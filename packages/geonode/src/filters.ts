@@ -1,0 +1,90 @@
+export type GeoNodeAttributeType = "date" | "number" | "text";
+
+export type GeoNodeAttributeFilterOperator =
+  | "contains"
+  | "equals"
+  | "greater-or-equal"
+  | "greater-than"
+  | "less-or-equal"
+  | "less-than"
+  | "not-equals";
+
+export interface GeoNodeAttributeFilter {
+  field: string;
+  operator: GeoNodeAttributeFilterOperator;
+  type: GeoNodeAttributeType;
+  value: string;
+}
+
+const comparisonOperators: Record<
+  Exclude<GeoNodeAttributeFilterOperator, "contains">,
+  string
+> = {
+  equals: "=",
+  "not-equals": "<>",
+  "greater-than": ">",
+  "greater-or-equal": ">=",
+  "less-than": "<",
+  "less-or-equal": "<=",
+};
+
+function quoteIdentifier(identifier: string): string {
+  const normalizedIdentifier = identifier.trim();
+
+  if (!normalizedIdentifier) {
+    throw new Error("An attribute field is required.");
+  }
+
+  return `"${normalizedIdentifier.replaceAll('"', '""')}"`;
+}
+
+function quoteText(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+function comparisonOperator(operator: GeoNodeAttributeFilterOperator): string {
+  if (operator === "contains") {
+    throw new Error("Contains is only supported by text attributes.");
+  }
+
+  return comparisonOperators[operator];
+}
+
+export function serializeGeoNodeAttributeFilter(
+  filter: GeoNodeAttributeFilter,
+): string {
+  const field = quoteIdentifier(filter.field);
+  const value = filter.value.trim();
+
+  if (!value) {
+    throw new Error("A filter value is required.");
+  }
+
+  if (filter.type === "text") {
+    if (filter.operator === "contains") {
+      return `${field} ILIKE ${quoteText(`%${value}%`)}`;
+    }
+
+    return `${field} ${comparisonOperator(filter.operator)} ${quoteText(value)}`;
+  }
+
+  if (filter.operator === "contains") {
+    throw new Error("Contains is only supported by text attributes.");
+  }
+
+  if (filter.type === "number") {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+      throw new Error("The numeric filter value is invalid.");
+    }
+
+    return `${field} ${comparisonOperator(filter.operator)} ${number}`;
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error("The date filter value is invalid.");
+  }
+
+  return `${field} ${comparisonOperator(filter.operator)} DATE ${quoteText(value)}`;
+}

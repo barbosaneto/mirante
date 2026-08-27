@@ -53,6 +53,7 @@ export interface MapFacade extends MapCommandApi {
   subscribeFeatureInfo(listener: (event: FeatureInfoEvent) => void): () => void;
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
+  setDatasetLayerFilter(id: number, cqlFilter?: string): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
   setBaseMap(id: BaseMapId): void;
   getView(): MapViewOptions;
@@ -289,6 +290,14 @@ export function createMap({
     },
     setDatasetLayerOpacity(id, opacity) {
       datasetLayers.get(id)?.setOpacity(Math.max(0, Math.min(1, opacity)));
+    },
+    setDatasetLayerFilter(id, cqlFilter) {
+      datasetLayers
+        .get(id)
+        ?.getSource()
+        ?.updateParams({
+          CQL_FILTER: cqlFilter || "INCLUDE",
+        });
     },
     setDatasetLayerVisibility(id, visible) {
       datasetLayers.get(id)?.setVisible(visible);

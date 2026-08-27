@@ -24,6 +24,7 @@ const mapMock = vi.hoisted(() => ({
   destroy: vi.fn(),
   removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
+  setDatasetLayerFilter: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
   getView: vi.fn(),
   subscribeFeatureInfo: vi.fn(),
@@ -119,6 +120,7 @@ describe("App", () => {
     mapMock.destroy.mockReset();
     mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
+    mapMock.setDatasetLayerFilter.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
     mapMock.getView.mockReset();
     mapMock.getView.mockReturnValue({ center: [-52, -15], zoom: 4 });
@@ -165,6 +167,7 @@ describe("App", () => {
           attributes: {
             name: "Test municipality",
             population: 1200,
+            surveyDate: "2026-08-26",
           },
           geometry: { type: "Point", coordinates: [-47.9, -15.8] },
           extent: [-47.9, -15.8, -47.9, -15.8],
@@ -221,6 +224,7 @@ describe("App", () => {
       destroy: mapMock.destroy,
       removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
+      setDatasetLayerFilter: mapMock.setDatasetLayerFilter,
       setDatasetLayerVisibility: mapMock.setDatasetLayerVisibility,
       setView: mapMock.setView,
     });
@@ -492,11 +496,38 @@ describe("App", () => {
       expect.objectContaining({ id: 7 }),
       expect.objectContaining({ page: 1, pageSize: 25 }),
     );
-    expect(within(tablePanel).getByText("name")).toBeInTheDocument();
+    expect(
+      within(tablePanel).getByRole("columnheader", { name: "name" }),
+    ).toBeInTheDocument();
     expect(
       within(tablePanel).getByText("Test municipality"),
     ).toBeInTheDocument();
     expect(within(tablePanel).getByText("1,200")).toBeInTheDocument();
+
+    fireEvent.change(within(tablePanel).getByLabelText("Value"), {
+      target: { value: "Test" },
+    });
+    fireEvent.click(
+      within(tablePanel).getByRole("button", { name: "Apply filter" }),
+    );
+    await waitFor(() =>
+      expect(listDatasetFeaturesMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: 7 }),
+        expect.objectContaining({
+          filter: {
+            field: "name",
+            operator: "contains",
+            type: "text",
+            value: "Test",
+          },
+          page: 1,
+        }),
+      ),
+    );
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenCalledWith(
+      7,
+      "\"name\" ILIKE '%Test%'",
+    );
 
     fireEvent.click(
       within(tablePanel).getByRole("button", {
@@ -506,6 +537,31 @@ describe("App", () => {
     expect(mapMock.fitGeographicExtent).toHaveBeenCalledWith([
       -47.9, -15.8, -47.9, -15.8,
     ]);
+
+    fireEvent.click(
+      within(tablePanel).getByRole("button", { name: "Clear filter" }),
+    );
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenLastCalledWith(
+      7,
+      undefined,
+    );
+
+    fireEvent.change(within(tablePanel).getByLabelText("Attribute"), {
+      target: { value: "surveyDate" },
+    });
+    fireEvent.change(within(tablePanel).getByLabelText("Operator"), {
+      target: { value: "greater-than" },
+    });
+    fireEvent.change(within(tablePanel).getByLabelText("Value"), {
+      target: { value: "2026-08-01" },
+    });
+    fireEvent.click(
+      within(tablePanel).getByRole("button", { name: "Apply filter" }),
+    );
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenLastCalledWith(
+      7,
+      "\"surveyDate\" > DATE '2026-08-01'",
+    );
 
     fireEvent.click(
       within(tablePanel).getByRole("button", {

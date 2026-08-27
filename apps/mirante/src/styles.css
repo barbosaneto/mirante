@@ -1096,6 +1096,54 @@ button,
   overflow: auto;
 }
 
+.attribute-table__filter {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  display: flex;
+  gap: var(--mirante-space-2);
+  align-items: flex-end;
+  padding: var(--mirante-space-3) var(--mirante-space-4);
+  border-bottom: 1px solid var(--mirante-color-border);
+  background: var(--mirante-color-panel);
+}
+
+.attribute-table__filter label {
+  display: grid;
+  min-width: 10rem;
+  gap: var(--mirante-space-1);
+}
+
+.attribute-table__filter label > span {
+  color: var(--mirante-color-text-muted);
+  font-size: 0.5625rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.attribute-table__filter select,
+.attribute-table__filter input {
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0 var(--mirante-space-3);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-small);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel-strong);
+  font-size: 0.75rem;
+}
+
+.attribute-table__filter select:focus,
+.attribute-table__filter input:focus {
+  border-color: var(--mirante-color-primary-strong);
+  outline: 2px solid rgb(20 184 166 / 18%);
+}
+
+.attribute-table__filter-value {
+  flex: 1 1 12rem;
+}
+
 .attribute-table__scroll {
   min-width: 100%;
   width: max-content;
@@ -1825,6 +1873,20 @@ button,
 
   .attribute-table__pagination {
     justify-content: space-between;
+  }
+
+  .attribute-table__filter {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .attribute-table__filter label {
+    min-width: calc(50% - var(--mirante-space-1));
+    flex: 1 1 9rem;
+  }
+
+  .attribute-table__filter .button {
+    flex: 1 1 auto;
   }
 
   .upload-backdrop {

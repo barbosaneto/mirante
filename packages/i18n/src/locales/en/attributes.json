@@ -15,6 +15,25 @@
   "next": "Next",
   "page": "Page {{page}} of {{totalPages}}",
   "pageWithoutTotal": "Page {{page}}",
+  "filter": {
+    "field": "Attribute",
+    "operator": "Operator",
+    "value": "Value",
+    "placeholder": "Filter value",
+    "noFields": "No attributes available",
+    "apply": "Apply filter",
+    "clear": "Clear filter",
+    "empty": "No features match the active filter.",
+    "operators": {
+      "contains": "Contains",
+      "equals": "Equals",
+      "not-equals": "Does not equal",
+      "greater-than": "Greater than",
+      "greater-or-equal": "Greater than or equal to",
+      "less-than": "Less than",
+      "less-or-equal": "Less than or equal to"
+    }
+  },
   "values": {
     "true": "Yes",
     "false": "No",

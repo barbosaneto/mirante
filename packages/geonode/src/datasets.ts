@@ -1,4 +1,8 @@
 import { createDatasetStyleFile, type DatasetUploadStyle } from "./sld";
+import {
+  serializeGeoNodeAttributeFilter,
+  type GeoNodeAttributeFilter,
+} from "./filters";
 
 export interface GeoNodeDataset {
   id: number;
@@ -43,6 +47,7 @@ export interface ListGeoNodeDatasetsOptions {
 }
 
 export interface ListGeoNodeDatasetFeaturesOptions {
+  filter?: GeoNodeAttributeFilter;
   page?: number;
   pageSize?: number;
   signal?: AbortSignal;
@@ -696,7 +701,7 @@ export function createGeoNodeDatasetClient({
     getDataset: retrieveDataset,
     async listDatasetFeatures(
       dataset,
-      { page = 1, pageSize = 25, signal } = {},
+      { filter, page = 1, pageSize = 25, signal } = {},
     ) {
       const safePage = Math.max(1, Math.trunc(page));
       const safePageSize = Math.max(1, Math.min(100, Math.trunc(pageSize)));
@@ -710,6 +715,9 @@ export function createGeoNodeDatasetClient({
         count: String(safePageSize + 1),
         startIndex: String((safePage - 1) * safePageSize),
       });
+      if (filter) {
+        query.set("cql_filter", serializeGeoNodeAttributeFilter(filter));
+      }
       const response = await request(appendQuery(dataset.wmsUrl, query), {
         signal,
       });

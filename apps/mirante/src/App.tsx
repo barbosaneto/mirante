@@ -3,6 +3,8 @@ import {
   createGeoNodeDatasetClient,
   createGeoNodeMapClient,
   GeoNodeDatasetIngestionError,
+  serializeGeoNodeAttributeFilter,
+  type GeoNodeAttributeFilter,
   type GeoNodeAuthenticationClient,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
@@ -60,6 +62,9 @@ function ApplicationShell({
   const activeDatasetIdsRef = useRef(new Set<number>());
   const [map, setMap] = useState<MapFacade | null>(null);
   const [datasets, setDatasets] = useState<DisplayedDataset[]>([]);
+  const [datasetFilters, setDatasetFilters] = useState<
+    Record<number, GeoNodeAttributeFilter>
+  >({});
   const [catalogueOpen, setCatalogueOpen] = useState(false);
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -168,6 +173,7 @@ function ApplicationShell({
     for (const item of datasets) map.removeDatasetLayer(item.dataset.id);
     activeDatasetIdsRef.current.clear();
     setDatasets([]);
+    setDatasetFilters({});
     for (const { dataset, layer } of [...restoredDatasets].reverse()) {
       addDatasetToMap(dataset, {
         fit: false,
@@ -241,6 +247,11 @@ function ApplicationShell({
     map?.removeDatasetLayer(id);
     activeDatasetIdsRef.current.delete(id);
     setAttributeDataset((current) => (current?.id === id ? null : current));
+    setDatasetFilters((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
     setDatasets((currentDatasets) =>
       currentDatasets.filter((item) => item.dataset.id !== id),
     );
@@ -254,6 +265,23 @@ function ApplicationShell({
     const displayedDataset = datasets.find((item) => item.dataset.id === id);
 
     if (displayedDataset) setAttributeDataset(displayedDataset.dataset);
+  }
+
+  function changeDatasetFilter(
+    id: number,
+    filter: GeoNodeAttributeFilter | undefined,
+  ) {
+    map?.setDatasetLayerFilter(
+      id,
+      filter ? serializeGeoNodeAttributeFilter(filter) : undefined,
+    );
+    setDatasetFilters((current) => {
+      if (filter) return { ...current, [id]: filter };
+
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
   }
 
   const managementPath = config.geonode.datasetManagementPath.startsWith("/")
@@ -279,6 +307,7 @@ function ApplicationShell({
       />
       <LayersPanel
         datasets={datasets}
+        filteredDatasetIds={Object.keys(datasetFilters).map(Number)}
         onOpacityChange={changeOpacity}
         onOpenAttributes={openAttributeTable}
         onRemove={removeDataset}
@@ -337,7 +366,11 @@ function ApplicationShell({
           key={attributeDataset.id}
           client={datasetClient}
           dataset={attributeDataset}
+          filter={datasetFilters[attributeDataset.id]}
           onClose={() => setAttributeDataset(null)}
+          onFilterChange={(filter) =>
+            changeDatasetFilter(attributeDataset.id, filter)
+          }
           onLocate={(feature) => {
             if (feature.extent) map?.fitGeographicExtent(feature.extent);
           }}

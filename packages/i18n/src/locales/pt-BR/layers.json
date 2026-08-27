@@ -3,6 +3,7 @@
   "count_one": "{{count}} camada",
   "count_other": "{{count}} camadas",
   "datasets": "Datasets ativos",
+  "filtered": "Filtrada",
   "empty": "Adicione um dataset pelo catálogo para exibi-lo no mapa.",
   "visibility": "Exibir {{name}}",
   "opacity": "Opacidade de {{name}}",

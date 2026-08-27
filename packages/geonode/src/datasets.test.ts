@@ -149,7 +149,16 @@ describe("GeoNode dataset client", () => {
           wmsUrl: "/geoserver/ows",
           extent: [-54, -16, -45, -8],
         },
-        { page: 2, pageSize: 25 },
+        {
+          filter: {
+            field: "name",
+            operator: "contains",
+            type: "text",
+            value: "Brasília",
+          },
+          page: 2,
+          pageSize: 25,
+        },
       ),
     ).resolves.toEqual({
       features: [
@@ -176,7 +185,7 @@ describe("GeoNode dataset client", () => {
       total: 26,
     });
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=geonode%3Amunicipal_boundaries&outputFormat=application%2Fjson&srsName=EPSG%3A4326&count=26&startIndex=25",
+      "/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=geonode%3Amunicipal_boundaries&outputFormat=application%2Fjson&srsName=EPSG%3A4326&count=26&startIndex=25&cql_filter=%22name%22+ILIKE+%27%25Bras%C3%ADlia%25%27",
     );
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
       credentials: "include",

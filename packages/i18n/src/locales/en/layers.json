@@ -3,6 +3,7 @@
   "count_one": "{{count}} layer",
   "count_other": "{{count}} layers",
   "datasets": "Active datasets",
+  "filtered": "Filtered",
   "empty": "Add a dataset from the catalogue to display it on the map.",
   "visibility": "Show {{name}}",
   "opacity": "{{name}} opacity",

@@ -11,6 +11,7 @@ export interface GeoNodeUser {
 }
 
 export * from "./datasets";
+export * from "./filters";
 export * from "./sld";
 
 export interface GeoNodeCredentials {

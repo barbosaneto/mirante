@@ -13,6 +13,7 @@ export interface DisplayedDataset {
 
 interface LayersPanelProps {
   datasets: readonly DisplayedDataset[];
+  filteredDatasetIds: readonly number[];
   onOpacityChange: (id: number, opacity: number) => void;
   onOpenAttributes: (id: number) => void;
   onRemove: (id: number) => void;
@@ -22,6 +23,7 @@ interface LayersPanelProps {
 
 export function LayersPanel({
   datasets,
+  filteredDatasetIds,
   onOpacityChange,
   onOpenAttributes,
   onRemove,
@@ -71,7 +73,11 @@ export function LayersPanel({
                 <span
                   className={`layer-row__type layer-row__type--${loadStatus}`}
                 >
-                  {loadStatus === "ready" ? "WMS" : t(`status.${loadStatus}`)}
+                  {loadStatus === "ready"
+                    ? filteredDatasetIds.includes(dataset.id)
+                      ? t("filtered")
+                      : "WMS"
+                    : t(`status.${loadStatus}`)}
                 </span>
                 <div className="layer-row__actions">
                   <button

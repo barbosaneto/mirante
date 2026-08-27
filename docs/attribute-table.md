@@ -19,6 +19,6 @@ Pages contain 25 records. Mirante requests one additional record as a look-ahead
 ## Current limits
 
 - The table reads vector datasets that GeoServer exposes through WFS.
-- Attribute filters are not yet available; they are planned for the next increment.
+- One typed attribute filter can be applied to the table and WMS layer. See [Attribute filtering](attribute-filtering.md).
 - Selecting a row locates its geometry but does not yet draw a persistent highlight.
 - Column ordering follows the GeoJSON property order returned by GeoServer.

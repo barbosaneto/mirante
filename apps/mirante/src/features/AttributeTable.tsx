@@ -1,4 +1,7 @@
 import {
+  type GeoNodeAttributeFilter,
+  type GeoNodeAttributeFilterOperator,
+  type GeoNodeAttributeType,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
   type GeoNodeDatasetFeature,
@@ -13,7 +16,9 @@ import { FocusIcon } from "../shell/Icons";
 interface AttributeTableProps {
   client: GeoNodeDatasetClient;
   dataset: GeoNodeDataset;
+  filter?: GeoNodeAttributeFilter;
   onClose: () => void;
+  onFilterChange: (filter: GeoNodeAttributeFilter | undefined) => void;
   onLocate: (feature: GeoNodeDatasetFeature) => void;
 }
 
@@ -23,6 +28,46 @@ type AttributeTableState =
   | { status: "ready"; result: GeoNodeDatasetFeaturePage };
 
 const pageSize = 25;
+
+interface AttributeField {
+  name: string;
+  type: GeoNodeAttributeType;
+}
+
+const comparisonOperators: readonly GeoNodeAttributeFilterOperator[] = [
+  "equals",
+  "not-equals",
+  "greater-than",
+  "greater-or-equal",
+  "less-than",
+  "less-or-equal",
+];
+
+function inferAttributeType(values: readonly unknown[]): GeoNodeAttributeType {
+  const populatedValues = values.filter(
+    (value) => value !== null && value !== undefined && value !== "",
+  );
+
+  if (
+    populatedValues.length > 0 &&
+    populatedValues.every((value) => typeof value === "number")
+  ) {
+    return "number";
+  }
+
+  if (
+    populatedValues.length > 0 &&
+    populatedValues.every(
+      (value) =>
+        typeof value === "string" &&
+        /^\d{4}-\d{2}-\d{2}(?:T.*|Z)?$/.test(value),
+    )
+  ) {
+    return "date";
+  }
+
+  return "text";
+}
 
 function formatAttributeValue(
   value: unknown,
@@ -41,13 +86,22 @@ function formatAttributeValue(
 export function AttributeTable({
   client,
   dataset,
+  filter,
   onClose,
+  onFilterChange,
   onLocate,
 }: AttributeTableProps) {
   const { t } = useTranslation("attributes");
   const titleId = useId();
   const [page, setPage] = useState(1);
   const [requestKey, setRequestKey] = useState(0);
+  const [fields, setFields] = useState<AttributeField[]>(
+    filter ? [{ name: filter.field, type: filter.type }] : [],
+  );
+  const [draftField, setDraftField] = useState(filter?.field ?? "");
+  const [draftOperator, setDraftOperator] =
+    useState<GeoNodeAttributeFilterOperator>(filter?.operator ?? "contains");
+  const [draftValue, setDraftValue] = useState(filter?.value ?? "");
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(
     null,
   );
@@ -61,6 +115,7 @@ export function AttributeTable({
 
     void client
       .listDatasetFeatures(dataset, {
+        filter,
         page,
         pageSize,
         signal: controller.signal,
@@ -71,7 +126,7 @@ export function AttributeTable({
       });
 
     return () => controller.abort();
-  }, [client, dataset, page, requestKey]);
+  }, [client, dataset, filter, page, requestKey]);
 
   const columns = useMemo(() => {
     if (state.status !== "ready") return [];
@@ -84,6 +139,38 @@ export function AttributeTable({
       ),
     );
   }, [state]);
+
+  useEffect(() => {
+    if (state.status !== "ready") return;
+
+    const inferredFields = columns.map((name) => ({
+      name,
+      type: inferAttributeType(
+        state.result.features.map((feature) => feature.attributes[name]),
+      ),
+    }));
+
+    setFields((currentFields) => {
+      const byName = new Map(
+        currentFields.map((field) => [field.name, field] as const),
+      );
+      inferredFields.forEach((field) => byName.set(field.name, field));
+      return [...byName.values()];
+    });
+  }, [columns, state]);
+
+  useEffect(() => {
+    if (draftField || !fields[0]) return;
+
+    setDraftField(fields[0].name);
+    setDraftOperator(fields[0].type === "text" ? "contains" : "equals");
+  }, [draftField, fields]);
+
+  const selectedField = fields.find((field) => field.name === draftField);
+  const availableOperators =
+    selectedField?.type === "text"
+      ? (["contains", "equals", "not-equals"] as const)
+      : comparisonOperators;
 
   const result = state.status === "ready" ? state.result : null;
   const totalPages =
@@ -133,6 +220,106 @@ export function AttributeTable({
       </header>
 
       <div className="attribute-table__content">
+        <form
+          className="attribute-table__filter"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!selectedField || !draftValue.trim()) return;
+
+            const nextFilter: GeoNodeAttributeFilter = {
+              field: selectedField.name,
+              operator: draftOperator,
+              type: selectedField.type,
+              value: draftValue.trim(),
+            };
+            setPage(1);
+            setSelectedFeatureId(null);
+            onFilterChange(nextFilter);
+          }}
+        >
+          <label>
+            <span>{t("filter.field")}</span>
+            <select
+              value={draftField}
+              disabled={fields.length === 0}
+              onChange={(event) => {
+                const field = fields.find(
+                  (candidate) => candidate.name === event.currentTarget.value,
+                );
+                setDraftField(event.currentTarget.value);
+                setDraftOperator(
+                  field?.type === "text" ? "contains" : "equals",
+                );
+                setDraftValue("");
+              }}
+            >
+              {fields.length === 0 ? (
+                <option value="">{t("filter.noFields")}</option>
+              ) : null}
+              {fields.map((field) => (
+                <option value={field.name} key={field.name}>
+                  {field.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{t("filter.operator")}</span>
+            <select
+              value={draftOperator}
+              disabled={!selectedField}
+              onChange={(event) =>
+                setDraftOperator(
+                  event.currentTarget.value as GeoNodeAttributeFilterOperator,
+                )
+              }
+            >
+              {availableOperators.map((operator) => (
+                <option value={operator} key={operator}>
+                  {t(`filter.operators.${operator}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="attribute-table__filter-value">
+            <span>{t("filter.value")}</span>
+            <input
+              type={
+                selectedField?.type === "number"
+                  ? "number"
+                  : selectedField?.type === "date"
+                    ? "date"
+                    : "text"
+              }
+              value={draftValue}
+              disabled={!selectedField}
+              placeholder={t("filter.placeholder")}
+              step={selectedField?.type === "number" ? "any" : undefined}
+              onChange={(event) => setDraftValue(event.currentTarget.value)}
+            />
+          </label>
+          <button
+            type="submit"
+            className="button button--primary"
+            disabled={!selectedField || !draftValue.trim()}
+          >
+            {t("filter.apply")}
+          </button>
+          {filter ? (
+            <button
+              type="button"
+              className="button button--secondary"
+              onClick={() => {
+                setPage(1);
+                setSelectedFeatureId(null);
+                setDraftValue("");
+                onFilterChange(undefined);
+              }}
+            >
+              {t("filter.clear")}
+            </button>
+          ) : null}
+        </form>
         {state.status === "loading" ? (
           <p className="attribute-table__state" role="status">
             {t("loading")}
@@ -151,7 +338,9 @@ export function AttributeTable({
           </div>
         ) : null}
         {result && result.features.length === 0 ? (
-          <p className="attribute-table__state">{t("empty")}</p>
+          <p className="attribute-table__state">
+            {filter ? t("filter.empty") : t("empty")}
+          </p>
         ) : null}
         {result && result.features.length > 0 ? (
           <div className="attribute-table__scroll">
