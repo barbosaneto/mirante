@@ -1,17 +1,35 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mapMock = vi.hoisted(() => ({
+  create: vi.fn(),
+  destroy: vi.fn(),
+}));
+
+vi.mock("@mirante/map", () => ({
+  createMap: mapMock.create,
+}));
 
 import { App } from "./App";
 
 describe("App", () => {
-  it("renders the initial localized message", () => {
-    render(<App />);
+  beforeEach(() => {
+    mapMock.create.mockReset();
+    mapMock.destroy.mockReset();
+    mapMock.create.mockReturnValue({ destroy: mapMock.destroy });
+  });
 
-    expect(
-      screen.getByRole("heading", { name: "Mirante" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("An extensible Web GIS client for GeoNode."),
-    ).toBeInTheDocument();
+  it("creates and destroys the map through the public facade", () => {
+    const { unmount } = render(<App />);
+
+    const mapRegion = screen.getByRole("region", {
+      name: "Interactive map centered on Brazil",
+    });
+
+    expect(mapMock.create).toHaveBeenCalledWith({ target: mapRegion });
+
+    unmount();
+
+    expect(mapMock.destroy).toHaveBeenCalledOnce();
   });
 });

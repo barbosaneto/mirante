@@ -2,5 +2,8 @@
   "application": {
     "name": "Mirante",
     "tagline": "An extensible Web GIS client for GeoNode."
+  },
+  "map": {
+    "ariaLabel": "Interactive map centered on Brazil"
   }
 }

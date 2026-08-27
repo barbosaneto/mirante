@@ -21,24 +21,37 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow: hidden;
+}
+
+button,
+[tabindex] {
+  outline-color: #2dd4bf;
+}
+
+#root,
+.app-shell,
+.map-viewport {
+  width: 100%;
+  height: 100%;
 }
 
 .app-shell {
-  display: grid;
-  min-height: 100vh;
-  place-content: center;
-  padding: 2rem;
-  text-align: center;
+  position: fixed;
+  inset: 0;
+  background: #090d16;
 }
 
-.app-shell h1 {
-  margin: 0;
-  color: #2dd4bf;
-  font-size: clamp(2.5rem, 8vw, 5rem);
-  letter-spacing: -0.05em;
+.map-viewport:focus-visible {
+  outline: 2px solid #2dd4bf;
+  outline-offset: -2px;
 }
 
-.app-shell p {
-  margin: 0.75rem 0 0;
+.map-viewport .ol-attribution {
   color: #94a3b8;
+  background: rgb(9 13 22 / 88%);
+}
+
+.map-viewport .ol-attribution a {
+  color: #cbd5e1;
 }
