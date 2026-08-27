@@ -3,6 +3,13 @@ import { fallbackLocale, supportedLocales } from "@mirante/i18n";
 
 import miranteLogo from "./assets/mirante.png";
 
+const geonodeBaseUrl = import.meta.env.VITE_GEONODE_BASE_URL ?? "/";
+const geonodeWebUrl =
+  import.meta.env.VITE_GEONODE_WEB_URL ??
+  (geonodeBaseUrl === "/" || geonodeBaseUrl === ""
+    ? "http://localhost:8000"
+    : geonodeBaseUrl);
+
 export const miranteConfig = defineMiranteConfig({
   branding: {
     applicationName: "Mirante",
@@ -13,7 +20,8 @@ export const miranteConfig = defineMiranteConfig({
     primaryColorStrong: "#0d9488",
   },
   geonode: {
-    baseUrl: import.meta.env.VITE_GEONODE_BASE_URL ?? "/",
+    baseUrl: geonodeBaseUrl,
+    webUrl: geonodeWebUrl,
     datasetManagementPath: "/catalogue/#/",
   },
   i18n: {

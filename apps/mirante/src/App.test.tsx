@@ -230,7 +230,7 @@ describe("App", () => {
     expect(screen.getByText("Signed in as Administrator")).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: "Manage datasets in GeoNode" }),
-    ).toHaveAttribute("href", "/catalogue/#/");
+    ).toHaveAttribute("href", "http://localhost:8000/catalogue/#/");
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {

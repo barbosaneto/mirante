@@ -20,6 +20,7 @@ export interface MiranteConfig {
   };
   geonode: {
     baseUrl: string;
+    webUrl: string;
     datasetManagementPath: string;
   };
   i18n: {

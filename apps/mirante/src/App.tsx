@@ -178,9 +178,9 @@ function ApplicationShell({
     ? config.geonode.datasetManagementPath
     : `/${config.geonode.datasetManagementPath}`;
   const datasetManagementUrl =
-    config.geonode.baseUrl === "/" || config.geonode.baseUrl === ""
+    config.geonode.webUrl === "/" || config.geonode.webUrl === ""
       ? managementPath
-      : `${config.geonode.baseUrl.replace(/\/$/, "")}${managementPath}`;
+      : `${config.geonode.webUrl.replace(/\/$/, "")}${managementPath}`;
 
   return (
     <main className="app-shell" style={themeStyle}>

@@ -6,7 +6,7 @@ The current contract covers:
 
 - Application name and logo URL.
 - Primary theme colors.
-- GeoNode base URL and dataset management path.
+- GeoNode API base URL, public web URL, and dataset management path.
 - Supported and fallback locales.
 - Initial map center and zoom.
 - Dataset upload, drawing, and measurement feature flags.
@@ -25,6 +25,7 @@ export const config = defineMiranteConfig({
   },
   geonode: {
     baseUrl: "/",
+    webUrl: "http://localhost:8000",
     datasetManagementPath: "/catalogue/#/",
   },
   i18n: {

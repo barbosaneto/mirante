@@ -23,7 +23,7 @@ npm run dev
 
 The development server is available at `http://localhost:5173` by default.
 
-When running outside Docker, the development proxy forwards GeoNode routes to `http://localhost:8000`. Set `GEONODE_INTERNAL_URL` to use another target.
+When running outside Docker, the development proxy forwards GeoNode routes to `http://localhost:8000`. Set `GEONODE_INTERNAL_URL` to use another target and `VITE_GEONODE_WEB_URL` to the public browser-facing GeoNode origin.
 
 ## Local GeoNode
 

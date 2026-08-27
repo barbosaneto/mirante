@@ -20,7 +20,7 @@ Removing a layer never deletes or changes the corresponding GeoNode dataset. Use
 
 ## Configuration
 
-The management link combines `geonode.baseUrl` with `geonode.datasetManagementPath`. The official GeoNode 5.1.0 distribution uses `/catalogue/#/`; institutional distributions can override the path without changing application internals.
+The management link combines `geonode.webUrl` with `geonode.datasetManagementPath`. The web URL must be the public browser-facing GeoNode origin, while `geonode.baseUrl` may remain relative and use the Mirante proxy for API requests. The official GeoNode 5.1.0 distribution uses `/catalogue/#/`; institutional distributions can override the URL and path without changing application internals.
 
 ## Current limits
 
