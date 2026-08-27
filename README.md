@@ -6,7 +6,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 ## Current status
 
-This repository currently contains the initial workspace, a containerized local development stack, an OpenLayers map, a responsive application shell, runtime internationalization, public distribution configuration, the first build-time extension API, and GeoNode session authentication. Dataset upload will be added incrementally.
+This repository contains the initial Mirante proof of concept: a containerized local GeoNode stack, session authentication, GeoJSON, KML, and zipped Shapefile ingestion with asynchronous progress, and published WMS visualization in OpenLayers. The responsive shell also includes runtime internationalization, public distribution configuration, and a build-time extension API.
 
 ## Requirements
 
@@ -54,6 +54,8 @@ The official distribution keeps branding, theme, GeoNode URL, map defaults, loca
 Mirante extensions are installed at build time and use only the root exports from `@mirante/sdk`. See [Extensions](docs/extensions.md) for a minimal toolbar example and [Internationalization](docs/internationalization.md) for locale behavior and translation validation.
 
 Authentication uses GeoNode's standard Django session, CSRF protection, and API V2 user resource without requiring a custom backend. See [Authentication](docs/authentication.md) for the request flow and deployment requirements.
+
+Authenticated users can upload GeoJSON, KML, and zipped Shapefiles through GeoNode's standard asynchronous importer. Mirante follows the execution, retrieves the published dataset, adds its WMS layer to OpenLayers, and exposes visibility and opacity controls. See [Dataset ingestion](docs/dataset-ingestion.md) for the supported flow and current limits.
 
 ## Workspace structure
 

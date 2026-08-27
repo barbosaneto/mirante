@@ -4,5 +4,13 @@
   "count_other": "{{count}} layers",
   "baseMap": "Base map",
   "darkMatter": "Dark Matter",
-  "empty": "Published datasets will appear here."
+  "datasets": "Published datasets",
+  "empty": "Published datasets will appear here.",
+  "visibility": "Show {{name}}",
+  "opacity": "{{name}} opacity",
+  "status": {
+    "loading": "Loading",
+    "ready": "Ready",
+    "error": "Error"
+  }
 }

@@ -1,0 +1,51 @@
+{
+  "toolbarLabel": "Upload dataset",
+  "dialog": {
+    "eyebrow": "GeoNode dataset",
+    "title": "Upload a dataset",
+    "description": "Select a GeoJSON, KML, or zipped Shapefile. GeoNode will ingest and publish it, then Mirante will add it to the map.",
+    "close": "Close upload dialog"
+  },
+  "dropzone": {
+    "prompt": "Drop a dataset file here",
+    "help": "GeoJSON, KML, or zipped Shapefile up to {{size}}",
+    "browse": "Choose file",
+    "replace": "Choose another file"
+  },
+  "validation": {
+    "valid": "Dataset file ready to upload.",
+    "empty-file": "The selected file is empty.",
+    "file-too-large": "The selected file exceeds the allowed size.",
+    "invalid-geojson": "The file must contain a valid GeoJSON FeatureCollection.",
+    "invalid-kml": "The file must contain a valid KML document.",
+    "invalid-zip": "The file must be a valid ZIP archive containing the components of one Shapefile.",
+    "unsupported-format": "Supported formats are .geojson, .kml, and .zip containing a Shapefile."
+  },
+  "progress": {
+    "uploading": "Sending file to GeoNode",
+    "processing": "GeoNode is publishing the dataset",
+    "retrieving": "Retrieving the published dataset",
+    "percentage": "{{value}}%",
+    "keepOpen": "Keep this dialog open until processing finishes."
+  },
+  "success": {
+    "title": "Dataset published",
+    "description": "{{name}} was added to the map and the view was fitted to its extent."
+  },
+  "errors": {
+    "title": "Dataset could not be published",
+    "csrf-unavailable": "GeoNode could not start a secure upload session.",
+    "network": "Mirante could not reach GeoNode. Check the connection and try again.",
+    "processing-failed": "GeoNode could not process this dataset.",
+    "session-expired": "Your GeoNode session expired. Sign in again and retry.",
+    "timeout": "GeoNode took too long to process this dataset.",
+    "unexpected-response": "GeoNode returned an unexpected response.",
+    "upload-rejected": "GeoNode rejected this upload. Check the file and your permissions."
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "done": "Done",
+    "upload": "Upload dataset",
+    "working": "Publishing…"
+  }
+}

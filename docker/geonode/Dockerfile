@@ -19,6 +19,7 @@ RUN apt-get update \
         libgdal-dev \
         libjpeg-dev \
         libldap2-dev \
+        libmagic1t64 \
         libmemcached-dev \
         libpq-dev \
         libsasl2-dev \

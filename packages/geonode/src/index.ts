@@ -7,6 +7,8 @@ export interface GeoNodeUser {
   isAdministrator: boolean;
 }
 
+export * from "./datasets";
+
 export interface GeoNodeCredentials {
   username: string;
   password: string;

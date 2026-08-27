@@ -1,14 +1,24 @@
 import { changeLocale } from "@mirante/i18n";
 import type {
   GeoNodeAuthenticationClient,
+  GeoNodeDatasetClient,
   GeoNodeUser,
 } from "@mirante/geonode";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mapMock = vi.hoisted(() => ({
   create: vi.fn(),
+  addDatasetLayer: vi.fn(),
   destroy: vi.fn(),
+  setDatasetLayerOpacity: vi.fn(),
+  setDatasetLayerVisibility: vi.fn(),
   setView: vi.fn(),
 }));
 
@@ -27,6 +37,17 @@ const authenticationMock: GeoNodeAuthenticationClient = {
   signOut: vi.fn().mockResolvedValue(undefined),
 };
 
+const uploadDatasetMock = vi.fn<GeoNodeDatasetClient["uploadDataset"]>();
+const datasetMock: GeoNodeDatasetClient = {
+  uploadDataset: uploadDatasetMock.mockResolvedValue({
+    id: 42,
+    title: "Conservation areas",
+    layerName: "geonode:conservation_areas",
+    wmsUrl: "/geoserver/geonode/conservation_areas/ows",
+    extent: [-54, -16, -45, -8],
+  }),
+};
+
 vi.mock("@mirante/map", () => ({
   createMap: mapMock.create,
 }));
@@ -38,7 +59,10 @@ describe("App", () => {
     await changeLocale("en");
     localStorage.clear();
     mapMock.create.mockReset();
+    mapMock.addDatasetLayer.mockReset();
     mapMock.destroy.mockReset();
+    mapMock.setDatasetLayerOpacity.mockReset();
+    mapMock.setDatasetLayerVisibility.mockReset();
     mapMock.setView.mockReset();
     vi.mocked(authenticationMock.restoreSession).mockReset();
     vi.mocked(authenticationMock.restoreSession).mockResolvedValue(null);
@@ -46,8 +70,19 @@ describe("App", () => {
     vi.mocked(authenticationMock.signIn).mockResolvedValue(authenticatedUser);
     vi.mocked(authenticationMock.signOut).mockReset();
     vi.mocked(authenticationMock.signOut).mockResolvedValue(undefined);
+    uploadDatasetMock.mockReset();
+    uploadDatasetMock.mockResolvedValue({
+      id: 42,
+      title: "Conservation areas",
+      layerName: "geonode:conservation_areas",
+      wmsUrl: "/geoserver/geonode/conservation_areas/ows",
+      extent: [-54, -16, -45, -8],
+    });
     mapMock.create.mockReturnValue({
+      addDatasetLayer: mapMock.addDatasetLayer,
       destroy: mapMock.destroy,
+      setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
+      setDatasetLayerVisibility: mapMock.setDatasetLayerVisibility,
       setView: mapMock.setView,
     });
   });
@@ -156,5 +191,76 @@ describe("App", () => {
         screen.getByRole("button", { name: "User account" }),
       ).toHaveTextContent("Sign in");
     });
+  });
+
+  it("uploads a valid GeoJSON and exposes map layer controls", async () => {
+    const { container } = render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "User account" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "User account" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Username" }), {
+      target: { value: "admin" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const uploadButton = await screen.findByRole("button", {
+      name: "Upload dataset",
+    });
+    await waitFor(() => expect(uploadButton).toBeEnabled());
+    fireEvent.click(uploadButton);
+
+    const fileInput =
+      container.querySelector<HTMLInputElement>('input[type="file"]');
+    const file = new File(
+      [
+        JSON.stringify({
+          type: "FeatureCollection",
+          features: [],
+        }),
+      ],
+      "conservation-areas.geojson",
+      { type: "application/geo+json" },
+    );
+    expect(fileInput).not.toBeNull();
+    fireEvent.change(fileInput!, { target: { files: [file] } });
+
+    const dialog = screen.getByRole("dialog", { name: "Upload a dataset" });
+    await within(dialog).findByText("Dataset file ready to upload.");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Upload dataset" }),
+    );
+
+    await within(dialog).findByText("Dataset published");
+    expect(uploadDatasetMock).toHaveBeenCalledWith(file, expect.anything());
+    expect(mapMock.addDatasetLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 42,
+        layerName: "geonode:conservation_areas",
+      }),
+    );
+
+    const visibility = screen.getByRole("checkbox", {
+      name: "Show Conservation areas",
+    });
+    fireEvent.click(visibility);
+    expect(mapMock.setDatasetLayerVisibility).toHaveBeenCalledWith(42, false);
+
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Conservation areas opacity" }),
+      { target: { value: "60" } },
+    );
+    expect(mapMock.setDatasetLayerOpacity).toHaveBeenCalledWith(42, 0.6);
   });
 });

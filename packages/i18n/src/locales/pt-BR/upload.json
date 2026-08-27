@@ -1,0 +1,51 @@
+{
+  "toolbarLabel": "Enviar dataset",
+  "dialog": {
+    "eyebrow": "Dataset do GeoNode",
+    "title": "Enviar um dataset",
+    "description": "Selecione um GeoJSON, KML ou Shapefile compactado. O GeoNode fará a ingestão e a publicação, e o Mirante o adicionará ao mapa.",
+    "close": "Fechar diálogo de upload"
+  },
+  "dropzone": {
+    "prompt": "Solte um arquivo de dataset aqui",
+    "help": "GeoJSON, KML ou Shapefile compactado de até {{size}}",
+    "browse": "Escolher arquivo",
+    "replace": "Escolher outro arquivo"
+  },
+  "validation": {
+    "valid": "Arquivo de dataset pronto para envio.",
+    "empty-file": "O arquivo selecionado está vazio.",
+    "file-too-large": "O arquivo selecionado excede o tamanho permitido.",
+    "invalid-geojson": "O arquivo deve conter uma FeatureCollection GeoJSON válida.",
+    "invalid-kml": "O arquivo deve conter um documento KML válido.",
+    "invalid-zip": "O arquivo deve ser um ZIP válido contendo os componentes de um Shapefile.",
+    "unsupported-format": "Os formatos aceitos são .geojson, .kml e .zip contendo um Shapefile."
+  },
+  "progress": {
+    "uploading": "Enviando arquivo ao GeoNode",
+    "processing": "O GeoNode está publicando o dataset",
+    "retrieving": "Recuperando o dataset publicado",
+    "percentage": "{{value}}%",
+    "keepOpen": "Mantenha este diálogo aberto até o processamento terminar."
+  },
+  "success": {
+    "title": "Dataset publicado",
+    "description": "{{name}} foi adicionado ao mapa e a visualização foi ajustada à sua extensão."
+  },
+  "errors": {
+    "title": "Não foi possível publicar o dataset",
+    "csrf-unavailable": "O GeoNode não conseguiu iniciar uma sessão segura de upload.",
+    "network": "O Mirante não conseguiu acessar o GeoNode. Verifique a conexão e tente novamente.",
+    "processing-failed": "O GeoNode não conseguiu processar este dataset.",
+    "session-expired": "Sua sessão do GeoNode expirou. Entre novamente e repita o envio.",
+    "timeout": "O GeoNode demorou demais para processar este dataset.",
+    "unexpected-response": "O GeoNode retornou uma resposta inesperada.",
+    "upload-rejected": "O GeoNode rejeitou o upload. Verifique o arquivo e suas permissões."
+  },
+  "actions": {
+    "cancel": "Cancelar",
+    "done": "Concluir",
+    "upload": "Enviar dataset",
+    "working": "Publicando…"
+  }
+}

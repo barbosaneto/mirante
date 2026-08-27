@@ -47,3 +47,12 @@ export function GlobeIcon() {
     </Icon>
   );
 }
+
+export function UploadIcon() {
+  return (
+    <Icon>
+      <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5" />
+      <path d="M5 14v5h14v-5" />
+    </Icon>
+  );
+}

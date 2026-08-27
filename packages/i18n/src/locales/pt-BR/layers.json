@@ -4,5 +4,13 @@
   "count_other": "{{count}} camadas",
   "baseMap": "Mapa-base",
   "darkMatter": "Dark Matter",
-  "empty": "Os datasets publicados aparecerão aqui."
+  "datasets": "Datasets publicados",
+  "empty": "Os datasets publicados aparecerão aqui.",
+  "visibility": "Exibir {{name}}",
+  "opacity": "Opacidade de {{name}}",
+  "status": {
+    "loading": "Carregando",
+    "ready": "Pronta",
+    "error": "Erro"
+  }
 }

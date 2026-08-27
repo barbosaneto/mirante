@@ -5,10 +5,12 @@ import enAuthentication from "./locales/en/authentication.json";
 import enCommon from "./locales/en/common.json";
 import enLayers from "./locales/en/layers.json";
 import enMap from "./locales/en/map.json";
+import enUpload from "./locales/en/upload.json";
 import ptBrAuthentication from "./locales/pt-BR/authentication.json";
 import ptBrCommon from "./locales/pt-BR/common.json";
 import ptBrLayers from "./locales/pt-BR/layers.json";
 import ptBrMap from "./locales/pt-BR/map.json";
+import ptBrUpload from "./locales/pt-BR/upload.json";
 
 export const supportedLocales = ["en", "pt-BR"] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
@@ -22,12 +24,14 @@ export const translationResources = {
     common: enCommon,
     layers: enLayers,
     map: enMap,
+    upload: enUpload,
   },
   "pt-BR": {
     authentication: ptBrAuthentication,
     common: ptBrCommon,
     layers: ptBrLayers,
     map: ptBrMap,
+    upload: ptBrUpload,
   },
 } as const;
 
@@ -96,7 +100,7 @@ if (!i18n.isInitialized) {
     fallbackLng: fallbackLocale,
     lng: initialLocale,
     defaultNS: "common",
-    ns: ["authentication", "common", "layers", "map"],
+    ns: ["authentication", "common", "layers", "map", "upload"],
     resources: translationResources,
     interpolation: {
       escapeValue: false,

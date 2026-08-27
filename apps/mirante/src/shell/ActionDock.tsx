@@ -2,7 +2,7 @@ import type { MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
 import { useTranslation } from "react-i18next";
 
-import { GlobeIcon, HomeIcon } from "./Icons";
+import { GlobeIcon, HomeIcon, UploadIcon } from "./Icons";
 
 const icons = {
   globe: <GlobeIcon />,
@@ -13,10 +13,19 @@ interface ActionDockProps {
   actions: readonly RegisteredToolbarItem[];
   authenticated: boolean;
   map: MapFacade | null;
+  uploadEnabled: boolean;
+  onUpload: () => void;
 }
 
-export function ActionDock({ actions, authenticated, map }: ActionDockProps) {
+export function ActionDock({
+  actions,
+  authenticated,
+  map,
+  onUpload,
+  uploadEnabled,
+}: ActionDockProps) {
   const { t } = useTranslation("common");
+  const { t: uploadTranslation } = useTranslation("upload");
 
   return (
     <div
@@ -24,6 +33,17 @@ export function ActionDock({ actions, authenticated, map }: ActionDockProps) {
       role="toolbar"
       aria-label={t("shell.tools.toolbarLabel")}
     >
+      {uploadEnabled ? (
+        <button
+          type="button"
+          aria-label={uploadTranslation("toolbarLabel")}
+          title={uploadTranslation("toolbarLabel")}
+          disabled={!map || !authenticated}
+          onClick={onUpload}
+        >
+          <UploadIcon />
+        </button>
+      ) : null}
       {actions.map((action) => {
         const label = t(action.labelKey, {
           ns: action.translationNamespace,
