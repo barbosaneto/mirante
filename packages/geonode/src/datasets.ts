@@ -68,6 +68,7 @@ export interface DatasetUploadMetadata {
 }
 
 export interface GeoNodeDatasetClient {
+  getDataset(id: number, signal?: AbortSignal): Promise<GeoNodeDataset>;
   listDatasets(
     options?: ListGeoNodeDatasetsOptions,
   ): Promise<GeoNodeDatasetPage>;
@@ -531,6 +532,7 @@ export function createGeoNodeDatasetClient({
   }
 
   return {
+    getDataset: retrieveDataset,
     async listDatasets({ page = 1, pageSize = 20, signal } = {}) {
       const query = new URLSearchParams({
         page: String(page),

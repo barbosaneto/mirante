@@ -2,7 +2,7 @@ import type { MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
 import { useTranslation } from "react-i18next";
 
-import { GlobeIcon, HomeIcon, UploadIcon } from "./Icons";
+import { GlobeIcon, HomeIcon, MapLibraryIcon, UploadIcon } from "./Icons";
 
 const icons = {
   globe: <GlobeIcon />,
@@ -15,6 +15,7 @@ interface ActionDockProps {
   canUploadDatasets: boolean;
   map: MapFacade | null;
   uploadEnabled: boolean;
+  onMaps: () => void;
   onUpload: () => void;
 }
 
@@ -23,6 +24,7 @@ export function ActionDock({
   authenticated,
   canUploadDatasets,
   map,
+  onMaps,
   onUpload,
   uploadEnabled,
 }: ActionDockProps) {
@@ -35,6 +37,17 @@ export function ActionDock({
       role="toolbar"
       aria-label={t("shell.tools.toolbarLabel")}
     >
+      {authenticated ? (
+        <button
+          type="button"
+          aria-label={t("toolbarLabel", { ns: "maps" })}
+          title={t("toolbarLabel", { ns: "maps" })}
+          disabled={!map}
+          onClick={onMaps}
+        >
+          <MapLibraryIcon />
+        </button>
+      ) : null}
       {uploadEnabled && canUploadDatasets ? (
         <button
           type="button"

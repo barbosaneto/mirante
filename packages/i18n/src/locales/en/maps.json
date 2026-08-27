@@ -1,0 +1,31 @@
+{
+  "toolbarLabel": "Save or open a map",
+  "dialog": {
+    "eyebrow": "GeoNode maps",
+    "title": "Saved maps",
+    "description": "Save the current view in GeoNode or restore a map you can access.",
+    "close": "Close saved maps"
+  },
+  "save": {
+    "title": "Save current map",
+    "help_one": "The current view and {{count}} active layer will be saved.",
+    "help_other": "The current view and {{count}} active layers will be saved.",
+    "placeholder": "Map title",
+    "action": "Save map",
+    "saving": "Saving…",
+    "success": "Map saved in GeoNode.",
+    "permission": "Your account can open accessible maps, but does not have permission to save new maps."
+  },
+  "list": {
+    "title": "Accessible maps",
+    "loading": "Loading maps from GeoNode…",
+    "error": "The GeoNode map catalogue could not be loaded.",
+    "retry": "Try again",
+    "empty": "No accessible maps were found.",
+    "open": "Open",
+    "opening": "Opening…"
+  },
+  "errors": {
+    "operation": "GeoNode could not complete this map operation. Check the session, permissions, and referenced datasets."
+  }
+}

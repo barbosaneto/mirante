@@ -2,6 +2,7 @@ import { changeLocale } from "@mirante/i18n";
 import type {
   GeoNodeAuthenticationClient,
   GeoNodeDatasetClient,
+  GeoNodeMapClient,
   GeoNodeUser,
 } from "@mirante/geonode";
 import {
@@ -20,6 +21,7 @@ const mapMock = vi.hoisted(() => ({
   removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
+  getView: vi.fn(),
   setView: vi.fn(),
 }));
 
@@ -32,6 +34,7 @@ const authenticatedUser: GeoNodeUser = {
   isAdministrator: true,
   permissions: ["add_resource"],
   canUploadDatasets: true,
+  canSaveMaps: true,
 };
 
 const viewerUser: GeoNodeUser = {
@@ -42,6 +45,7 @@ const viewerUser: GeoNodeUser = {
   isAdministrator: false,
   permissions: [],
   canUploadDatasets: false,
+  canSaveMaps: false,
 };
 
 const authenticationMock: GeoNodeAuthenticationClient = {
@@ -52,7 +56,9 @@ const authenticationMock: GeoNodeAuthenticationClient = {
 
 const uploadDatasetMock = vi.fn<GeoNodeDatasetClient["uploadDataset"]>();
 const listDatasetsMock = vi.fn<GeoNodeDatasetClient["listDatasets"]>();
+const getDatasetMock = vi.fn<GeoNodeDatasetClient["getDataset"]>();
 const datasetMock: GeoNodeDatasetClient = {
+  getDataset: getDatasetMock,
   listDatasets: listDatasetsMock.mockResolvedValue({
     datasets: [
       {
@@ -76,6 +82,15 @@ const datasetMock: GeoNodeDatasetClient = {
   }),
 };
 
+const listMapsMock = vi.fn<GeoNodeMapClient["listMaps"]>();
+const createSavedMapMock = vi.fn<GeoNodeMapClient["createMap"]>();
+const getSavedMapMock = vi.fn<GeoNodeMapClient["getMap"]>();
+const savedMapMock: GeoNodeMapClient = {
+  createMap: createSavedMapMock,
+  getMap: getSavedMapMock,
+  listMaps: listMapsMock,
+};
+
 vi.mock("@mirante/map", () => ({
   createMap: mapMock.create,
 }));
@@ -92,6 +107,8 @@ describe("App", () => {
     mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
+    mapMock.getView.mockReset();
+    mapMock.getView.mockReturnValue({ center: [-52, -15], zoom: 4 });
     mapMock.setView.mockReset();
     vi.mocked(authenticationMock.restoreSession).mockReset();
     vi.mocked(authenticationMock.restoreSession).mockResolvedValue(null);
@@ -100,7 +117,11 @@ describe("App", () => {
     vi.mocked(authenticationMock.signOut).mockReset();
     vi.mocked(authenticationMock.signOut).mockResolvedValue(undefined);
     uploadDatasetMock.mockReset();
+    getDatasetMock.mockReset();
     listDatasetsMock.mockReset();
+    listMapsMock.mockReset();
+    createSavedMapMock.mockReset();
+    getSavedMapMock.mockReset();
     listDatasetsMock.mockResolvedValue({
       datasets: [
         {
@@ -122,8 +143,38 @@ describe("App", () => {
       wmsUrl: "/geoserver/geonode/conservation_areas/ows",
       extent: [-54, -16, -45, -8],
     });
+    listMapsMock.mockResolvedValue({
+      maps: [{ id: 12, title: "Field survey" }],
+      page: 1,
+      pageSize: 50,
+      total: 1,
+    });
+    createSavedMapMock.mockResolvedValue({ id: 13, title: "New map" });
+    getSavedMapMock.mockResolvedValue({
+      id: 12,
+      title: "Field survey",
+      view: { center: [-47.9, -15.8], zoom: 8 },
+      layers: [
+        {
+          datasetId: 7,
+          layerName: "geonode:municipal_boundaries",
+          title: "Municipal boundaries",
+          opacity: 0.6,
+          visible: false,
+          order: 0,
+        },
+      ],
+    });
+    getDatasetMock.mockResolvedValue({
+      id: 7,
+      title: "Municipal boundaries",
+      layerName: "geonode:municipal_boundaries",
+      wmsUrl: "/geoserver/ows",
+      extent: [-54, -16, -45, -8],
+    });
     mapMock.create.mockReturnValue({
       addDatasetLayer: mapMock.addDatasetLayer,
+      getView: mapMock.getView,
       destroy: mapMock.destroy,
       removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
@@ -408,5 +459,52 @@ describe("App", () => {
       { target: { value: "60" } },
     );
     expect(mapMock.setDatasetLayerOpacity).toHaveBeenCalledWith(42, 0.6);
+  });
+
+  it("saves and restores maps through the vanilla GeoNode map API", async () => {
+    vi.mocked(authenticationMock.restoreSession).mockResolvedValue(
+      authenticatedUser,
+    );
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+        mapClient={savedMapMock}
+      />,
+    );
+
+    const mapsButton = await screen.findByRole("button", {
+      name: "Save or open a map",
+    });
+    fireEvent.click(mapsButton);
+    const dialog = await screen.findByRole("dialog", { name: "Saved maps" });
+    expect(await within(dialog).findByText("Field survey")).toBeInTheDocument();
+
+    fireEvent.change(
+      within(dialog).getByRole("textbox", { name: "Save current map" }),
+      {
+        target: { value: "Regional overview" },
+      },
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save map" }));
+    await within(dialog).findByText("Map saved in GeoNode.");
+    expect(createSavedMapMock).toHaveBeenCalledWith({
+      title: "Regional overview",
+      view: { center: [-52, -15], zoom: 4 },
+      layers: [],
+    });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Open" }));
+    await waitFor(() => expect(getSavedMapMock).toHaveBeenCalledWith(12));
+    expect(getDatasetMock).toHaveBeenCalledWith(7);
+    expect(mapMock.addDatasetLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7, fit: false }),
+    );
+    expect(mapMock.setDatasetLayerOpacity).toHaveBeenCalledWith(7, 0.6);
+    expect(mapMock.setDatasetLayerVisibility).toHaveBeenCalledWith(7, false);
+    expect(mapMock.setView).toHaveBeenCalledWith({
+      center: [-47.9, -15.8],
+      zoom: 8,
+    });
   });
 });

@@ -6,7 +6,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 ## Current status
 
-This repository contains the initial Mirante proof of concept: a containerized local GeoNode stack, session authentication, a browsable GeoNode dataset catalogue, GeoJSON, KML, and zipped Shapefile ingestion with asynchronous progress, and published WMS visualization in OpenLayers. The responsive shell also includes runtime internationalization, public distribution configuration, and a build-time extension API.
+This repository contains the initial Mirante proof of concept: a containerized local GeoNode stack, session authentication, a browsable GeoNode dataset catalogue, GeoJSON, KML, and zipped Shapefile ingestion with asynchronous progress, published WMS visualization in OpenLayers, and persistent GeoNode maps. The responsive shell also includes runtime internationalization, public distribution configuration, and a build-time extension API.
 
 ## Requirements
 
@@ -58,6 +58,8 @@ Authentication uses GeoNode's standard Django session, CSRF protection, and API 
 Users with GeoNode's resource creation permission can upload GeoJSON, KML, and zipped Shapefiles through its standard asynchronous importer. Optional title, description, polygon styling, and point styling use vanilla GeoNode metadata and SLD workflows. Mirante follows the execution, retrieves the published dataset, adds its WMS layer to OpenLayers, and exposes visibility and opacity controls. See [Dataset ingestion](docs/dataset-ingestion.md) and [Upload permissions](docs/upload-permissions.md) for the supported flow and authorization contract.
 
 The collapsed dataset catalogue lists published resources visible through GeoNode API V2. Users can add them to the map, remove active layers without deleting server resources, and open GeoNode's full catalogue for advanced management. See [Dataset catalogue](docs/dataset-catalogue.md).
+
+Authenticated users can list accessible GeoNode maps, restore their geographic view and dataset layer state, and save new maps when their account has the standard resource creation permission. See [Map persistence](docs/map-persistence.md).
 
 ## Workspace structure
 

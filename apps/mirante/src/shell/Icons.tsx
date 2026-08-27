@@ -57,6 +57,15 @@ export function UploadIcon() {
   );
 }
 
+export function MapLibraryIcon() {
+  return (
+    <Icon>
+      <path d="m4 6 5-2 6 2 5-2v14l-5 2-6-2-5 2V6Z" />
+      <path d="M9 4v14M15 6v14" />
+    </Icon>
+  );
+}
+
 export function PlusIcon() {
   return (
     <Icon>

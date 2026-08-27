@@ -29,6 +29,7 @@ describe("internationalization", () => {
       "common",
       "layers",
       "map",
+      "maps",
     ] as const) {
       expect(
         findMissingTranslationKeys(

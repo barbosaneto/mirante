@@ -1,0 +1,31 @@
+{
+  "toolbarLabel": "Salvar ou abrir um mapa",
+  "dialog": {
+    "eyebrow": "Mapas do GeoNode",
+    "title": "Mapas salvos",
+    "description": "Salve a visualização atual no GeoNode ou restaure um mapa ao qual você tem acesso.",
+    "close": "Fechar mapas salvos"
+  },
+  "save": {
+    "title": "Salvar mapa atual",
+    "help_one": "A visualização atual e {{count}} camada ativa serão salvas.",
+    "help_other": "A visualização atual e {{count}} camadas ativas serão salvas.",
+    "placeholder": "Título do mapa",
+    "action": "Salvar mapa",
+    "saving": "Salvando…",
+    "success": "Mapa salvo no GeoNode.",
+    "permission": "Sua conta pode abrir mapas acessíveis, mas não possui permissão para salvar novos mapas."
+  },
+  "list": {
+    "title": "Mapas acessíveis",
+    "loading": "Carregando mapas do GeoNode…",
+    "error": "Não foi possível carregar o catálogo de mapas do GeoNode.",
+    "retry": "Tentar novamente",
+    "empty": "Nenhum mapa acessível foi encontrado.",
+    "open": "Abrir",
+    "opening": "Abrindo…"
+  },
+  "errors": {
+    "operation": "O GeoNode não conseguiu concluir esta operação. Verifique a sessão, as permissões e os datasets referenciados."
+  }
+}

@@ -4,7 +4,7 @@ import type { MapCommandApi, MapViewOptions } from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
 import TileLayer from "ol/layer/Tile.js";
 import OlMap from "ol/Map.js";
-import { fromLonLat, transformExtent } from "ol/proj.js";
+import { fromLonLat, toLonLat, transformExtent } from "ol/proj.js";
 import TileWMS from "ol/source/TileWMS.js";
 import XYZ from "ol/source/XYZ.js";
 import View from "ol/View.js";
@@ -28,6 +28,7 @@ export interface DatasetMapLayerOptions {
   title: string;
   wmsUrl: string;
   extent: readonly [minX: number, minY: number, maxX: number, maxY: number];
+  fit?: boolean;
   onLoadStatusChange?: (status: DatasetLayerLoadStatus) => void;
 }
 
@@ -36,6 +37,7 @@ export interface MapFacade extends MapCommandApi {
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
+  getView(): MapViewOptions;
   destroy(): void;
 }
 
@@ -79,6 +81,7 @@ export function createMap({
   return {
     addDatasetLayer({
       extent,
+      fit = true,
       id,
       layerName,
       onLoadStatusChange,
@@ -121,13 +124,26 @@ export function createMap({
 
       datasetLayers.set(id, layer);
       map.addLayer(layer);
-      map
-        .getView()
-        .fit(transformExtent([...extent], "EPSG:4326", "EPSG:3857"), {
-          duration: 350,
-          maxZoom: 14,
-          padding: [72, 72, 72, 380],
-        });
+      if (fit) {
+        map
+          .getView()
+          .fit(transformExtent([...extent], "EPSG:4326", "EPSG:3857"), {
+            duration: 350,
+            maxZoom: 14,
+            padding: [72, 72, 72, 380],
+          });
+      }
+    },
+    getView() {
+      const view = map.getView();
+      const center = toLonLat(
+        view.getCenter() ?? fromLonLat([...defaultCenter]),
+      );
+
+      return {
+        center: [center[0] ?? defaultCenter[0], center[1] ?? defaultCenter[1]],
+        zoom: view.getZoom() ?? defaultZoom,
+      };
     },
     setView({ center, zoom }: MapViewOptions) {
       map.getView().animate({

@@ -24,6 +24,6 @@ The management link combines `geonode.webUrl` with `geonode.datasetManagementPat
 
 ## Current limits
 
-- Active layers are stored only in the current browser session and are cleared by a page reload.
+- Unsaved active-layer changes are cleared by a page reload. Users can persist the current view and layer state as a GeoNode map.
 - The first catalogue version supports pagination but does not provide text or faceted search.
 - Removing a layer from the map does not modify its server-side permissions or publication state.

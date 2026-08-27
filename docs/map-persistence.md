@@ -1,0 +1,31 @@
+# Map persistence
+
+Mirante saves maps as standard resources in vanilla GeoNode 5.1.0. No custom backend endpoint, model, or GeoNode plugin is required.
+
+## Saving
+
+Authenticated users with GeoNode's `add_resource` permission can open the map library and provide a title. Mirante sends `POST /api/v2/maps?include[]=data` with:
+
+- The geographic center and zoom in the standard map `data` document.
+- WMS layer descriptions in the standard map layer array.
+- Dataset relations, visibility, opacity, and ordering in `maplayers`.
+- A versioned `mirante` section inside `data` for faithful restoration by Mirante.
+
+The map is owned, permissioned, listed, and managed by GeoNode like any other map resource.
+
+## Opening
+
+The library lists resources visible to the current session through `GET /api/v2/maps`. Opening a map retrieves its full representation with `GET /api/v2/maps/{id}?include[]=data`, then retrieves every referenced dataset from the dataset API before changing the current map.
+
+Mirante restores the active datasets, visibility, opacity, order, center, and zoom. It also supports GeoNode maps without the `mirante` section when their standard `maplayers` include dataset relations and their `data` document contains a geographic center and zoom.
+
+## Authorization
+
+Map listing and retrieval remain subject to GeoNode's resource permissions. Saving uses the same compact `add_resource` capability already returned by the vanilla user API. Users without it can open accessible maps but do not see the save form.
+
+## Current limits
+
+- Saving always creates a new GeoNode map; updating an existing map is not yet exposed.
+- The library loads the first 50 accessible maps and does not yet provide pagination or search.
+- A map cannot be restored when a referenced dataset has been deleted or is no longer visible to the current user.
+- Mirante restores dataset WMS layers; specialized remote or non-dataset layers from third-party GeoNode clients are ignored.

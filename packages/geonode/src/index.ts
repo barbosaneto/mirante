@@ -7,6 +7,7 @@ export interface GeoNodeUser {
   isAdministrator: boolean;
   permissions: readonly string[];
   canUploadDatasets: boolean;
+  canSaveMaps: boolean;
 }
 
 export * from "./datasets";
@@ -115,8 +116,11 @@ function mapUser(payload: GeoNodeUserPayload): GeoNodeUser {
     isAdministrator: payload.is_superuser || payload.is_staff,
     permissions: payload.perms,
     canUploadDatasets: payload.perms.includes("add_resource"),
+    canSaveMaps: payload.perms.includes("add_resource"),
   };
 }
+
+export * from "./maps";
 
 function parseCsrfToken(html: string): string {
   const match = html.match(

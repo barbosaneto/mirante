@@ -5,11 +5,13 @@ import enAuthentication from "./locales/en/authentication.json";
 import enCommon from "./locales/en/common.json";
 import enLayers from "./locales/en/layers.json";
 import enMap from "./locales/en/map.json";
+import enMaps from "./locales/en/maps.json";
 import enUpload from "./locales/en/upload.json";
 import ptBrAuthentication from "./locales/pt-BR/authentication.json";
 import ptBrCommon from "./locales/pt-BR/common.json";
 import ptBrLayers from "./locales/pt-BR/layers.json";
 import ptBrMap from "./locales/pt-BR/map.json";
+import ptBrMaps from "./locales/pt-BR/maps.json";
 import ptBrUpload from "./locales/pt-BR/upload.json";
 
 export const supportedLocales = ["en", "pt-BR"] as const;
@@ -24,6 +26,7 @@ export const translationResources = {
     common: enCommon,
     layers: enLayers,
     map: enMap,
+    maps: enMaps,
     upload: enUpload,
   },
   "pt-BR": {
@@ -31,6 +34,7 @@ export const translationResources = {
     common: ptBrCommon,
     layers: ptBrLayers,
     map: ptBrMap,
+    maps: ptBrMaps,
     upload: ptBrUpload,
   },
 } as const;
@@ -100,7 +104,7 @@ if (!i18n.isInitialized) {
     fallbackLng: fallbackLocale,
     lng: initialLocale,
     defaultNS: "common",
-    ns: ["authentication", "common", "layers", "map", "upload"],
+    ns: ["authentication", "common", "layers", "map", "maps", "upload"],
     resources: translationResources,
     interpolation: {
       escapeValue: false,

@@ -60,6 +60,7 @@ describe("GeoNode authentication client", () => {
       isAdministrator: true,
       permissions: ["add_resource"],
       canUploadDatasets: true,
+      canSaveMaps: true,
     });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -109,6 +110,7 @@ describe("GeoNode authentication client", () => {
     await expect(client.restoreSession()).resolves.toMatchObject({
       permissions: [],
       canUploadDatasets: false,
+      canSaveMaps: false,
     });
   });
 

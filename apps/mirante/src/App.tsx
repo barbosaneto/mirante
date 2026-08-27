@@ -1,10 +1,12 @@
 import {
   createGeoNodeAuthenticationClient,
   createGeoNodeDatasetClient,
+  createGeoNodeMapClient,
   GeoNodeDatasetIngestionError,
   type GeoNodeAuthenticationClient,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
+  type GeoNodeMapClient,
   type UploadDatasetOptions,
 } from "@mirante/geonode";
 import { createMap, type MapFacade } from "@mirante/map";
@@ -14,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthentication } from "./auth/AuthenticationContext";
 import { AuthenticationProvider } from "./auth/AuthenticationProvider";
 import { mirante } from "./mirante";
+import { MapPersistenceDialog } from "./maps/MapPersistenceDialog";
 import { ActionDock } from "./shell/ActionDock";
 import { Brand } from "./shell/Brand";
 import { DatasetCatalogDrawer } from "./shell/DatasetCatalogDrawer";
@@ -33,6 +36,10 @@ const defaultDatasetClient = createGeoNodeDatasetClient({
   baseUrl: mirante.config.geonode.baseUrl,
 });
 
+const defaultMapClient = createGeoNodeMapClient({
+  baseUrl: mirante.config.geonode.baseUrl,
+});
+
 const initialUploadState: UploadWorkflowState = {
   status: "idle",
   progress: 0,
@@ -40,8 +47,10 @@ const initialUploadState: UploadWorkflowState = {
 
 function ApplicationShell({
   datasetClient,
+  mapClient,
 }: {
   datasetClient: GeoNodeDatasetClient;
+  mapClient: GeoNodeMapClient;
 }) {
   const { t } = useTranslation("map");
   const { status, user } = useAuthentication();
@@ -52,6 +61,7 @@ function ApplicationShell({
   const [catalogueOpen, setCatalogueOpen] = useState(false);
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [mapLibraryOpen, setMapLibraryOpen] = useState(false);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
   const { config } = mirante;
@@ -85,23 +95,29 @@ function ApplicationShell({
     document.title = config.branding.applicationName;
   }, [config.branding.applicationName]);
 
-  function addDatasetToMap(dataset: GeoNodeDataset) {
+  function addDatasetToMap(
+    dataset: GeoNodeDataset,
+    options: { fit?: boolean; opacity?: number; visible?: boolean } = {},
+  ) {
     if (!map || activeDatasetIdsRef.current.has(dataset.id)) {
       return;
     }
 
     activeDatasetIdsRef.current.add(dataset.id);
+    const opacity = options.opacity ?? 1;
+    const visible = options.visible ?? true;
     setDatasets((currentDatasets) => [
       {
         dataset,
         loadStatus: "loading",
-        opacity: 1,
-        visible: true,
+        opacity,
+        visible,
       },
       ...currentDatasets,
     ]);
     map.addDatasetLayer({
       ...dataset,
+      fit: options.fit,
       onLoadStatusChange(loadStatus) {
         setDatasets((currentDatasets) =>
           currentDatasets.map((item) =>
@@ -110,6 +126,47 @@ function ApplicationShell({
         );
       },
     });
+    map.setDatasetLayerOpacity(dataset.id, opacity);
+    map.setDatasetLayerVisibility(dataset.id, visible);
+  }
+
+  async function saveMap(title: string) {
+    if (!map) return;
+    await mapClient.createMap({
+      title,
+      view: map.getView(),
+      layers: datasets.map((item, order) => ({
+        datasetId: item.dataset.id,
+        layerName: item.dataset.layerName,
+        title: item.dataset.title,
+        opacity: item.opacity,
+        visible: item.visible,
+        order,
+      })),
+    });
+  }
+
+  async function openMap(id: number) {
+    if (!map) return;
+    const savedMap = await mapClient.getMap(id);
+    const restoredDatasets = await Promise.all(
+      savedMap.layers.map(async (layer) => ({
+        layer,
+        dataset: await datasetClient.getDataset(layer.datasetId),
+      })),
+    );
+
+    for (const item of datasets) map.removeDatasetLayer(item.dataset.id);
+    activeDatasetIdsRef.current.clear();
+    setDatasets([]);
+    for (const { dataset, layer } of [...restoredDatasets].reverse()) {
+      addDatasetToMap(dataset, {
+        fit: false,
+        opacity: layer.opacity,
+        visible: layer.visible,
+      });
+    }
+    map.setView(savedMap.view);
   }
 
   async function uploadDataset(
@@ -221,12 +278,23 @@ function ApplicationShell({
         authenticated={status === "authenticated"}
         canUploadDatasets={user?.canUploadDatasets === true}
         map={map}
+        onMaps={() => setMapLibraryOpen(true)}
         uploadEnabled={config.features.datasetUpload}
         onUpload={() => {
           setUploadState(initialUploadState);
           setUploadOpen(true);
         }}
       />
+      {mapLibraryOpen ? (
+        <MapPersistenceDialog
+          canSave={user?.canSaveMaps === true}
+          client={mapClient}
+          layerCount={datasets.length}
+          onClose={() => setMapLibraryOpen(false)}
+          onOpen={openMap}
+          onSave={saveMap}
+        />
+      ) : null}
       {uploadOpen ? (
         <DatasetUploadDialog
           state={uploadState}
@@ -243,13 +311,15 @@ function ApplicationShell({
 export function App({
   authenticationClient = defaultAuthenticationClient,
   datasetClient = defaultDatasetClient,
+  mapClient = defaultMapClient,
 }: {
   authenticationClient?: GeoNodeAuthenticationClient;
   datasetClient?: GeoNodeDatasetClient;
+  mapClient?: GeoNodeMapClient;
 }) {
   return (
     <AuthenticationProvider client={authenticationClient}>
-      <ApplicationShell datasetClient={datasetClient} />
+      <ApplicationShell datasetClient={datasetClient} mapClient={mapClient} />
     </AuthenticationProvider>
   );
 }

@@ -19,6 +19,7 @@ describe("ActionDock", () => {
     };
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
+      getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
@@ -33,6 +34,7 @@ describe("ActionDock", () => {
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
+        onMaps={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Mirante" });
@@ -47,6 +49,7 @@ describe("ActionDock", () => {
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
+        onMaps={vi.fn()}
       />,
     );
     fireEvent.click(button);
@@ -59,6 +62,7 @@ describe("ActionDock", () => {
     const onUpload = vi.fn();
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
+      getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
@@ -73,6 +77,7 @@ describe("ActionDock", () => {
         map={map}
         uploadEnabled
         onUpload={onUpload}
+        onMaps={vi.fn()}
       />,
     );
     expect(
@@ -86,6 +91,7 @@ describe("ActionDock", () => {
         map={map}
         uploadEnabled
         onUpload={onUpload}
+        onMaps={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Upload dataset" });
