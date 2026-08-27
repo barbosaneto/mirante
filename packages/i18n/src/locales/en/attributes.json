@@ -1,0 +1,23 @@
+{
+  "eyebrow": "Attribute table",
+  "close": "Close attribute table",
+  "summary": "Showing {{start}}–{{end}} of {{total}} features",
+  "summaryWithoutTotal": "Showing features {{start}}–{{end}}",
+  "loading": "Loading dataset attributes…",
+  "error": "The attributes could not be loaded from GeoServer.",
+  "retry": "Try again",
+  "empty": "This dataset has no features to display.",
+  "featureId": "Feature ID",
+  "actions": "Actions",
+  "locate": "Locate feature {{id}} on the map",
+  "geometryUnavailable": "This feature has no available geometry",
+  "previous": "Previous",
+  "next": "Next",
+  "page": "Page {{page}} of {{totalPages}}",
+  "pageWithoutTotal": "Page {{page}}",
+  "values": {
+    "true": "Yes",
+    "false": "No",
+    "empty": "Not provided"
+  }
+}

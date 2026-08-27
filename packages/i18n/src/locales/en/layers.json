@@ -6,6 +6,7 @@
   "empty": "Add a dataset from the catalogue to display it on the map.",
   "visibility": "Show {{name}}",
   "opacity": "{{name}} opacity",
+  "openAttributes": "Open {{name}} attribute table",
   "remove": "Remove {{name}} from the map",
   "zoomTo": "Zoom to {{name}}",
   "catalogue": {

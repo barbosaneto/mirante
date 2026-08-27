@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAuthentication } from "./auth/AuthenticationContext";
 import { AuthenticationProvider } from "./auth/AuthenticationProvider";
+import { AttributeTable } from "./features/AttributeTable";
 import { FeatureInfoDialog } from "./features/FeatureInfoDialog";
 import { mirante } from "./mirante";
 import { MapPersistenceDialog } from "./maps/MapPersistenceDialog";
@@ -63,6 +64,8 @@ function ApplicationShell({
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [mapLibraryOpen, setMapLibraryOpen] = useState(false);
+  const [attributeDataset, setAttributeDataset] =
+    useState<GeoNodeDataset | null>(null);
   const [featureInfo, setFeatureInfo] = useState<FeatureInfoEvent | null>(null);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
@@ -153,6 +156,7 @@ function ApplicationShell({
 
   async function openMap(id: number) {
     if (!map) return;
+    setAttributeDataset(null);
     const savedMap = await mapClient.getMap(id);
     const restoredDatasets = await Promise.all(
       savedMap.layers.map(async (layer) => ({
@@ -236,6 +240,7 @@ function ApplicationShell({
   function removeDataset(id: number) {
     map?.removeDatasetLayer(id);
     activeDatasetIdsRef.current.delete(id);
+    setAttributeDataset((current) => (current?.id === id ? null : current));
     setDatasets((currentDatasets) =>
       currentDatasets.filter((item) => item.dataset.id !== id),
     );
@@ -243,6 +248,12 @@ function ApplicationShell({
 
   function zoomToDataset(id: number) {
     map?.fitDatasetLayer(id);
+  }
+
+  function openAttributeTable(id: number) {
+    const displayedDataset = datasets.find((item) => item.dataset.id === id);
+
+    if (displayedDataset) setAttributeDataset(displayedDataset.dataset);
   }
 
   const managementPath = config.geonode.datasetManagementPath.startsWith("/")
@@ -269,6 +280,7 @@ function ApplicationShell({
       <LayersPanel
         datasets={datasets}
         onOpacityChange={changeOpacity}
+        onOpenAttributes={openAttributeTable}
         onRemove={removeDataset}
         onVisibilityChange={changeVisibility}
         onZoom={zoomToDataset}
@@ -318,6 +330,17 @@ function ApplicationShell({
         <FeatureInfoDialog
           result={featureInfo}
           onClose={() => setFeatureInfo(null)}
+        />
+      ) : null}
+      {attributeDataset ? (
+        <AttributeTable
+          key={attributeDataset.id}
+          client={datasetClient}
+          dataset={attributeDataset}
+          onClose={() => setAttributeDataset(null)}
+          onLocate={(feature) => {
+            if (feature.extent) map?.fitGeographicExtent(feature.extent);
+          }}
         />
       ) : null}
     </main>

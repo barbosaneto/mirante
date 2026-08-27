@@ -2,7 +2,7 @@ import type { GeoNodeDataset } from "@mirante/geonode";
 import type { DatasetLayerLoadStatus } from "@mirante/map";
 import { useTranslation } from "react-i18next";
 
-import { FocusIcon, LayersIcon, TrashIcon } from "./Icons";
+import { FocusIcon, LayersIcon, TableIcon, TrashIcon } from "./Icons";
 
 export interface DisplayedDataset {
   dataset: GeoNodeDataset;
@@ -14,6 +14,7 @@ export interface DisplayedDataset {
 interface LayersPanelProps {
   datasets: readonly DisplayedDataset[];
   onOpacityChange: (id: number, opacity: number) => void;
+  onOpenAttributes: (id: number) => void;
   onRemove: (id: number) => void;
   onZoom: (id: number) => void;
   onVisibilityChange: (id: number, visible: boolean) => void;
@@ -22,6 +23,7 @@ interface LayersPanelProps {
 export function LayersPanel({
   datasets,
   onOpacityChange,
+  onOpenAttributes,
   onRemove,
   onVisibilityChange,
   onZoom,
@@ -72,6 +74,15 @@ export function LayersPanel({
                   {loadStatus === "ready" ? "WMS" : t(`status.${loadStatus}`)}
                 </span>
                 <div className="layer-row__actions">
+                  <button
+                    type="button"
+                    className="layer-row__attributes"
+                    aria-label={t("openAttributes", { name: dataset.title })}
+                    title={t("openAttributes", { name: dataset.title })}
+                    onClick={() => onOpenAttributes(dataset.id)}
+                  >
+                    <TableIcon />
+                  </button>
                   <button
                     type="button"
                     className="layer-row__zoom"

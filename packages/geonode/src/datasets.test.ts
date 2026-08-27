@@ -109,6 +109,81 @@ describe("GeoNode dataset client", () => {
     );
   });
 
+  it("lists a paginated attribute page through vanilla GeoServer WFS", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        type: "FeatureCollection",
+        numberMatched: 26,
+        numberReturned: 1,
+        features: [
+          {
+            type: "Feature",
+            id: "municipal_boundaries.26",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [-48.2, -16.1],
+                  [-47.8, -16.1],
+                  [-47.8, -15.7],
+                  [-48.2, -16.1],
+                ],
+              ],
+            },
+            properties: { name: "Brasília", population: 2_817_381 },
+          },
+        ],
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.listDatasetFeatures(
+        {
+          id: 7,
+          title: "Municipal boundaries",
+          layerName: "geonode:municipal_boundaries",
+          wmsUrl: "/geoserver/ows",
+          extent: [-54, -16, -45, -8],
+        },
+        { page: 2, pageSize: 25 },
+      ),
+    ).resolves.toEqual({
+      features: [
+        {
+          id: "municipal_boundaries.26",
+          attributes: { name: "Brasília", population: 2_817_381 },
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [-48.2, -16.1],
+                [-47.8, -16.1],
+                [-47.8, -15.7],
+                [-48.2, -16.1],
+              ],
+            ],
+          },
+          extent: [-48.2, -16.1, -47.8, -15.7],
+        },
+      ],
+      hasNext: false,
+      page: 2,
+      pageSize: 25,
+      total: 26,
+    });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=geonode%3Amunicipal_boundaries&outputFormat=application%2Fjson&srsName=EPSG%3A4326&count=26&startIndex=25",
+    );
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      credentials: "include",
+      headers: { Accept: "application/json, text/html" },
+    });
+  });
+
   it("uploads, follows execution, and retrieves a vanilla GeoNode dataset", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

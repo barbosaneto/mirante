@@ -1,6 +1,7 @@
 import i18n, { type ResourceLanguage } from "i18next";
 import { initReactI18next } from "react-i18next";
 
+import enAttributes from "./locales/en/attributes.json";
 import enAuthentication from "./locales/en/authentication.json";
 import enCommon from "./locales/en/common.json";
 import enFeatureInfo from "./locales/en/featureInfo.json";
@@ -8,6 +9,7 @@ import enLayers from "./locales/en/layers.json";
 import enMap from "./locales/en/map.json";
 import enMaps from "./locales/en/maps.json";
 import enUpload from "./locales/en/upload.json";
+import ptBrAttributes from "./locales/pt-BR/attributes.json";
 import ptBrAuthentication from "./locales/pt-BR/authentication.json";
 import ptBrCommon from "./locales/pt-BR/common.json";
 import ptBrFeatureInfo from "./locales/pt-BR/featureInfo.json";
@@ -24,6 +26,7 @@ export const localeStorageKey = "mirante.locale";
 
 export const translationResources = {
   en: {
+    attributes: enAttributes,
     authentication: enAuthentication,
     common: enCommon,
     featureInfo: enFeatureInfo,
@@ -33,6 +36,7 @@ export const translationResources = {
     upload: enUpload,
   },
   "pt-BR": {
+    attributes: ptBrAttributes,
     authentication: ptBrAuthentication,
     common: ptBrCommon,
     featureInfo: ptBrFeatureInfo,
@@ -109,6 +113,7 @@ if (!i18n.isInitialized) {
     lng: initialLocale,
     defaultNS: "common",
     ns: [
+      "attributes",
       "authentication",
       "common",
       "featureInfo",

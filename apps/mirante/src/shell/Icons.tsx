@@ -124,3 +124,12 @@ export function FocusIcon() {
     </Icon>
   );
 }
+
+export function TableIcon() {
+  return (
+    <Icon>
+      <rect x="4" y="5" width="16" height="14" rx="1.5" />
+      <path d="M4 10h16M9 5v14" />
+    </Icon>
+  );
+}

@@ -1,0 +1,23 @@
+{
+  "eyebrow": "Tabela de atributos",
+  "close": "Fechar tabela de atributos",
+  "summary": "Exibindo {{start}}–{{end}} de {{total}} feições",
+  "summaryWithoutTotal": "Exibindo feições {{start}}–{{end}}",
+  "loading": "Carregando atributos do dataset…",
+  "error": "Não foi possível carregar os atributos pelo GeoServer.",
+  "retry": "Tentar novamente",
+  "empty": "Este dataset não possui feições para exibir.",
+  "featureId": "ID da feição",
+  "actions": "Ações",
+  "locate": "Localizar a feição {{id}} no mapa",
+  "geometryUnavailable": "Esta feição não possui geometria disponível",
+  "previous": "Anterior",
+  "next": "Próxima",
+  "page": "Página {{page}} de {{totalPages}}",
+  "pageWithoutTotal": "Página {{page}}",
+  "values": {
+    "true": "Sim",
+    "false": "Não",
+    "empty": "Não informado"
+  }
+}

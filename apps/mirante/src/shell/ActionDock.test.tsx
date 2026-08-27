@@ -20,6 +20,7 @@ describe("ActionDock", () => {
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
       fitDatasetLayer: vi.fn(),
+      fitGeographicExtent: vi.fn(),
       getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),
@@ -66,6 +67,7 @@ describe("ActionDock", () => {
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
       fitDatasetLayer: vi.fn(),
+      fitGeographicExtent: vi.fn(),
       getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),

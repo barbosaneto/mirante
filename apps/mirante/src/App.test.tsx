@@ -20,6 +20,7 @@ const mapMock = vi.hoisted(() => ({
   create: vi.fn(),
   addDatasetLayer: vi.fn(),
   fitDatasetLayer: vi.fn(),
+  fitGeographicExtent: vi.fn(),
   destroy: vi.fn(),
   removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
@@ -61,9 +62,12 @@ const authenticationMock: GeoNodeAuthenticationClient = {
 
 const uploadDatasetMock = vi.fn<GeoNodeDatasetClient["uploadDataset"]>();
 const listDatasetsMock = vi.fn<GeoNodeDatasetClient["listDatasets"]>();
+const listDatasetFeaturesMock =
+  vi.fn<GeoNodeDatasetClient["listDatasetFeatures"]>();
 const getDatasetMock = vi.fn<GeoNodeDatasetClient["getDataset"]>();
 const datasetMock: GeoNodeDatasetClient = {
   getDataset: getDatasetMock,
+  listDatasetFeatures: listDatasetFeaturesMock,
   listDatasets: listDatasetsMock.mockResolvedValue({
     datasets: [
       {
@@ -111,6 +115,7 @@ describe("App", () => {
     mapMock.create.mockReset();
     mapMock.addDatasetLayer.mockReset();
     mapMock.fitDatasetLayer.mockReset();
+    mapMock.fitGeographicExtent.mockReset();
     mapMock.destroy.mockReset();
     mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
@@ -134,6 +139,7 @@ describe("App", () => {
     vi.mocked(authenticationMock.signOut).mockResolvedValue(undefined);
     uploadDatasetMock.mockReset();
     getDatasetMock.mockReset();
+    listDatasetFeaturesMock.mockReset();
     listDatasetsMock.mockReset();
     listMapsMock.mockReset();
     createSavedMapMock.mockReset();
@@ -150,6 +156,23 @@ describe("App", () => {
       ],
       page: 1,
       pageSize: 20,
+      total: 1,
+    });
+    listDatasetFeaturesMock.mockResolvedValue({
+      features: [
+        {
+          id: "municipal_boundaries.14",
+          attributes: {
+            name: "Test municipality",
+            population: 1200,
+          },
+          geometry: { type: "Point", coordinates: [-47.9, -15.8] },
+          extent: [-47.9, -15.8, -47.9, -15.8],
+        },
+      ],
+      hasNext: false,
+      page: 1,
+      pageSize: 25,
       total: 1,
     });
     uploadDatasetMock.mockResolvedValue({
@@ -191,6 +214,7 @@ describe("App", () => {
     mapMock.create.mockReturnValue({
       addDatasetLayer: mapMock.addDatasetLayer,
       fitDatasetLayer: mapMock.fitDatasetLayer,
+      fitGeographicExtent: mapMock.fitGeographicExtent,
       getView: mapMock.getView,
       subscribeFeatureInfo: mapMock.subscribeFeatureInfo,
       setBaseMap: mapMock.setBaseMap,
@@ -438,6 +462,58 @@ describe("App", () => {
     );
     expect(
       screen.queryByRole("dialog", { name: "Feature attributes" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens a paginated attribute table and locates a feature", async () => {
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Browse datasets" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Add Municipal boundaries to the map",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Open Municipal boundaries attribute table",
+      }),
+    );
+
+    const tablePanel = await screen.findByRole("dialog", {
+      name: "Municipal boundaries",
+    });
+    expect(listDatasetFeaturesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7 }),
+      expect.objectContaining({ page: 1, pageSize: 25 }),
+    );
+    expect(within(tablePanel).getByText("name")).toBeInTheDocument();
+    expect(
+      within(tablePanel).getByText("Test municipality"),
+    ).toBeInTheDocument();
+    expect(within(tablePanel).getByText("1,200")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(tablePanel).getByRole("button", {
+        name: "Locate feature municipal_boundaries.14 on the map",
+      }),
+    );
+    expect(mapMock.fitGeographicExtent).toHaveBeenCalledWith([
+      -47.9, -15.8, -47.9, -15.8,
+    ]);
+
+    fireEvent.click(
+      within(tablePanel).getByRole("button", {
+        name: "Close attribute table",
+      }),
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Municipal boundaries" }),
     ).not.toBeInTheDocument();
   });
 

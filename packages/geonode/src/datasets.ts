@@ -15,10 +15,36 @@ export interface GeoNodeDatasetPage {
   total: number;
 }
 
+export interface GeoNodeDatasetFeature {
+  id: string;
+  attributes: Readonly<Record<string, unknown>>;
+  geometry: Readonly<Record<string, unknown>> | null;
+  extent?: readonly [
+    minLongitude: number,
+    minLatitude: number,
+    maxLongitude: number,
+    maxLatitude: number,
+  ];
+}
+
+export interface GeoNodeDatasetFeaturePage {
+  features: readonly GeoNodeDatasetFeature[];
+  hasNext: boolean;
+  page: number;
+  pageSize: number;
+  total?: number;
+}
+
 export interface ListGeoNodeDatasetsOptions {
   page?: number;
   pageSize?: number;
   search?: string;
+  signal?: AbortSignal;
+}
+
+export interface ListGeoNodeDatasetFeaturesOptions {
+  page?: number;
+  pageSize?: number;
   signal?: AbortSignal;
 }
 
@@ -70,6 +96,10 @@ export interface DatasetUploadMetadata {
 
 export interface GeoNodeDatasetClient {
   getDataset(id: number, signal?: AbortSignal): Promise<GeoNodeDataset>;
+  listDatasetFeatures(
+    dataset: GeoNodeDataset,
+    options?: ListGeoNodeDatasetFeaturesOptions,
+  ): Promise<GeoNodeDatasetFeaturePage>;
   listDatasets(
     options?: ListGeoNodeDatasetsOptions,
   ): Promise<GeoNodeDatasetPage>;
@@ -249,6 +279,129 @@ function parseDatasetPage(baseUrl: string, value: unknown): GeoNodeDatasetPage {
   };
 }
 
+function geometryExtent(
+  geometry: Readonly<Record<string, unknown>>,
+): GeoNodeDatasetFeature["extent"] {
+  let minLongitude = Number.POSITIVE_INFINITY;
+  let minLatitude = Number.POSITIVE_INFINITY;
+  let maxLongitude = Number.NEGATIVE_INFINITY;
+  let maxLatitude = Number.NEGATIVE_INFINITY;
+
+  function visit(value: unknown): void {
+    if (!Array.isArray(value)) return;
+
+    if (typeof value[0] === "number" && typeof value[1] === "number") {
+      minLongitude = Math.min(minLongitude, value[0]);
+      minLatitude = Math.min(minLatitude, value[1]);
+      maxLongitude = Math.max(maxLongitude, value[0]);
+      maxLatitude = Math.max(maxLatitude, value[1]);
+      return;
+    }
+
+    value.forEach(visit);
+  }
+
+  visit(geometry.coordinates);
+  if (Array.isArray(geometry.geometries)) {
+    geometry.geometries.forEach((child) => {
+      if (isRecord(child)) {
+        const childExtent = geometryExtent(child);
+
+        if (childExtent) {
+          visit([
+            [childExtent[0], childExtent[1]],
+            [childExtent[2], childExtent[3]],
+          ]);
+        }
+      }
+    });
+  }
+
+  return Number.isFinite(minLongitude)
+    ? [minLongitude, minLatitude, maxLongitude, maxLatitude]
+    : undefined;
+}
+
+function parseFeatureTotal(value: unknown): number | null {
+  const total =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && /^\d+$/.test(value)
+        ? Number(value)
+        : null;
+
+  return total !== null && Number.isSafeInteger(total) && total >= 0
+    ? total
+    : null;
+}
+
+function parseDatasetFeaturePage(
+  value: unknown,
+  page: number,
+  pageSize: number,
+): GeoNodeDatasetFeaturePage {
+  if (!isRecord(value) || !Array.isArray(value.features)) {
+    throw new GeoNodeDatasetIngestionError(
+      "unexpected-response",
+      "GeoServer returned an invalid WFS feature collection.",
+    );
+  }
+
+  const startIndex = (page - 1) * pageSize;
+  const parsedFeatures = value.features.map((candidate, index) => {
+    if (!isRecord(candidate)) {
+      throw new GeoNodeDatasetIngestionError(
+        "unexpected-response",
+        "GeoServer returned an invalid WFS feature.",
+      );
+    }
+
+    const properties = isRecord(candidate.properties)
+      ? candidate.properties
+      : {};
+    const geometry = isRecord(candidate.geometry) ? candidate.geometry : null;
+    const rawId = candidate.id;
+
+    return {
+      id:
+        typeof rawId === "string" || typeof rawId === "number"
+          ? String(rawId)
+          : String(startIndex + index + 1),
+      attributes: properties,
+      geometry,
+      ...(geometry ? { extent: geometryExtent(geometry) } : {}),
+    } satisfies GeoNodeDatasetFeature;
+  });
+  const features = parsedFeatures.slice(0, pageSize);
+  const minimumTotal = startIndex + features.length;
+  const announcedTotal = parseFeatureTotal(
+    value.numberMatched ?? value.totalFeatures,
+  );
+  const reliableTotal =
+    announcedTotal !== null && announcedTotal >= minimumTotal
+      ? announcedTotal
+      : null;
+  const hasNext =
+    parsedFeatures.length > pageSize ||
+    (reliableTotal !== null && reliableTotal > minimumTotal);
+
+  return {
+    features,
+    hasNext,
+    page,
+    pageSize,
+    ...(reliableTotal !== null
+      ? { total: reliableTotal }
+      : !hasNext
+        ? { total: minimumTotal }
+        : {}),
+  };
+}
+
+function appendQuery(url: string, query: URLSearchParams): string {
+  return `${url}${url.includes("?") ? "&" : "?"}${query.toString()}`;
+}
+
 function delay(milliseconds: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const timeout = globalThis.setTimeout(resolve, milliseconds);
@@ -345,14 +498,21 @@ export function createGeoNodeDatasetClient({
 }: CreateDatasetClientOptions): GeoNodeDatasetClient {
   async function request(path: string, init?: RequestInit): Promise<Response> {
     try {
-      return await fetchImplementation(joinUrl(baseUrl, path), {
-        ...init,
-        credentials: "include",
-        headers: {
-          Accept: "application/json, text/html",
-          ...init?.headers,
+      const alreadyNormalized =
+        /^https?:\/\//.test(path) ||
+        (baseUrl !== "" && baseUrl !== "/" && path.startsWith(baseUrl));
+
+      return await fetchImplementation(
+        alreadyNormalized ? path : joinUrl(baseUrl, path),
+        {
+          ...init,
+          credentials: "include",
+          headers: {
+            Accept: "application/json, text/html",
+            ...init?.headers,
+          },
         },
-      });
+      );
     } catch (error) {
       if (init?.signal?.aborted) {
         throw error;
@@ -534,6 +694,46 @@ export function createGeoNodeDatasetClient({
 
   return {
     getDataset: retrieveDataset,
+    async listDatasetFeatures(
+      dataset,
+      { page = 1, pageSize = 25, signal } = {},
+    ) {
+      const safePage = Math.max(1, Math.trunc(page));
+      const safePageSize = Math.max(1, Math.min(100, Math.trunc(pageSize)));
+      const query = new URLSearchParams({
+        service: "WFS",
+        version: "2.0.0",
+        request: "GetFeature",
+        typeNames: dataset.layerName,
+        outputFormat: "application/json",
+        srsName: "EPSG:4326",
+        count: String(safePageSize + 1),
+        startIndex: String((safePage - 1) * safePageSize),
+      });
+      const response = await request(appendQuery(dataset.wmsUrl, query), {
+        signal,
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session cannot access this dataset's features.",
+        );
+      }
+
+      if (!response.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "unexpected-response",
+          `GeoServer WFS request failed with status ${response.status}.`,
+        );
+      }
+
+      return parseDatasetFeaturePage(
+        await response.json(),
+        safePage,
+        safePageSize,
+      );
+    },
     async listDatasets({ page = 1, pageSize = 20, search, signal } = {}) {
       const query = new URLSearchParams({
         page: String(page),

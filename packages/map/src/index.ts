@@ -42,6 +42,14 @@ export interface DatasetMapLayerOptions {
 export interface MapFacade extends MapCommandApi {
   addDatasetLayer(options: DatasetMapLayerOptions): void;
   fitDatasetLayer(id: number): void;
+  fitGeographicExtent(
+    extent: readonly [
+      minLongitude: number,
+      minLatitude: number,
+      maxLongitude: number,
+      maxLatitude: number,
+    ],
+  ): void;
   subscribeFeatureInfo(listener: (event: FeatureInfoEvent) => void): () => void;
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
@@ -248,6 +256,9 @@ export function createMap({
     fitDatasetLayer(id) {
       const extent = datasetExtents.get(id);
       if (extent) fitDatasetExtent(extent);
+    },
+    fitGeographicExtent(extent) {
+      fitDatasetExtent(extent);
     },
     getView() {
       const view = map.getView();
