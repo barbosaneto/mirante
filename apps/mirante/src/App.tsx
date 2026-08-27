@@ -5,6 +5,7 @@ import {
   type GeoNodeAuthenticationClient,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
+  type UploadDatasetOptions,
 } from "@mirante/geonode";
 import { createMap, type MapFacade } from "@mirante/map";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
@@ -111,7 +112,10 @@ function ApplicationShell({
     });
   }
 
-  async function uploadDataset(file: File) {
+  async function uploadDataset(
+    file: File,
+    customizations: Pick<UploadDatasetOptions, "metadata" | "style">,
+  ) {
     if (!map) {
       return;
     }
@@ -120,6 +124,7 @@ function ApplicationShell({
 
     try {
       const dataset = await datasetClient.uploadDataset(file, {
+        ...customizations,
         onProgress(progress) {
           setUploadState({
             status: progress.stage === "uploading" ? "uploading" : "processing",
@@ -226,7 +231,9 @@ function ApplicationShell({
         <DatasetUploadDialog
           state={uploadState}
           onClose={() => setUploadOpen(false)}
-          onUpload={(file) => void uploadDataset(file)}
+          onUpload={(file, customizations) =>
+            void uploadDataset(file, customizations)
+          }
         />
       ) : null}
     </main>

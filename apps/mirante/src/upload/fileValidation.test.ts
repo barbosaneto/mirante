@@ -2,6 +2,41 @@ import { describe, expect, it } from "vitest";
 
 import { validateDatasetFile } from "./fileValidation";
 
+function createStoredZip(filename: string): Uint8Array {
+  const name = new TextEncoder().encode(filename);
+  const localSize = 30 + name.length + 1;
+  const centralSize = 46 + name.length;
+  const bytes = new Uint8Array(localSize + centralSize + 22);
+  const view = new DataView(bytes.buffer);
+
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 0x0800, true);
+  view.setUint32(18, 1, true);
+  view.setUint32(22, 1, true);
+  view.setUint16(26, name.length, true);
+  bytes.set(name, 30);
+
+  const centralOffset = localSize;
+  view.setUint32(centralOffset, 0x02014b50, true);
+  view.setUint16(centralOffset + 4, 20, true);
+  view.setUint16(centralOffset + 6, 20, true);
+  view.setUint16(centralOffset + 8, 0x0800, true);
+  view.setUint32(centralOffset + 20, 1, true);
+  view.setUint32(centralOffset + 24, 1, true);
+  view.setUint16(centralOffset + 28, name.length, true);
+  bytes.set(name, centralOffset + 46);
+
+  const endOffset = localSize + centralSize;
+  view.setUint32(endOffset, 0x06054b50, true);
+  view.setUint16(endOffset + 8, 1, true);
+  view.setUint16(endOffset + 10, 1, true);
+  view.setUint32(endOffset + 12, centralSize, true);
+  view.setUint32(endOffset + 16, centralOffset, true);
+
+  return bytes;
+}
+
 describe("dataset file validation", () => {
   it("accepts a GeoJSON FeatureCollection", async () => {
     const file = new File(
@@ -21,14 +56,24 @@ describe("dataset file validation", () => {
       "dataset.kml",
       { type: "application/vnd.google-earth.kml+xml" },
     );
-    const zip = new File(
-      [new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00])],
-      "shapefile.zip",
-      { type: "application/zip" },
-    );
+    const zip = new File([createStoredZip("dataset.shp")], "shapefile.zip", {
+      type: "application/zip",
+    });
 
     await expect(validateDatasetFile(kml)).resolves.toBeNull();
     await expect(validateDatasetFile(zip)).resolves.toBeNull();
+  });
+
+  it("rejects ZIP archives with non-ASCII internal filenames", async () => {
+    const zip = new File(
+      [createStoredZip("Municípios AC e AM.cpg")],
+      "municipios.zip",
+      { type: "application/zip" },
+    );
+
+    await expect(validateDatasetFile(zip)).resolves.toBe(
+      "non-ascii-zip-filenames",
+    );
   });
 
   it("rejects unsupported extensions and invalid supported files", async () => {

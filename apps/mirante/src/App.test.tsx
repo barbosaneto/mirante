@@ -347,12 +347,49 @@ describe("App", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Upload a dataset" });
     await within(dialog).findByText("Dataset file ready to upload.");
+    fireEvent.change(
+      within(dialog).getByRole("textbox", { name: "Dataset title" }),
+      { target: { value: "Protected areas" } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole("textbox", { name: "Description" }),
+      { target: { value: "Protected territories" } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole("combobox", { name: "Geometry style" }),
+      { target: { value: "point" } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole("combobox", { name: "Point shape" }),
+      { target: { value: "square" } },
+    );
+    fireEvent.change(within(dialog).getByLabelText("Fill color"), {
+      target: { value: "#22c55e" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Outline color"), {
+      target: { value: "#14532d" },
+    });
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Upload dataset" }),
     );
 
     await within(dialog).findByText("Dataset published");
-    expect(uploadDatasetMock).toHaveBeenCalledWith(file, expect.anything());
+    expect(uploadDatasetMock).toHaveBeenCalledOnce();
+    const uploadCall = uploadDatasetMock.mock.calls[0];
+    expect(uploadCall?.[0]).toBe(file);
+    expect(uploadCall?.[1]).toMatchObject({
+      metadata: {
+        title: "Protected areas",
+        abstract: "Protected territories",
+      },
+      style: {
+        geometry: "point",
+        fillColor: "#22c55e",
+        strokeColor: "#14532d",
+        shape: "square",
+      },
+    });
+    expect(typeof uploadCall?.[1]?.onProgress).toBe("function");
     expect(mapMock.addDatasetLayer).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 42,

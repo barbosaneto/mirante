@@ -19,11 +19,35 @@
     "invalid-geojson": "O arquivo deve conter uma FeatureCollection GeoJSON válida.",
     "invalid-kml": "O arquivo deve conter um documento KML válido.",
     "invalid-zip": "O arquivo deve ser um ZIP válido contendo os componentes de um Shapefile.",
+    "non-ascii-zip-filenames": "Os arquivos dentro do ZIP devem usar nomes iguais, sem acentos ou caracteres especiais, como municipios.shp, municipios.dbf, municipios.shx e municipios.prj.",
     "unsupported-format": "Os formatos aceitos são .geojson, .kml e .zip contendo um Shapefile."
+  },
+  "metadata": {
+    "legend": "Metadados opcionais",
+    "help": "Deixe estes campos vazios para usar os metadados padrão do GeoNode.",
+    "title": "Título do dataset",
+    "titlePlaceholder": "Nome exibido no catálogo",
+    "abstract": "Descrição",
+    "abstractPlaceholder": "Descrição breve do dataset"
+  },
+  "style": {
+    "legend": "Estilo opcional",
+    "help": "Escolha um tipo de geometria para publicar um estilo básico persistente no GeoNode.",
+    "geometry": "Estilo da geometria",
+    "default": "Padrão do GeoNode",
+    "polygon": "Polígono",
+    "point": "Ponto",
+    "pointShape": "Formato do ponto",
+    "circle": "Círculo",
+    "square": "Quadrado",
+    "fillColor": "Cor de preenchimento",
+    "strokeColor": "Cor do contorno"
   },
   "progress": {
     "uploading": "Enviando arquivo ao GeoNode",
     "processing": "O GeoNode está publicando o dataset",
+    "metadata": "Atualizando os metadados do dataset",
+    "styling": "Publicando o estilo do dataset",
     "retrieving": "Recuperando o dataset publicado",
     "percentage": "{{value}}%",
     "keepOpen": "Mantenha este diálogo aberto até o processamento terminar."
@@ -35,10 +59,12 @@
   "errors": {
     "title": "Não foi possível publicar o dataset",
     "csrf-unavailable": "O GeoNode não conseguiu iniciar uma sessão segura de upload.",
+    "metadata-update-failed": "O dataset foi publicado, mas o GeoNode não conseguiu aplicar seus metadados.",
     "network": "O Mirante não conseguiu acessar o GeoNode. Verifique a conexão e tente novamente.",
     "permission-denied": "Sua conta do GeoNode não possui permissão para enviar datasets.",
     "processing-failed": "O GeoNode não conseguiu processar este dataset.",
     "session-expired": "Sua sessão do GeoNode expirou. Entre novamente e repita o envio.",
+    "style-update-failed": "O dataset foi publicado, mas o GeoNode não conseguiu aplicar seu estilo.",
     "timeout": "O GeoNode demorou demais para processar este dataset.",
     "unexpected-response": "O GeoNode retornou uma resposta inesperada.",
     "upload-rejected": "O GeoNode rejeitou o upload. Verifique o arquivo e suas permissões."

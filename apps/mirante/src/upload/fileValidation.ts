@@ -6,6 +6,7 @@ export type DatasetFileValidationErrorCode =
   | "invalid-geojson"
   | "invalid-kml"
   | "invalid-zip"
+  | "non-ascii-zip-filenames"
   | "unsupported-format";
 
 function readFile(file: File): Promise<string> {
@@ -25,7 +26,7 @@ function readFile(file: File): Promise<string> {
   });
 }
 
-function readFileBuffer(file: File): Promise<ArrayBuffer> {
+function readFileBuffer(file: Blob): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("load", () => {
@@ -40,7 +41,7 @@ function readFileBuffer(file: File): Promise<ArrayBuffer> {
     reader.addEventListener("error", () =>
       reject(reader.error ?? new Error("The selected file could not be read.")),
     );
-    reader.readAsArrayBuffer(file.slice(0, 4));
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -81,19 +82,83 @@ async function validateKml(file: File): Promise<boolean> {
   }
 }
 
-async function validateZip(file: File): Promise<boolean> {
+type ZipValidationResult = "invalid" | "non-ascii-filenames" | "valid";
+
+function findEndOfCentralDirectory(bytes: Uint8Array): number {
+  const minimumOffset = Math.max(0, bytes.length - 65_557);
+
+  for (let offset = bytes.length - 22; offset >= minimumOffset; offset -= 1) {
+    if (
+      bytes[offset] === 0x50 &&
+      bytes[offset + 1] === 0x4b &&
+      bytes[offset + 2] === 0x05 &&
+      bytes[offset + 3] === 0x06
+    ) {
+      return offset;
+    }
+  }
+
+  return -1;
+}
+
+async function validateZip(file: File): Promise<ZipValidationResult> {
   try {
     const bytes = new Uint8Array(await readFileBuffer(file));
+    if (
+      bytes.length < 22 ||
+      bytes[0] !== 0x50 ||
+      bytes[1] !== 0x4b ||
+      bytes[2] !== 0x03 ||
+      bytes[3] !== 0x04
+    ) {
+      return "invalid";
+    }
 
-    return (
-      bytes.length === 4 &&
-      bytes[0] === 0x50 &&
-      bytes[1] === 0x4b &&
-      bytes[2] === 0x03 &&
-      bytes[3] === 0x04
-    );
+    const endOffset = findEndOfCentralDirectory(bytes);
+    if (endOffset < 0) {
+      return "invalid";
+    }
+
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const entryCount = view.getUint16(endOffset + 10, true);
+    const directorySize = view.getUint32(endOffset + 12, true);
+    let offset = view.getUint32(endOffset + 16, true);
+    const directoryEnd = offset + directorySize;
+
+    if (directoryEnd > endOffset || directoryEnd > bytes.length) {
+      return "invalid";
+    }
+
+    for (let entry = 0; entry < entryCount; entry += 1) {
+      if (
+        offset + 46 > directoryEnd ||
+        view.getUint32(offset, true) !== 0x02014b50
+      ) {
+        return "invalid";
+      }
+
+      const filenameLength = view.getUint16(offset + 28, true);
+      const extraLength = view.getUint16(offset + 30, true);
+      const commentLength = view.getUint16(offset + 32, true);
+      const filenameStart = offset + 46;
+      const filenameEnd = filenameStart + filenameLength;
+
+      if (filenameEnd > directoryEnd) {
+        return "invalid";
+      }
+
+      if (
+        bytes.subarray(filenameStart, filenameEnd).some((byte) => byte > 0x7f)
+      ) {
+        return "non-ascii-filenames";
+      }
+
+      offset = filenameEnd + extraLength + commentLength;
+    }
+
+    return offset === directoryEnd ? "valid" : "invalid";
   } catch {
-    return false;
+    return "invalid";
   }
 }
 
@@ -122,8 +187,16 @@ export async function validateDatasetFile(
     return "invalid-kml";
   }
 
-  if (extension === ".zip" && !(await validateZip(file))) {
-    return "invalid-zip";
+  if (extension === ".zip") {
+    const zipValidation = await validateZip(file);
+
+    if (zipValidation === "non-ascii-filenames") {
+      return "non-ascii-zip-filenames";
+    }
+
+    if (zipValidation === "invalid") {
+      return "invalid-zip";
+    }
   }
 
   return null;

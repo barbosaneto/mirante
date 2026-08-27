@@ -1,4 +1,8 @@
 import { formatFileSize } from "@mirante/i18n";
+import type {
+  DatasetUploadMetadata,
+  DatasetUploadStyle,
+} from "@mirante/geonode";
 import {
   type ChangeEvent,
   type DragEvent,
@@ -25,7 +29,7 @@ export type UploadWorkflowStatus =
 export interface UploadWorkflowState {
   status: UploadWorkflowStatus;
   progress: number;
-  stage?: "processing" | "retrieving" | "uploading";
+  stage?: "metadata" | "processing" | "retrieving" | "styling" | "uploading";
   errorCode?: string;
   errorDetail?: string;
   datasetTitle?: string;
@@ -34,7 +38,13 @@ export interface UploadWorkflowState {
 interface DatasetUploadDialogProps {
   state: UploadWorkflowState;
   onClose: () => void;
-  onUpload: (file: File) => void;
+  onUpload: (
+    file: File,
+    customizations: {
+      metadata?: DatasetUploadMetadata;
+      style?: DatasetUploadStyle;
+    },
+  ) => void;
 }
 
 export function DatasetUploadDialog({
@@ -49,6 +59,14 @@ export function DatasetUploadDialog({
   const [file, setFile] = useState<File | null>(null);
   const [validationError, setValidationError] =
     useState<DatasetFileValidationErrorCode | null>(null);
+  const [title, setTitle] = useState("");
+  const [abstract, setAbstract] = useState("");
+  const [geometryStyle, setGeometryStyle] = useState<
+    "default" | "point" | "polygon"
+  >("default");
+  const [fillColor, setFillColor] = useState("#14b8a6");
+  const [strokeColor, setStrokeColor] = useState("#0f172a");
+  const [pointShape, setPointShape] = useState<"circle" | "square">("circle");
   const busy = state.status === "uploading" || state.status === "processing";
 
   async function selectFile(selectedFile: File | null) {
@@ -75,7 +93,32 @@ export function DatasetUploadDialog({
     event.preventDefault();
 
     if (file && !validationError && !busy) {
-      onUpload(file);
+      const trimmedTitle = title.trim();
+      const trimmedAbstract = abstract.trim();
+      const metadata =
+        trimmedTitle || trimmedAbstract
+          ? {
+              ...(trimmedTitle ? { title: trimmedTitle } : {}),
+              ...(trimmedAbstract ? { abstract: trimmedAbstract } : {}),
+            }
+          : undefined;
+      const style =
+        geometryStyle === "default"
+          ? undefined
+          : geometryStyle === "polygon"
+            ? {
+                geometry: "polygon" as const,
+                fillColor,
+                strokeColor,
+              }
+            : {
+                geometry: "point" as const,
+                fillColor,
+                strokeColor,
+                shape: pointShape,
+              };
+
+      onUpload(file, { metadata, style });
     }
   }
 
@@ -170,6 +213,90 @@ export function DatasetUploadDialog({
                   {t("validation.valid")}
                 </p>
               ) : null}
+
+              <fieldset className="upload-options" disabled={busy}>
+                <legend>{t("metadata.legend")}</legend>
+                <p>{t("metadata.help")}</p>
+                <label>
+                  <span>{t("metadata.title")}</span>
+                  <input
+                    type="text"
+                    maxLength={255}
+                    value={title}
+                    placeholder={t("metadata.titlePlaceholder")}
+                    onChange={(event) => setTitle(event.currentTarget.value)}
+                  />
+                </label>
+                <label>
+                  <span>{t("metadata.abstract")}</span>
+                  <textarea
+                    rows={3}
+                    value={abstract}
+                    placeholder={t("metadata.abstractPlaceholder")}
+                    onChange={(event) => setAbstract(event.currentTarget.value)}
+                  />
+                </label>
+              </fieldset>
+
+              <fieldset className="upload-options" disabled={busy}>
+                <legend>{t("style.legend")}</legend>
+                <p>{t("style.help")}</p>
+                <label>
+                  <span>{t("style.geometry")}</span>
+                  <select
+                    value={geometryStyle}
+                    onChange={(event) =>
+                      setGeometryStyle(
+                        event.currentTarget.value as typeof geometryStyle,
+                      )
+                    }
+                  >
+                    <option value="default">{t("style.default")}</option>
+                    <option value="polygon">{t("style.polygon")}</option>
+                    <option value="point">{t("style.point")}</option>
+                  </select>
+                </label>
+                {geometryStyle !== "default" ? (
+                  <div className="upload-style-grid">
+                    {geometryStyle === "point" ? (
+                      <label>
+                        <span>{t("style.pointShape")}</span>
+                        <select
+                          value={pointShape}
+                          onChange={(event) =>
+                            setPointShape(
+                              event.currentTarget.value as typeof pointShape,
+                            )
+                          }
+                        >
+                          <option value="circle">{t("style.circle")}</option>
+                          <option value="square">{t("style.square")}</option>
+                        </select>
+                      </label>
+                    ) : null}
+                    <label>
+                      <span>{t("style.fillColor")}</span>
+                      <input
+                        type="color"
+                        value={fillColor}
+                        onChange={(event) =>
+                          setFillColor(event.currentTarget.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>{t("style.strokeColor")}</span>
+                      <input
+                        type="color"
+                        value={strokeColor}
+                        onChange={(event) =>
+                          setStrokeColor(event.currentTarget.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </fieldset>
 
               {busy ? (
                 <div className="upload-progress" role="status">

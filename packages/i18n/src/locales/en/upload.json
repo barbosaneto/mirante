@@ -19,11 +19,35 @@
     "invalid-geojson": "The file must contain a valid GeoJSON FeatureCollection.",
     "invalid-kml": "The file must contain a valid KML document.",
     "invalid-zip": "The file must be a valid ZIP archive containing the components of one Shapefile.",
+    "non-ascii-zip-filenames": "Files inside the ZIP must use matching names without accents or special characters, such as municipalities.shp, municipalities.dbf, municipalities.shx, and municipalities.prj.",
     "unsupported-format": "Supported formats are .geojson, .kml, and .zip containing a Shapefile."
+  },
+  "metadata": {
+    "legend": "Optional metadata",
+    "help": "Leave these fields empty to use GeoNode's default metadata.",
+    "title": "Dataset title",
+    "titlePlaceholder": "Name shown in the catalogue",
+    "abstract": "Description",
+    "abstractPlaceholder": "Short description of the dataset"
+  },
+  "style": {
+    "legend": "Optional style",
+    "help": "Choose a geometry type to publish a basic persistent GeoNode style.",
+    "geometry": "Geometry style",
+    "default": "GeoNode default",
+    "polygon": "Polygon",
+    "point": "Point",
+    "pointShape": "Point shape",
+    "circle": "Circle",
+    "square": "Square",
+    "fillColor": "Fill color",
+    "strokeColor": "Outline color"
   },
   "progress": {
     "uploading": "Sending file to GeoNode",
     "processing": "GeoNode is publishing the dataset",
+    "metadata": "Updating dataset metadata",
+    "styling": "Publishing dataset style",
     "retrieving": "Retrieving the published dataset",
     "percentage": "{{value}}%",
     "keepOpen": "Keep this dialog open until processing finishes."
@@ -35,10 +59,12 @@
   "errors": {
     "title": "Dataset could not be published",
     "csrf-unavailable": "GeoNode could not start a secure upload session.",
+    "metadata-update-failed": "The dataset was published, but GeoNode could not apply its metadata.",
     "network": "Mirante could not reach GeoNode. Check the connection and try again.",
     "permission-denied": "Your GeoNode account does not have permission to upload datasets.",
     "processing-failed": "GeoNode could not process this dataset.",
     "session-expired": "Your GeoNode session expired. Sign in again and retry.",
+    "style-update-failed": "The dataset was published, but GeoNode could not apply its style.",
     "timeout": "GeoNode took too long to process this dataset.",
     "unexpected-response": "GeoNode returned an unexpected response.",
     "upload-rejected": "GeoNode rejected this upload. Check the file and your permissions."

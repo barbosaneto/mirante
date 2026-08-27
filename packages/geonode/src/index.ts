@@ -10,6 +10,7 @@ export interface GeoNodeUser {
 }
 
 export * from "./datasets";
+export * from "./sld";
 
 export interface GeoNodeCredentials {
   username: string;

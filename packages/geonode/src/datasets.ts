@@ -1,3 +1,5 @@
+import { createDatasetStyleFile, type DatasetUploadStyle } from "./sld";
+
 export interface GeoNodeDataset {
   id: number;
   title: string;
@@ -19,7 +21,12 @@ export interface ListGeoNodeDatasetsOptions {
   signal?: AbortSignal;
 }
 
-export type DatasetIngestionStage = "uploading" | "processing" | "retrieving";
+export type DatasetIngestionStage =
+  | "metadata"
+  | "processing"
+  | "retrieving"
+  | "styling"
+  | "uploading";
 
 export interface DatasetIngestionProgress {
   stage: DatasetIngestionStage;
@@ -28,10 +35,12 @@ export interface DatasetIngestionProgress {
 
 export type DatasetIngestionErrorCode =
   | "csrf-unavailable"
+  | "metadata-update-failed"
   | "network"
   | "permission-denied"
   | "processing-failed"
   | "session-expired"
+  | "style-update-failed"
   | "timeout"
   | "unexpected-response"
   | "upload-rejected";
@@ -47,8 +56,15 @@ export class GeoNodeDatasetIngestionError extends Error {
 }
 
 export interface UploadDatasetOptions {
+  metadata?: DatasetUploadMetadata;
   onProgress?: (progress: DatasetIngestionProgress) => void;
   signal?: AbortSignal;
+  style?: DatasetUploadStyle;
+}
+
+export interface DatasetUploadMetadata {
+  title?: string;
+  abstract?: string;
 }
 
 export interface GeoNodeDatasetClient {
@@ -263,10 +279,60 @@ async function responseErrorDetail(response: Response): Promise<string | null> {
 
   try {
     const detail = (await response.text()).trim();
-    return detail || null;
+
+    if (
+      response.headers.get("Content-Type")?.includes("text/html") ||
+      /^<!doctype html|^<html/i.test(detail)
+    ) {
+      return null;
+    }
+
+    return detail ? detail.slice(0, 500) : null;
   } catch {
     return null;
   }
+}
+
+function normalizeMetadata(
+  metadata: DatasetUploadMetadata | undefined,
+): DatasetUploadMetadata | null {
+  const title = metadata?.title?.trim();
+  const abstract = metadata?.abstract?.trim();
+
+  return title || abstract
+    ? {
+        ...(title ? { title } : {}),
+        ...(abstract ? { abstract } : {}),
+      }
+    : null;
+}
+
+function createGeoNodeSafeUploadFile(file: File): File {
+  const extensionIndex = file.name.lastIndexOf(".");
+  const originalStem =
+    extensionIndex > 0 ? file.name.slice(0, extensionIndex) : file.name;
+  const originalExtension =
+    extensionIndex > 0 ? file.name.slice(extensionIndex) : "";
+  const stem = originalStem
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+  const extension = originalExtension
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9.]+/g, "")
+    .toLowerCase();
+  const safeName = `${stem || "dataset"}${extension}`;
+
+  if (safeName === file.name) {
+    return file;
+  }
+
+  return new File([file], safeName, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 }
 
 export function createGeoNodeDatasetClient({
@@ -333,6 +399,137 @@ export function createGeoNodeDatasetClient({
     return parseDatasetPayload(baseUrl, await response.json());
   }
 
+  async function updateDatasetMetadata(
+    datasetId: number,
+    metadata: DatasetUploadMetadata,
+    csrfToken: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const response = await request(`/api/v2/datasets/${datasetId}`, {
+      method: "PATCH",
+      body: JSON.stringify(metadata),
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      signal,
+    });
+
+    if (response.status === 401) {
+      throw new GeoNodeDatasetIngestionError(
+        "session-expired",
+        "The GeoNode session expired before metadata could be updated.",
+      );
+    }
+
+    if (!response.ok) {
+      const detail = await responseErrorDetail(response);
+      throw new GeoNodeDatasetIngestionError(
+        "metadata-update-failed",
+        `GeoNode published the dataset but rejected its metadata with status ${response.status}${detail ? `: ${detail}` : "."}`,
+      );
+    }
+  }
+
+  async function uploadDatasetStyle(
+    dataset: GeoNodeDataset,
+    style: DatasetUploadStyle,
+    csrfToken: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    let styleFile: File;
+
+    try {
+      styleFile = createDatasetStyleFile(dataset, style);
+    } catch (error) {
+      throw new GeoNodeDatasetIngestionError(
+        "style-update-failed",
+        error instanceof Error ? error.message : "Dataset style is invalid.",
+      );
+    }
+    const body = new FormData();
+    body.set("base_file", styleFile);
+    // GeoNode 5.1 selects the SLD handler through base_file, but its style
+    // application step reads sld_file from the cloned upload files.
+    body.set("sld_file", styleFile);
+    body.set("resource_pk", String(dataset.id));
+    body.set("action", "resource_style_upload");
+
+    const response = await request("/api/v2/uploads/upload", {
+      method: "POST",
+      body,
+      headers: { "X-CSRFToken": csrfToken },
+      signal,
+    });
+
+    if (response.status === 401) {
+      throw new GeoNodeDatasetIngestionError(
+        "session-expired",
+        "The GeoNode session expired before the style could be applied.",
+      );
+    }
+
+    if (!response.ok) {
+      const detail = await responseErrorDetail(response);
+      throw new GeoNodeDatasetIngestionError(
+        "style-update-failed",
+        `GeoNode published the dataset but rejected its style with status ${response.status}${detail ? `: ${detail}` : "."}`,
+      );
+    }
+
+    const payload: unknown = await response.json();
+
+    if (!isRecord(payload) || typeof payload.execution_id !== "string") {
+      throw new GeoNodeDatasetIngestionError(
+        "style-update-failed",
+        "GeoNode returned an invalid style execution response.",
+      );
+    }
+
+    for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
+      if (attempt > 0) {
+        await delay(pollIntervalMs, signal);
+      }
+
+      const executionResponse = await request(
+        `/api/v2/resource-service/execution-status/${payload.execution_id}`,
+        { signal },
+      );
+
+      if (executionResponse.status === 401) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session expired while the style was being applied.",
+        );
+      }
+
+      if (!executionResponse.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "style-update-failed",
+          `GeoNode style execution failed with status ${executionResponse.status}.`,
+        );
+      }
+
+      const execution = parseExecutionPayload(await executionResponse.json());
+
+      if (execution.status === "failed") {
+        throw new GeoNodeDatasetIngestionError(
+          "style-update-failed",
+          execution.log || "GeoNode failed to apply the dataset style.",
+        );
+      }
+
+      if (execution.status === "finished") {
+        return;
+      }
+    }
+
+    throw new GeoNodeDatasetIngestionError(
+      "style-update-failed",
+      "GeoNode did not finish applying the dataset style in time.",
+    );
+  }
+
   return {
     async listDatasets({ page = 1, pageSize = 20, signal } = {}) {
       const query = new URLSearchParams({
@@ -358,15 +555,17 @@ export function createGeoNodeDatasetClient({
       return parseDatasetPage(baseUrl, await response.json());
     },
     async uploadDataset(file, options = {}) {
-      const { onProgress, signal } = options;
+      const { metadata, onProgress, signal, style } = options;
+      const normalizedMetadata = normalizeMetadata(metadata);
       onProgress?.({ stage: "uploading", percentage: 5 });
       const csrfToken = await getCsrfToken(signal);
+      const uploadFile = createGeoNodeSafeUploadFile(file);
       const body = new FormData();
-      body.set("base_file", file);
-      if (file.name.toLowerCase().endsWith(".zip")) {
+      body.set("base_file", uploadFile);
+      if (uploadFile.name.endsWith(".zip")) {
         // GeoNode 5.1 uses this marker to inspect the archive and select the
         // Shapefile handler while keeping the archive itself as base_file.
-        body.set("zip_file", file);
+        body.set("zip_file", uploadFile);
       }
       body.set("action", "upload");
       body.set("store_spatial_files", "true");
@@ -460,8 +659,33 @@ export function createGeoNodeDatasetClient({
             );
           }
 
-          onProgress?.({ stage: "retrieving", percentage: 95 });
-          const dataset = await retrieveDataset(datasetId, signal);
+          onProgress?.({ stage: "retrieving", percentage: 92 });
+          let dataset = await retrieveDataset(datasetId, signal);
+
+          if (normalizedMetadata) {
+            onProgress?.({ stage: "metadata", percentage: 94 });
+            await updateDatasetMetadata(
+              datasetId,
+              normalizedMetadata,
+              csrfToken,
+              signal,
+            );
+            dataset = {
+              ...dataset,
+              title: normalizedMetadata.title ?? dataset.title,
+            };
+          }
+
+          if (style) {
+            onProgress?.({ stage: "styling", percentage: 97 });
+            await uploadDatasetStyle(dataset, style, csrfToken, signal);
+          }
+
+          if (normalizedMetadata || style) {
+            onProgress?.({ stage: "retrieving", percentage: 99 });
+            dataset = await retrieveDataset(datasetId, signal);
+          }
+
           onProgress?.({ stage: "retrieving", percentage: 100 });
           return dataset;
         }

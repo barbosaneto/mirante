@@ -55,7 +55,7 @@ Mirante extensions are installed at build time and use only the root exports fro
 
 Authentication uses GeoNode's standard Django session, CSRF protection, and API V2 user resource without requiring a custom backend. See [Authentication](docs/authentication.md) for the request flow and deployment requirements.
 
-Users with GeoNode's resource creation permission can upload GeoJSON, KML, and zipped Shapefiles through its standard asynchronous importer. Mirante follows the execution, retrieves the published dataset, adds its WMS layer to OpenLayers, and exposes visibility and opacity controls. See [Dataset ingestion](docs/dataset-ingestion.md) and [Upload permissions](docs/upload-permissions.md) for the supported flow and authorization contract.
+Users with GeoNode's resource creation permission can upload GeoJSON, KML, and zipped Shapefiles through its standard asynchronous importer. Optional title, description, polygon styling, and point styling use vanilla GeoNode metadata and SLD workflows. Mirante follows the execution, retrieves the published dataset, adds its WMS layer to OpenLayers, and exposes visibility and opacity controls. See [Dataset ingestion](docs/dataset-ingestion.md) and [Upload permissions](docs/upload-permissions.md) for the supported flow and authorization contract.
 
 The collapsed dataset catalogue lists published resources visible through GeoNode API V2. Users can add them to the map, remove active layers without deleting server resources, and open GeoNode's full catalogue for advanced management. See [Dataset catalogue](docs/dataset-catalogue.md).
 
