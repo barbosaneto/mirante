@@ -2,6 +2,7 @@ export interface DatasetFeatureInfo {
   datasetId: number;
   datasetTitle: string;
   featureId?: string;
+  geometry?: Readonly<Record<string, unknown>>;
   attributes: Readonly<Record<string, unknown>>;
 }
 
@@ -28,12 +29,14 @@ export function parseWmsFeatureInfo(
       typeof rawFeatureId === "string" || typeof rawFeatureId === "number"
         ? String(rawFeatureId)
         : undefined;
+    const geometry = isRecord(feature.geometry) ? feature.geometry : undefined;
 
     return [
       {
         datasetId,
         datasetTitle,
         ...(featureId ? { featureId } : {}),
+        ...(geometry ? { geometry } : {}),
         attributes: feature.properties,
       },
     ];

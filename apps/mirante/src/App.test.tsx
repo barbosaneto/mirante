@@ -26,6 +26,7 @@ const mapMock = vi.hoisted(() => ({
   setDatasetLayerOpacity: vi.fn(),
   setDatasetLayerFilter: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
+  setSelectedFeatureGeometry: vi.fn(),
   getView: vi.fn(),
   subscribeFeatureInfo: vi.fn(),
   setBaseMap: vi.fn(),
@@ -122,6 +123,7 @@ describe("App", () => {
     mapMock.setDatasetLayerOpacity.mockReset();
     mapMock.setDatasetLayerFilter.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
+    mapMock.setSelectedFeatureGeometry.mockReset();
     mapMock.getView.mockReset();
     mapMock.getView.mockReturnValue({ center: [-52, -15], zoom: 4 });
     mapMock.subscribeFeatureInfo.mockReset();
@@ -204,6 +206,12 @@ describe("App", () => {
           opacity: 0.6,
           visible: false,
           order: 0,
+          filter: {
+            field: "name",
+            operator: "contains",
+            type: "text",
+            value: "Test",
+          },
         },
       ],
     });
@@ -226,6 +234,7 @@ describe("App", () => {
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
       setDatasetLayerFilter: mapMock.setDatasetLayerFilter,
       setDatasetLayerVisibility: mapMock.setDatasetLayerVisibility,
+      setSelectedFeatureGeometry: mapMock.setSelectedFeatureGeometry,
       setView: mapMock.setView,
     });
   });
@@ -438,6 +447,7 @@ describe("App", () => {
             datasetId: 7,
             datasetTitle: "Municipal boundaries",
             featureId: "municipalities.14",
+            geometry: { type: "Point", coordinates: [-47.9, -15.8] },
             attributes: {
               name: "Test municipality",
               population: 1200,
@@ -460,6 +470,10 @@ describe("App", () => {
     expect(within(dialog).getByText("1,200")).toBeInTheDocument();
     expect(within(dialog).getByText("Yes")).toBeInTheDocument();
     expect(within(dialog).getByText("Not informed")).toBeInTheDocument();
+    expect(mapMock.setSelectedFeatureGeometry).toHaveBeenCalledWith({
+      type: "Point",
+      coordinates: [-47.9, -15.8],
+    });
 
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Close feature attributes" }),
@@ -504,6 +518,29 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(within(tablePanel).getByText("1,200")).toBeInTheDocument();
 
+    act(() => {
+      featureInfoListener?.({
+        status: "ready",
+        features: [
+          {
+            datasetId: 7,
+            datasetTitle: "Municipal boundaries",
+            featureId: "municipal_boundaries.14",
+            geometry: { type: "Point", coordinates: [-47.9, -15.8] },
+            attributes: { name: "Test municipality" },
+          },
+        ],
+      });
+    });
+    expect(
+      within(tablePanel)
+        .getByRole("rowheader", { name: "municipal_boundaries.14" })
+        .closest("tr"),
+    ).toHaveClass("attribute-table__row--selected");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close feature attributes" }),
+    );
+
     fireEvent.change(within(tablePanel).getByLabelText("Value"), {
       target: { value: "Test" },
     });
@@ -529,14 +566,20 @@ describe("App", () => {
       "\"name\" ILIKE '%Test%'",
     );
 
-    fireEvent.click(
-      within(tablePanel).getByRole("button", {
-        name: "Locate feature municipal_boundaries.14 on the map",
-      }),
-    );
+    const locateButton = within(tablePanel).getByRole("button", {
+      name: "Locate feature municipal_boundaries.14 on the map",
+    });
+    fireEvent.click(locateButton);
     expect(mapMock.fitGeographicExtent).toHaveBeenCalledWith([
       -47.9, -15.8, -47.9, -15.8,
     ]);
+    expect(mapMock.setSelectedFeatureGeometry).toHaveBeenCalledWith({
+      type: "Point",
+      coordinates: [-47.9, -15.8],
+    });
+    expect(locateButton.closest("tr")).toHaveClass(
+      "attribute-table__row--selected",
+    );
 
     fireEvent.click(
       within(tablePanel).getByRole("button", { name: "Clear filter" }),
@@ -722,6 +765,10 @@ describe("App", () => {
     );
     expect(mapMock.setDatasetLayerOpacity).toHaveBeenCalledWith(7, 0.6);
     expect(mapMock.setDatasetLayerVisibility).toHaveBeenCalledWith(7, false);
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenCalledWith(
+      7,
+      "\"name\" ILIKE '%Test%'",
+    );
     expect(mapMock.setView).toHaveBeenCalledWith({
       center: [-47.9, -15.8],
       zoom: 8,

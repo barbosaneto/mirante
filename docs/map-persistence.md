@@ -9,7 +9,9 @@ Authenticated users with GeoNode's `add_resource` permission can open the map li
 - The geographic center and zoom in the standard map `data` document.
 - WMS layer descriptions in the standard map layer array.
 - Dataset relations, visibility, opacity, and ordering in `maplayers`.
-- A versioned `mirante` section inside `data` for faithful restoration by Mirante.
+- A versioned `mirante` section inside `data` for faithful restoration by Mirante, including structured attribute filters.
+
+Active filters are also serialized into the standard WMS layer `CQL_FILTER` parameter so the GeoNode map representation retains the filtered visualization outside Mirante when supported by the consuming client.
 
 The map is owned, permissioned, listed, and managed by GeoNode like any other map resource.
 
@@ -17,7 +19,7 @@ The map is owned, permissioned, listed, and managed by GeoNode like any other ma
 
 The library lists resources visible to the current session through `GET /api/v2/maps`. Opening a map retrieves its full representation with `GET /api/v2/maps/{id}?include[]=data`, then retrieves every referenced dataset from the dataset API before changing the current map.
 
-Mirante restores the active datasets, visibility, opacity, order, center, and zoom. It also supports GeoNode maps without the `mirante` section when their standard `maplayers` include dataset relations and their `data` document contains a geographic center and zoom.
+Mirante restores the active datasets, visibility, opacity, filters, order, center, and zoom. It also supports GeoNode maps without the `mirante` section when their standard `maplayers` include dataset relations and their `data` document contains a geographic center and zoom.
 
 ## Authorization
 

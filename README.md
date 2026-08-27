@@ -61,7 +61,7 @@ The collapsed dataset catalogue lists published resources visible through GeoNod
 
 Active layers can be fitted back into view from the layer panel. Clicking the map queries visible dataset layers through standard WMS GetFeatureInfo and presents returned attributes without requiring a custom backend. See [Feature inspection](docs/feature-inspection.md).
 
-Each active vector dataset also provides a paginated attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, locate an individual feature, and apply typed attribute filters synchronized with the WMS visualization without loading the complete dataset into the browser. See [Attribute table](docs/attribute-table.md) and [Attribute filtering](docs/attribute-filtering.md).
+Each active vector dataset also provides a paginated attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, select and persistently highlight an individual feature, and apply typed attribute filters synchronized with the WMS visualization without loading the complete dataset into the browser. Filters are preserved in Mirante map resources. See [Attribute table](docs/attribute-table.md), [Attribute filtering](docs/attribute-filtering.md), and [Map persistence](docs/map-persistence.md).
 
 The bottom toolbar includes a base map selector for the dark CARTO basemap and the standard light OpenStreetMap layer. The active dataset panel remains dedicated to WMS overlays. See [Base maps](docs/base-maps.md).
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { parseWmsFeatureInfo } from "./featureInfo";
 
 describe("WMS feature information", () => {
-  it("maps GeoServer GeoJSON properties without exposing geometry", () => {
+  it("maps GeoServer GeoJSON properties and selection geometry", () => {
     expect(
       parseWmsFeatureInfo(7, "Land parcels", {
         type: "FeatureCollection",
@@ -26,6 +26,7 @@ describe("WMS feature information", () => {
         datasetId: 7,
         datasetTitle: "Land parcels",
         featureId: "parcels.14",
+        geometry: { type: "Point", coordinates: [-52, -15] },
         attributes: {
           name: "Parcel 14",
           area: 97.68,

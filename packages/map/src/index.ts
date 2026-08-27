@@ -2,11 +2,15 @@ import "ol/ol.css";
 
 import type { MapCommandApi, MapViewOptions } from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
+import Feature from "ol/Feature.js";
 import TileLayer from "ol/layer/Tile.js";
+import VectorLayer from "ol/layer/Vector.js";
 import OlMap from "ol/Map.js";
 import { fromLonLat, toLonLat, transformExtent } from "ol/proj.js";
 import TileWMS from "ol/source/TileWMS.js";
 import XYZ from "ol/source/XYZ.js";
+import VectorSource from "ol/source/Vector.js";
+import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style.js";
 import View from "ol/View.js";
 
 import { parseWmsFeatureInfo, type DatasetFeatureInfo } from "./featureInfo";
@@ -55,6 +59,9 @@ export interface MapFacade extends MapCommandApi {
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerFilter(id: number, cqlFilter?: string): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
+  setSelectedFeatureGeometry(
+    geometry?: Readonly<Record<string, unknown>>,
+  ): void;
   setBaseMap(id: BaseMapId): void;
   getView(): MapViewOptions;
   destroy(): void;
@@ -98,6 +105,21 @@ export function createMap({
   const baseMapLayer = new TileLayer({
     source: baseMapSources[defaultBaseMapId],
   });
+  const selectionSource = new VectorSource();
+  const selectionColor = "#14b8a6";
+  const selectionLayer = new VectorLayer({
+    source: selectionSource,
+    style: new Style({
+      fill: new Fill({ color: "rgb(20 184 166 / 18%)" }),
+      stroke: new Stroke({ color: selectionColor, width: 4 }),
+      image: new CircleStyle({
+        radius: 8,
+        fill: new Fill({ color: selectionColor }),
+        stroke: new Stroke({ color: "#f8fafc", width: 2 }),
+      }),
+    }),
+  });
+  selectionLayer.setZIndex(1_000);
   const map = new OlMap({
     target,
     controls: defaultControls({
@@ -105,7 +127,7 @@ export function createMap({
         collapsible: false,
       },
     }),
-    layers: [baseMapLayer],
+    layers: [baseMapLayer, selectionLayer],
     view: new View({
       center: fromLonLat([initialCenter[0], initialCenter[1]]),
       zoom: initialZoom,
@@ -119,6 +141,7 @@ export function createMap({
   >();
   const featureInfoListeners = new Set<(event: FeatureInfoEvent) => void>();
   let featureInfoRequest = 0;
+  let selectedFeatureRequest = 0;
 
   function fitDatasetExtent(extent: readonly [number, number, number, number]) {
     map.getView().fit(transformExtent([...extent], "EPSG:4326", "EPSG:3857"), {
@@ -302,6 +325,29 @@ export function createMap({
     setDatasetLayerVisibility(id, visible) {
       datasetLayers.get(id)?.setVisible(visible);
     },
+    setSelectedFeatureGeometry(geometry) {
+      const request = ++selectedFeatureRequest;
+      selectionSource.clear();
+      if (!geometry || typeof geometry.type !== "string") return;
+
+      void import("ol/format/GeoJSON.js")
+        .then(({ default: GeoJSON }) => {
+          if (request !== selectedFeatureRequest) return;
+
+          try {
+            const selectedGeometry = new GeoJSON().readGeometry(geometry, {
+              dataProjection: "EPSG:4326",
+              featureProjection: "EPSG:3857",
+            });
+            selectionSource.addFeature(new Feature(selectedGeometry));
+          } catch {
+            // Invalid GeoJSON geometry cannot be highlighted; map use continues.
+          }
+        })
+        .catch(() => {
+          // A failed optional formatter chunk must not interrupt map use.
+        });
+    },
     setBaseMap(id) {
       baseMapLayer.setSource(baseMapSources[id]);
     },
@@ -311,7 +357,9 @@ export function createMap({
     },
     destroy() {
       featureInfoRequest += 1;
+      selectedFeatureRequest += 1;
       featureInfoListeners.clear();
+      selectionSource.clear();
       datasetLayers.clear();
       datasetExtents.clear();
       map.setTarget(undefined);

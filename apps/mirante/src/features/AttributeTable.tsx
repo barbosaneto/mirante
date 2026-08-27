@@ -20,6 +20,7 @@ interface AttributeTableProps {
   onClose: () => void;
   onFilterChange: (filter: GeoNodeAttributeFilter | undefined) => void;
   onLocate: (feature: GeoNodeDatasetFeature) => void;
+  selectedFeatureId?: string;
 }
 
 type AttributeTableState =
@@ -90,6 +91,7 @@ export function AttributeTable({
   onClose,
   onFilterChange,
   onLocate,
+  selectedFeatureId,
 }: AttributeTableProps) {
   const { t } = useTranslation("attributes");
   const titleId = useId();
@@ -102,9 +104,6 @@ export function AttributeTable({
   const [draftOperator, setDraftOperator] =
     useState<GeoNodeAttributeFilterOperator>(filter?.operator ?? "contains");
   const [draftValue, setDraftValue] = useState(filter?.value ?? "");
-  const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(
-    null,
-  );
   const [state, setState] = useState<AttributeTableState>({
     status: "loading",
   });
@@ -233,7 +232,6 @@ export function AttributeTable({
               value: draftValue.trim(),
             };
             setPage(1);
-            setSelectedFeatureId(null);
             onFilterChange(nextFilter);
           }}
         >
@@ -311,7 +309,6 @@ export function AttributeTable({
               className="button button--secondary"
               onClick={() => {
                 setPage(1);
-                setSelectedFeatureId(null);
                 setDraftValue("");
                 onFilterChange(undefined);
               }}
@@ -390,7 +387,6 @@ export function AttributeTable({
                             : t("geometryUnavailable")
                         }
                         onClick={() => {
-                          setSelectedFeatureId(feature.id);
                           onLocate(feature);
                         }}
                       >

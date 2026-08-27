@@ -26,4 +26,4 @@ Field identifiers and text literals are escaped before serialization. Numeric va
 - A layer supports one active condition at a time.
 - Compound `AND` and `OR` groups are not yet available.
 - Field types are inferred from the first loaded attribute page rather than a separate WFS schema request.
-- Filters are kept for the current application session and are not yet written to saved GeoNode maps.
+- Filters created by other GeoNode clients can only be restored when they use Mirante's structured filter metadata.

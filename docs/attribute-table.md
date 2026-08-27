@@ -14,11 +14,12 @@ Pages contain 25 records. Mirante requests one additional record as a look-ahead
 - Null and empty values receive a localized placeholder.
 - Numbers and booleans use the active interface locale.
 - The locate action selects the row and fits the feature geometry extent on the map.
+- The selected geometry remains highlighted when pages or filters change.
+- A map click selects the corresponding row when that feature is available on the current page.
 - Closing the table does not remove or change the active WMS layer.
 
 ## Current limits
 
 - The table reads vector datasets that GeoServer exposes through WFS.
 - One typed attribute filter can be applied to the table and WMS layer. See [Attribute filtering](attribute-filtering.md).
-- Selecting a row locates its geometry but does not yet draw a persistent highlight.
 - Column ordering follows the GeoJSON property order returned by GeoServer.

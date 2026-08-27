@@ -31,6 +31,12 @@ describe("GeoNode map client", () => {
             opacity: 0.6,
             visible: false,
             order: 0,
+            filter: {
+              field: "status",
+              operator: "equals",
+              type: "text",
+              value: "approved",
+            },
           },
         ],
       }),
@@ -47,8 +53,20 @@ describe("GeoNode map client", () => {
       data: {
         map: { zoom: 8, center: { x: -47.9, y: -15.8, crs: "EPSG:4326" } },
         mirante: {
-          version: 1,
-          layers: [{ datasetId: 7, opacity: 0.6, visible: false }],
+          version: 2,
+          layers: [
+            {
+              datasetId: 7,
+              opacity: 0.6,
+              visible: false,
+              filter: {
+                field: "status",
+                operator: "equals",
+                type: "text",
+                value: "approved",
+              },
+            },
+          ],
         },
       },
       maplayers: [
@@ -57,6 +75,10 @@ describe("GeoNode map client", () => {
           opacity: 0.6,
           visibility: false,
           order: 0,
+          extra_params: {
+            msId: "mirante-dataset-7",
+            CQL_FILTER: "\"status\" = 'approved'",
+          },
         },
       ],
     });
@@ -109,6 +131,12 @@ describe("GeoNode map client", () => {
                   opacity: 0.6,
                   visible: false,
                   order: 0,
+                  filter: {
+                    field: "name",
+                    operator: "contains",
+                    type: "text",
+                    value: "Municipal",
+                  },
                 },
               ],
             },
@@ -123,7 +151,19 @@ describe("GeoNode map client", () => {
       id: 12,
       title: "Field survey",
       view: { center: [-47.9, -15.8], zoom: 8 },
-      layers: [{ datasetId: 7, opacity: 0.6, visible: false }],
+      layers: [
+        {
+          datasetId: 7,
+          opacity: 0.6,
+          visible: false,
+          filter: {
+            field: "name",
+            operator: "contains",
+            type: "text",
+            value: "Municipal",
+          },
+        },
+      ],
     });
   });
 

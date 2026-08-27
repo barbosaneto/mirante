@@ -11,7 +11,12 @@ import {
   type GeoNodeMapClient,
   type UploadDatasetOptions,
 } from "@mirante/geonode";
-import { createMap, type FeatureInfoEvent, type MapFacade } from "@mirante/map";
+import {
+  createMap,
+  type DatasetFeatureInfo,
+  type FeatureInfoEvent,
+  type MapFacade,
+} from "@mirante/map";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -49,6 +54,11 @@ const initialUploadState: UploadWorkflowState = {
   progress: 0,
 };
 
+type SelectedFeature = Pick<
+  DatasetFeatureInfo,
+  "datasetId" | "featureId" | "geometry"
+>;
+
 function ApplicationShell({
   datasetClient,
   mapClient,
@@ -72,6 +82,8 @@ function ApplicationShell({
   const [attributeDataset, setAttributeDataset] =
     useState<GeoNodeDataset | null>(null);
   const [featureInfo, setFeatureInfo] = useState<FeatureInfoEvent | null>(null);
+  const [selectedFeature, setSelectedFeature] =
+    useState<SelectedFeature | null>(null);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
   const { config } = mirante;
@@ -93,8 +105,19 @@ function ApplicationShell({
       initialCenter: config.map.initialCenter,
       initialZoom: config.map.initialZoom,
     });
-    const unsubscribeFeatureInfo =
-      mapFacade.subscribeFeatureInfo(setFeatureInfo);
+    const unsubscribeFeatureInfo = mapFacade.subscribeFeatureInfo((event) => {
+      setFeatureInfo(event);
+
+      if (event.status === "ready" && event.features[0]) {
+        const feature = event.features[0];
+        setSelectedFeature({
+          datasetId: feature.datasetId,
+          ...(feature.featureId ? { featureId: feature.featureId } : {}),
+          ...(feature.geometry ? { geometry: feature.geometry } : {}),
+        });
+        mapFacade.setSelectedFeatureGeometry(feature.geometry);
+      }
+    });
 
     setMap(mapFacade);
 
@@ -155,6 +178,9 @@ function ApplicationShell({
         opacity: item.opacity,
         visible: item.visible,
         order,
+        ...(datasetFilters[item.dataset.id]
+          ? { filter: datasetFilters[item.dataset.id] }
+          : {}),
       })),
     });
   }
@@ -162,6 +188,8 @@ function ApplicationShell({
   async function openMap(id: number) {
     if (!map) return;
     setAttributeDataset(null);
+    setSelectedFeature(null);
+    map.setSelectedFeatureGeometry();
     const savedMap = await mapClient.getMap(id);
     const restoredDatasets = await Promise.all(
       savedMap.layers.map(async (layer) => ({
@@ -173,14 +201,22 @@ function ApplicationShell({
     for (const item of datasets) map.removeDatasetLayer(item.dataset.id);
     activeDatasetIdsRef.current.clear();
     setDatasets([]);
-    setDatasetFilters({});
+    const restoredFilters: Record<number, GeoNodeAttributeFilter> = {};
     for (const { dataset, layer } of [...restoredDatasets].reverse()) {
       addDatasetToMap(dataset, {
         fit: false,
         opacity: layer.opacity,
         visible: layer.visible,
       });
+      if (layer.filter) {
+        restoredFilters[dataset.id] = layer.filter;
+        map.setDatasetLayerFilter(
+          dataset.id,
+          serializeGeoNodeAttributeFilter(layer.filter),
+        );
+      }
     }
+    setDatasetFilters(restoredFilters);
     map.setView(savedMap.view);
   }
 
@@ -247,6 +283,10 @@ function ApplicationShell({
     map?.removeDatasetLayer(id);
     activeDatasetIdsRef.current.delete(id);
     setAttributeDataset((current) => (current?.id === id ? null : current));
+    if (selectedFeature?.datasetId === id) {
+      setSelectedFeature(null);
+      map?.setSelectedFeatureGeometry();
+    }
     setDatasetFilters((current) => {
       const next = { ...current };
       delete next[id];
@@ -372,8 +412,19 @@ function ApplicationShell({
             changeDatasetFilter(attributeDataset.id, filter)
           }
           onLocate={(feature) => {
+            setSelectedFeature({
+              datasetId: attributeDataset.id,
+              featureId: feature.id,
+              ...(feature.geometry ? { geometry: feature.geometry } : {}),
+            });
+            map?.setSelectedFeatureGeometry(feature.geometry ?? undefined);
             if (feature.extent) map?.fitGeographicExtent(feature.extent);
           }}
+          selectedFeatureId={
+            selectedFeature?.datasetId === attributeDataset.id
+              ? selectedFeature.featureId
+              : undefined
+          }
         />
       ) : null}
     </main>

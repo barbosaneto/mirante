@@ -1,5 +1,12 @@
 import type { MapViewOptions } from "@mirante/sdk";
 
+import {
+  serializeGeoNodeAttributeFilter,
+  type GeoNodeAttributeFilter,
+  type GeoNodeAttributeFilterOperator,
+  type GeoNodeAttributeType,
+} from "./filters";
+
 export interface GeoNodeMapLayerState {
   datasetId: number;
   layerName: string;
@@ -7,6 +14,7 @@ export interface GeoNodeMapLayerState {
   opacity: number;
   visible: boolean;
   order: number;
+  filter?: GeoNodeAttributeFilter;
 }
 
 export interface GeoNodeMapSummary {
@@ -130,6 +138,45 @@ function parseView(data: Record<string, unknown>): MapViewOptions | null {
   return { center: [x, y], zoom: map.zoom };
 }
 
+const filterTypes = new Set<GeoNodeAttributeType>(["date", "number", "text"]);
+const filterOperators = new Set<GeoNodeAttributeFilterOperator>([
+  "contains",
+  "equals",
+  "greater-or-equal",
+  "greater-than",
+  "less-or-equal",
+  "less-than",
+  "not-equals",
+]);
+
+function parseFilter(value: unknown): GeoNodeAttributeFilter | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.field !== "string" ||
+    typeof value.type !== "string" ||
+    typeof value.operator !== "string" ||
+    typeof value.value !== "string" ||
+    !filterTypes.has(value.type as GeoNodeAttributeType) ||
+    !filterOperators.has(value.operator as GeoNodeAttributeFilterOperator)
+  ) {
+    return undefined;
+  }
+
+  const filter: GeoNodeAttributeFilter = {
+    field: value.field,
+    type: value.type as GeoNodeAttributeType,
+    operator: value.operator as GeoNodeAttributeFilterOperator,
+    value: value.value,
+  };
+
+  try {
+    serializeGeoNodeAttributeFilter(filter);
+    return filter;
+  } catch {
+    return undefined;
+  }
+}
+
 function parseLayer(
   value: unknown,
   fallbackOrder: number,
@@ -156,6 +203,7 @@ function parseLayer(
       ? Math.max(0, Math.min(1, value.opacity))
       : 1;
   const order = typeof value.order === "number" ? value.order : fallbackOrder;
+  const filter = parseFilter(value.filter);
 
   if (datasetId === null || !layerName || !title) return null;
   return {
@@ -165,6 +213,7 @@ function parseLayer(
     opacity,
     visible: value.visible !== false && value.visibility !== false,
     order,
+    ...(filter ? { filter } : {}),
   };
 }
 
@@ -220,14 +269,19 @@ function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
         title: layer.title,
         visibility: layer.visible,
         opacity: layer.opacity,
-        extraParams: { msId: `mirante-dataset-${layer.datasetId}` },
+        extraParams: {
+          msId: `mirante-dataset-${layer.datasetId}`,
+          ...(layer.filter
+            ? { CQL_FILTER: serializeGeoNodeAttributeFilter(layer.filter) }
+            : {}),
+        },
       })),
       projection: "EPSG:3857",
       backgrounds: [],
     },
     version: 2,
     mirante: {
-      version: 1,
+      version: 2,
       layers: input.layers.map((layer) => ({
         datasetId: layer.datasetId,
         layerName: layer.layerName,
@@ -235,6 +289,7 @@ function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
         opacity: layer.opacity,
         visible: layer.visible,
         order: layer.order,
+        ...(layer.filter ? { filter: layer.filter } : {}),
       })),
     },
   };
@@ -280,7 +335,12 @@ export function createGeoNodeMapClient({
             order: layer.order,
             opacity: layer.opacity,
             visibility: layer.visible,
-            extra_params: { msId: `mirante-dataset-${layer.datasetId}` },
+            extra_params: {
+              msId: `mirante-dataset-${layer.datasetId}`,
+              ...(layer.filter
+                ? { CQL_FILTER: serializeGeoNodeAttributeFilter(layer.filter) }
+                : {}),
+            },
           })),
         }),
         headers: {

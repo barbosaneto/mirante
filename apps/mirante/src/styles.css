@@ -1092,15 +1092,17 @@ button,
 }
 
 .attribute-table__content {
+  display: flex;
   min-height: 8rem;
-  overflow: auto;
+  overflow: hidden;
+  flex: 1 1 auto;
+  flex-direction: column;
 }
 
 .attribute-table__filter {
-  position: sticky;
   z-index: 3;
-  top: 0;
   display: flex;
+  flex: 0 0 auto;
   gap: var(--mirante-space-2);
   align-items: flex-end;
   padding: var(--mirante-space-3) var(--mirante-space-4);
@@ -1145,12 +1147,15 @@ button,
 }
 
 .attribute-table__scroll {
-  min-width: 100%;
-  width: max-content;
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  flex: 1 1 auto;
 }
 
 .attribute-table table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.6875rem;
