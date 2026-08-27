@@ -25,6 +25,7 @@ describe("ActionDock", () => {
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
       setDatasetLayerVisibility: vi.fn(),
+      setBaseMap: vi.fn(),
       setView: vi.fn(),
       subscribeFeatureInfo: vi.fn(),
     };
@@ -70,6 +71,7 @@ describe("ActionDock", () => {
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
       setDatasetLayerVisibility: vi.fn(),
+      setBaseMap: vi.fn(),
       setView: vi.fn(),
       subscribeFeatureInfo: vi.fn(),
     };

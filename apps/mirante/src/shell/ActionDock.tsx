@@ -2,6 +2,7 @@ import type { MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
 import { useTranslation } from "react-i18next";
 
+import { BaseMapSelector } from "./BaseMapSelector";
 import { GlobeIcon, HomeIcon, MapLibraryIcon, UploadIcon } from "./Icons";
 
 const icons = {
@@ -86,6 +87,7 @@ export function ActionDock({
           </button>
         );
       })}
+      <BaseMapSelector map={map} />
     </div>
   );
 }

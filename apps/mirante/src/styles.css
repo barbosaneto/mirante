@@ -435,14 +435,13 @@ button,
 
 .dataset-catalog-toggle {
   top: 4.75rem;
-  right: 0;
+  right: var(--mirante-space-4);
   display: flex;
   gap: var(--mirante-space-2);
   align-items: center;
   min-height: 2.75rem;
   padding: 0 var(--mirante-space-3);
-  border-right: 0;
-  border-radius: var(--mirante-radius-medium) 0 0 var(--mirante-radius-medium);
+  border-radius: var(--mirante-radius-medium);
   color: #ccfbf1;
   cursor: pointer;
 }
@@ -1441,6 +1440,52 @@ button,
   background: var(--mirante-color-primary-strong);
 }
 
+.base-map-selector {
+  position: relative;
+  display: grid;
+}
+
+.base-map-selector__popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--mirante-space-3));
+  display: grid;
+  width: 12rem;
+  gap: var(--mirante-space-2);
+  padding: var(--mirante-space-3);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-medium);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel);
+  box-shadow: var(--mirante-shadow-panel);
+}
+
+.base-map-selector__popover label {
+  color: var(--mirante-color-text-muted);
+  font-size: 0.625rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.base-map-selector__popover select {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 var(--mirante-space-2);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-small);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel-strong);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.base-map-selector__popover select:focus-visible {
+  border-color: var(--mirante-color-primary);
+  outline: 2px solid rgb(20 184 166 / 18%);
+  outline-offset: 1px;
+}
+
 .map-viewport .ol-zoom {
   top: auto;
   right: auto;
@@ -1539,6 +1584,7 @@ button,
 
   .dataset-catalog-toggle {
     top: 4.25rem;
+    right: var(--mirante-space-3);
     bottom: auto;
   }
 

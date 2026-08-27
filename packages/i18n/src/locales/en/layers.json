@@ -2,8 +2,6 @@
   "title": "Layers",
   "count_one": "{{count}} layer",
   "count_other": "{{count}} layers",
-  "baseMap": "Base map",
-  "darkMatter": "Dark Matter",
   "datasets": "Active datasets",
   "empty": "Add a dataset from the catalogue to display it on the map.",
   "visibility": "Show {{name}}",

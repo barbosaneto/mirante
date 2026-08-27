@@ -26,6 +26,7 @@ export interface CreateMapOptions {
 }
 
 export type DatasetLayerLoadStatus = "error" | "loading" | "ready";
+export type BaseMapId = "dark-matter" | "open-street-map";
 
 export interface DatasetMapLayerOptions {
   id: number;
@@ -44,6 +45,7 @@ export interface MapFacade extends MapCommandApi {
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
+  setBaseMap(id: BaseMapId): void;
   getView(): MapViewOptions;
   destroy(): void;
 }
@@ -61,12 +63,31 @@ const darkBasemapAttribution = [
   '&copy; <a href="https://carto.com/attributions">CARTO</a>',
 ];
 
+const openStreetMapAttribution = [
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+];
+
 export function createMap({
   target,
   initialCenter = defaultCenter,
   initialZoom = defaultZoom,
   fetch: fetchImplementation = globalThis.fetch,
 }: CreateMapOptions): MapFacade {
+  const baseMapSources: Record<BaseMapId, XYZ> = {
+    "dark-matter": new XYZ({
+      attributions: darkBasemapAttribution,
+      crossOrigin: "anonymous",
+      url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+    }),
+    "open-street-map": new XYZ({
+      attributions: openStreetMapAttribution,
+      crossOrigin: "anonymous",
+      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    }),
+  };
+  const baseMapLayer = new TileLayer({
+    source: baseMapSources["dark-matter"],
+  });
   const map = new OlMap({
     target,
     controls: defaultControls({
@@ -74,15 +95,7 @@ export function createMap({
         collapsible: false,
       },
     }),
-    layers: [
-      new TileLayer({
-        source: new XYZ({
-          attributions: darkBasemapAttribution,
-          crossOrigin: "anonymous",
-          url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        }),
-      }),
-    ],
+    layers: [baseMapLayer],
     view: new View({
       center: fromLonLat([initialCenter[0], initialCenter[1]]),
       zoom: initialZoom,
@@ -267,6 +280,9 @@ export function createMap({
     },
     setDatasetLayerVisibility(id, visible) {
       datasetLayers.get(id)?.setVisible(visible);
+    },
+    setBaseMap(id) {
+      baseMapLayer.setSource(baseMapSources[id]);
     },
     subscribeFeatureInfo(listener) {
       featureInfoListeners.add(listener);

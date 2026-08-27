@@ -1,3 +1,9 @@
 {
-  "ariaLabel": "Mapa interativo centralizado no Brasil"
+  "ariaLabel": "Mapa interativo centralizado no Brasil",
+  "baseMap": {
+    "open": "Escolher mapa-base",
+    "label": "Mapa-base",
+    "darkMatter": "Dark Matter",
+    "openStreetMap": "OpenStreetMap"
+  }
 }

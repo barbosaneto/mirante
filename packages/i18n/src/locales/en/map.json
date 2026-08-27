@@ -1,3 +1,9 @@
 {
-  "ariaLabel": "Interactive map centered on Brazil"
+  "ariaLabel": "Interactive map centered on Brazil",
+  "baseMap": {
+    "open": "Choose base map",
+    "label": "Base map",
+    "darkMatter": "Dark Matter",
+    "openStreetMap": "OpenStreetMap"
+  }
 }

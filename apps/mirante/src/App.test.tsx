@@ -26,6 +26,7 @@ const mapMock = vi.hoisted(() => ({
   setDatasetLayerVisibility: vi.fn(),
   getView: vi.fn(),
   subscribeFeatureInfo: vi.fn(),
+  setBaseMap: vi.fn(),
   setView: vi.fn(),
 }));
 
@@ -122,6 +123,7 @@ describe("App", () => {
         return vi.fn();
       },
     );
+    mapMock.setBaseMap.mockReset();
     mapMock.setView.mockReset();
     vi.mocked(authenticationMock.restoreSession).mockReset();
     vi.mocked(authenticationMock.restoreSession).mockResolvedValue(null);
@@ -190,6 +192,7 @@ describe("App", () => {
       fitDatasetLayer: mapMock.fitDatasetLayer,
       getView: mapMock.getView,
       subscribeFeatureInfo: mapMock.subscribeFeatureInfo,
+      setBaseMap: mapMock.setBaseMap,
       destroy: mapMock.destroy,
       removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
@@ -223,9 +226,8 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "Layers" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Base map" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Dark Matter")).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Base map" }),
+    ).not.toBeInTheDocument();
     await waitFor(() => {
       expect(
         screen.getByRole("button", { name: "User account" }),
@@ -240,11 +242,14 @@ describe("App", () => {
       zoom: 4,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Zoom to Brazil" }));
-    expect(mapMock.setView).toHaveBeenCalledWith({
-      center: [-52, -14],
-      zoom: 4.5,
+    expect(
+      screen.queryByRole("button", { name: "Zoom to Brazil" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Choose base map" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Base map" }), {
+      target: { value: "open-street-map" },
     });
+    expect(mapMock.setBaseMap).toHaveBeenCalledWith("open-street-map");
   });
 
   it("changes and persists the interface locale at runtime", async () => {

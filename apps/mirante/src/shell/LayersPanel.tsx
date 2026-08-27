@@ -114,16 +114,6 @@ export function LayersPanel({
         </section>
       ) : null}
 
-      <section className="layer-group" aria-labelledby="basemap-group-title">
-        <h2 id="basemap-group-title">{t("baseMap")}</h2>
-        <div className="layer-row">
-          <span className="layer-row__status" aria-hidden="true" />
-          <span className="layer-row__swatch" aria-hidden="true" />
-          <span className="layer-row__name">{t("darkMatter")}</span>
-          <span className="layer-row__type">XYZ</span>
-        </div>
-      </section>
-
       {datasets.length === 0 ? (
         <p className="layers-panel__empty">{t("empty")}</p>
       ) : null}

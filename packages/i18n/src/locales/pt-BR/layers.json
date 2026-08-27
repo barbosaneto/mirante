@@ -2,8 +2,6 @@
   "title": "Camadas",
   "count_one": "{{count}} camada",
   "count_other": "{{count}} camadas",
-  "baseMap": "Mapa-base",
-  "darkMatter": "Dark Matter",
   "datasets": "Datasets ativos",
   "empty": "Adicione um dataset pelo catálogo para exibi-lo no mapa.",
   "visibility": "Exibir {{name}}",
