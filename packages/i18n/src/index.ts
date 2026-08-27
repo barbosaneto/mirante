@@ -3,12 +3,14 @@ import { initReactI18next } from "react-i18next";
 
 import enAuthentication from "./locales/en/authentication.json";
 import enCommon from "./locales/en/common.json";
+import enFeatureInfo from "./locales/en/featureInfo.json";
 import enLayers from "./locales/en/layers.json";
 import enMap from "./locales/en/map.json";
 import enMaps from "./locales/en/maps.json";
 import enUpload from "./locales/en/upload.json";
 import ptBrAuthentication from "./locales/pt-BR/authentication.json";
 import ptBrCommon from "./locales/pt-BR/common.json";
+import ptBrFeatureInfo from "./locales/pt-BR/featureInfo.json";
 import ptBrLayers from "./locales/pt-BR/layers.json";
 import ptBrMap from "./locales/pt-BR/map.json";
 import ptBrMaps from "./locales/pt-BR/maps.json";
@@ -24,6 +26,7 @@ export const translationResources = {
   en: {
     authentication: enAuthentication,
     common: enCommon,
+    featureInfo: enFeatureInfo,
     layers: enLayers,
     map: enMap,
     maps: enMaps,
@@ -32,6 +35,7 @@ export const translationResources = {
   "pt-BR": {
     authentication: ptBrAuthentication,
     common: ptBrCommon,
+    featureInfo: ptBrFeatureInfo,
     layers: ptBrLayers,
     map: ptBrMap,
     maps: ptBrMaps,
@@ -104,7 +108,15 @@ if (!i18n.isInitialized) {
     fallbackLng: fallbackLocale,
     lng: initialLocale,
     defaultNS: "common",
-    ns: ["authentication", "common", "layers", "map", "maps", "upload"],
+    ns: [
+      "authentication",
+      "common",
+      "featureInfo",
+      "layers",
+      "map",
+      "maps",
+      "upload",
+    ],
     resources: translationResources,
     interpolation: {
       escapeValue: false,

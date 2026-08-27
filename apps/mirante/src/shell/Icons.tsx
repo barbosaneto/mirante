@@ -115,3 +115,12 @@ export function SearchIcon() {
     </Icon>
   );
 }
+
+export function FocusIcon() {
+  return (
+    <Icon>
+      <path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}

@@ -1,4 +1,5 @@
 import { changeLocale } from "@mirante/i18n";
+import type { FeatureInfoEvent } from "@mirante/map";
 import type {
   GeoNodeAuthenticationClient,
   GeoNodeDatasetClient,
@@ -7,6 +8,7 @@ import type {
 } from "@mirante/geonode";
 import {
   fireEvent,
+  act,
   render,
   screen,
   waitFor,
@@ -17,11 +19,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mapMock = vi.hoisted(() => ({
   create: vi.fn(),
   addDatasetLayer: vi.fn(),
+  fitDatasetLayer: vi.fn(),
   destroy: vi.fn(),
   removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
   getView: vi.fn(),
+  subscribeFeatureInfo: vi.fn(),
   setView: vi.fn(),
 }));
 
@@ -90,6 +94,7 @@ const savedMapMock: GeoNodeMapClient = {
   getMap: getSavedMapMock,
   listMaps: listMapsMock,
 };
+let featureInfoListener: ((event: FeatureInfoEvent) => void) | undefined;
 
 vi.mock("@mirante/map", () => ({
   createMap: mapMock.create,
@@ -103,12 +108,20 @@ describe("App", () => {
     localStorage.clear();
     mapMock.create.mockReset();
     mapMock.addDatasetLayer.mockReset();
+    mapMock.fitDatasetLayer.mockReset();
     mapMock.destroy.mockReset();
     mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
     mapMock.getView.mockReset();
     mapMock.getView.mockReturnValue({ center: [-52, -15], zoom: 4 });
+    mapMock.subscribeFeatureInfo.mockReset();
+    mapMock.subscribeFeatureInfo.mockImplementation(
+      (listener: (event: FeatureInfoEvent) => void) => {
+        featureInfoListener = listener;
+        return vi.fn();
+      },
+    );
     mapMock.setView.mockReset();
     vi.mocked(authenticationMock.restoreSession).mockReset();
     vi.mocked(authenticationMock.restoreSession).mockResolvedValue(null);
@@ -174,7 +187,9 @@ describe("App", () => {
     });
     mapMock.create.mockReturnValue({
       addDatasetLayer: mapMock.addDatasetLayer,
+      fitDatasetLayer: mapMock.fitDatasetLayer,
       getView: mapMock.getView,
+      subscribeFeatureInfo: mapMock.subscribeFeatureInfo,
       destroy: mapMock.destroy,
       removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
@@ -355,6 +370,11 @@ describe("App", () => {
     ).toBeDisabled();
 
     fireEvent.click(
+      screen.getByRole("button", { name: "Zoom to Municipal boundaries" }),
+    );
+    expect(mapMock.fitDatasetLayer).toHaveBeenCalledWith(7);
+
+    fireEvent.click(
       screen.getByRole("button", {
         name: "Remove Municipal boundaries from the map",
       }),
@@ -365,6 +385,54 @@ describe("App", () => {
         name: "Add Municipal boundaries to the map",
       }),
     ).toBeEnabled();
+  });
+
+  it("shows attributes returned for a clicked map feature", async () => {
+    render(<App authenticationClient={authenticationMock} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "User account" }),
+      ).toBeEnabled(),
+    );
+
+    act(() => {
+      featureInfoListener?.({
+        status: "ready",
+        features: [
+          {
+            datasetId: 7,
+            datasetTitle: "Municipal boundaries",
+            featureId: "municipalities.14",
+            attributes: {
+              name: "Test municipality",
+              population: 1200,
+              active: true,
+              note: null,
+            },
+          },
+        ],
+      });
+    });
+
+    const dialog = screen.getByRole("dialog", { name: "Feature attributes" });
+    expect(
+      within(dialog).getByText("Municipal boundaries"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Feature municipalities.14"),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("Test municipality")).toBeInTheDocument();
+    expect(within(dialog).getByText("1,200")).toBeInTheDocument();
+    expect(within(dialog).getByText("Yes")).toBeInTheDocument();
+    expect(within(dialog).getByText("Not informed")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Close feature attributes" }),
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Feature attributes" }),
+    ).not.toBeInTheDocument();
   });
 
   it("uploads a valid GeoJSON and exposes map layer controls", async () => {

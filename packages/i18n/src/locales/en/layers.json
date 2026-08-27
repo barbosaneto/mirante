@@ -9,6 +9,7 @@
   "visibility": "Show {{name}}",
   "opacity": "{{name}} opacity",
   "remove": "Remove {{name}} from the map",
+  "zoomTo": "Zoom to {{name}}",
   "catalogue": {
     "open": "Browse datasets",
     "eyebrow": "GeoNode catalogue",

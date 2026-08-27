@@ -9,6 +9,10 @@ import TileWMS from "ol/source/TileWMS.js";
 import XYZ from "ol/source/XYZ.js";
 import View from "ol/View.js";
 
+import { parseWmsFeatureInfo, type DatasetFeatureInfo } from "./featureInfo";
+
+export type { DatasetFeatureInfo } from "./featureInfo";
+
 export type GeographicCoordinate = readonly [
   longitude: number,
   latitude: number,
@@ -18,6 +22,7 @@ export interface CreateMapOptions {
   target: HTMLElement;
   initialCenter?: GeographicCoordinate;
   initialZoom?: number;
+  fetch?: typeof globalThis.fetch;
 }
 
 export type DatasetLayerLoadStatus = "error" | "loading" | "ready";
@@ -34,12 +39,19 @@ export interface DatasetMapLayerOptions {
 
 export interface MapFacade extends MapCommandApi {
   addDatasetLayer(options: DatasetMapLayerOptions): void;
+  fitDatasetLayer(id: number): void;
+  subscribeFeatureInfo(listener: (event: FeatureInfoEvent) => void): () => void;
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
   getView(): MapViewOptions;
   destroy(): void;
 }
+
+export type FeatureInfoEvent =
+  | { status: "error" }
+  | { status: "loading" }
+  | { status: "ready"; features: readonly DatasetFeatureInfo[] };
 
 const defaultCenter: GeographicCoordinate = [-52, -15];
 const defaultZoom = 4;
@@ -53,6 +65,7 @@ export function createMap({
   target,
   initialCenter = defaultCenter,
   initialZoom = defaultZoom,
+  fetch: fetchImplementation = globalThis.fetch,
 }: CreateMapOptions): MapFacade {
   const map = new OlMap({
     target,
@@ -77,6 +90,95 @@ export function createMap({
   });
 
   const datasetLayers = new Map<number, TileLayer<TileWMS>>();
+  const datasetExtents = new Map<
+    number,
+    readonly [number, number, number, number]
+  >();
+  const featureInfoListeners = new Set<(event: FeatureInfoEvent) => void>();
+  let featureInfoRequest = 0;
+
+  function fitDatasetExtent(extent: readonly [number, number, number, number]) {
+    map.getView().fit(transformExtent([...extent], "EPSG:4326", "EPSG:3857"), {
+      duration: 350,
+      maxZoom: 14,
+      padding: [72, 72, 72, 380],
+    });
+  }
+
+  function publishFeatureInfo(event: FeatureInfoEvent) {
+    featureInfoListeners.forEach((listener) => listener(event));
+  }
+
+  map.on("singleclick", (event) => {
+    const view = map.getView();
+    const resolution = view.getResolution();
+    const projection = view.getProjection();
+    const queryableLayers = [...datasetLayers.entries()].filter(
+      ([, layer]) => layer.getVisible() && layer.getOpacity() > 0,
+    );
+
+    if (resolution === undefined || queryableLayers.length === 0) {
+      return;
+    }
+
+    const request = ++featureInfoRequest;
+    publishFeatureInfo({ status: "loading" });
+
+    void Promise.allSettled(
+      queryableLayers.map(async ([datasetId, layer]) => {
+        const source = layer.getSource();
+        const url = source?.getFeatureInfoUrl(
+          event.coordinate,
+          resolution,
+          projection,
+          {
+            FEATURE_COUNT: 10,
+            INFO_FORMAT: "application/json",
+          },
+        );
+
+        if (!url) {
+          return [];
+        }
+
+        const response = await fetchImplementation(url, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `WMS feature request failed with status ${response.status}.`,
+          );
+        }
+
+        return parseWmsFeatureInfo(
+          datasetId,
+          String(layer.get("title") ?? datasetId),
+          await response.json(),
+        );
+      }),
+    ).then((results) => {
+      if (request !== featureInfoRequest) {
+        return;
+      }
+
+      const successfulResults = results.filter(
+        (result): result is PromiseFulfilledResult<DatasetFeatureInfo[]> =>
+          result.status === "fulfilled",
+      );
+
+      if (successfulResults.length === 0) {
+        publishFeatureInfo({ status: "error" });
+        return;
+      }
+
+      publishFeatureInfo({
+        status: "ready",
+        features: successfulResults.flatMap((result) => result.value),
+      });
+    });
+  });
 
   return {
     addDatasetLayer({
@@ -123,16 +225,15 @@ export function createMap({
       });
 
       datasetLayers.set(id, layer);
+      datasetExtents.set(id, extent);
       map.addLayer(layer);
       if (fit) {
-        map
-          .getView()
-          .fit(transformExtent([...extent], "EPSG:4326", "EPSG:3857"), {
-            duration: 350,
-            maxZoom: 14,
-            padding: [72, 72, 72, 380],
-          });
+        fitDatasetExtent(extent);
       }
+    },
+    fitDatasetLayer(id) {
+      const extent = datasetExtents.get(id);
+      if (extent) fitDatasetExtent(extent);
     },
     getView() {
       const view = map.getView();
@@ -158,6 +259,7 @@ export function createMap({
       if (layer) {
         map.removeLayer(layer);
         datasetLayers.delete(id);
+        datasetExtents.delete(id);
       }
     },
     setDatasetLayerOpacity(id, opacity) {
@@ -166,8 +268,15 @@ export function createMap({
     setDatasetLayerVisibility(id, visible) {
       datasetLayers.get(id)?.setVisible(visible);
     },
+    subscribeFeatureInfo(listener) {
+      featureInfoListeners.add(listener);
+      return () => featureInfoListeners.delete(listener);
+    },
     destroy() {
+      featureInfoRequest += 1;
+      featureInfoListeners.clear();
       datasetLayers.clear();
+      datasetExtents.clear();
       map.setTarget(undefined);
       map.dispose();
     },

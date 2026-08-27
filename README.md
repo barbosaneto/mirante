@@ -59,6 +59,8 @@ Users with GeoNode's resource creation permission can upload GeoJSON, KML, and z
 
 The collapsed dataset catalogue lists published resources visible through GeoNode API V2. Users can add them to the map, remove active layers without deleting server resources, and open GeoNode's full catalogue for advanced management. See [Dataset catalogue](docs/dataset-catalogue.md).
 
+Active layers can be fitted back into view from the layer panel. Clicking the map queries visible dataset layers through standard WMS GetFeatureInfo and presents returned attributes without requiring a custom backend. See [Feature inspection](docs/feature-inspection.md).
+
 Authenticated users can list accessible GeoNode maps, restore their geographic view and dataset layer state, and save new maps when their account has the standard resource creation permission. See [Map persistence](docs/map-persistence.md).
 
 ## Workspace structure

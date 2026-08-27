@@ -1,0 +1,18 @@
+{
+  "eyebrow": "Map feature",
+  "title": "Feature attributes",
+  "description": "Attributes returned by the visible GeoNode layers at the selected location.",
+  "close": "Close feature attributes",
+  "loading": "Querying visible layers…",
+  "error": "The visible layers could not be queried.",
+  "empty": "No feature was found at this location.",
+  "noAttributes": "This feature has no published attributes.",
+  "featureId": "Feature {{id}}",
+  "attribute": "Attribute",
+  "value": "Value",
+  "values": {
+    "true": "Yes",
+    "false": "No",
+    "empty": "Not informed"
+  }
+}

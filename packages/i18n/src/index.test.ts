@@ -27,6 +27,7 @@ describe("internationalization", () => {
     for (const namespace of [
       "authentication",
       "common",
+      "featureInfo",
       "layers",
       "map",
       "maps",

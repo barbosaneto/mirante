@@ -19,12 +19,14 @@ describe("ActionDock", () => {
     };
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
+      fitDatasetLayer: vi.fn(),
       getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
       setDatasetLayerVisibility: vi.fn(),
       setView: vi.fn(),
+      subscribeFeatureInfo: vi.fn(),
     };
     const { rerender } = render(
       <ActionDock
@@ -62,12 +64,14 @@ describe("ActionDock", () => {
     const onUpload = vi.fn();
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
+      fitDatasetLayer: vi.fn(),
       getView: vi.fn(),
       destroy: vi.fn(),
       removeDatasetLayer: vi.fn(),
       setDatasetLayerOpacity: vi.fn(),
       setDatasetLayerVisibility: vi.fn(),
       setView: vi.fn(),
+      subscribeFeatureInfo: vi.fn(),
     };
     const { rerender } = render(
       <ActionDock

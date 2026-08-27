@@ -1,0 +1,18 @@
+{
+  "eyebrow": "Feição do mapa",
+  "title": "Atributos da feição",
+  "description": "Atributos retornados pelas camadas visíveis do GeoNode no local selecionado.",
+  "close": "Fechar atributos da feição",
+  "loading": "Consultando camadas visíveis…",
+  "error": "Não foi possível consultar as camadas visíveis.",
+  "empty": "Nenhuma feição foi encontrada neste local.",
+  "noAttributes": "Esta feição não possui atributos publicados.",
+  "featureId": "Feição {{id}}",
+  "attribute": "Atributo",
+  "value": "Valor",
+  "values": {
+    "true": "Sim",
+    "false": "Não",
+    "empty": "Não informado"
+  }
+}

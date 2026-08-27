@@ -2,7 +2,7 @@ import type { GeoNodeDataset } from "@mirante/geonode";
 import type { DatasetLayerLoadStatus } from "@mirante/map";
 import { useTranslation } from "react-i18next";
 
-import { LayersIcon, TrashIcon } from "./Icons";
+import { FocusIcon, LayersIcon, TrashIcon } from "./Icons";
 
 export interface DisplayedDataset {
   dataset: GeoNodeDataset;
@@ -15,6 +15,7 @@ interface LayersPanelProps {
   datasets: readonly DisplayedDataset[];
   onOpacityChange: (id: number, opacity: number) => void;
   onRemove: (id: number) => void;
+  onZoom: (id: number) => void;
   onVisibilityChange: (id: number, visible: boolean) => void;
 }
 
@@ -23,6 +24,7 @@ export function LayersPanel({
   onOpacityChange,
   onRemove,
   onVisibilityChange,
+  onZoom,
 }: LayersPanelProps) {
   const { t } = useTranslation("layers");
   const layerCount = datasets.length;
@@ -69,15 +71,26 @@ export function LayersPanel({
                 >
                   {loadStatus === "ready" ? "WMS" : t(`status.${loadStatus}`)}
                 </span>
-                <button
-                  type="button"
-                  className="layer-row__remove"
-                  aria-label={t("remove", { name: dataset.title })}
-                  title={t("remove", { name: dataset.title })}
-                  onClick={() => onRemove(dataset.id)}
-                >
-                  <TrashIcon />
-                </button>
+                <div className="layer-row__actions">
+                  <button
+                    type="button"
+                    className="layer-row__zoom"
+                    aria-label={t("zoomTo", { name: dataset.title })}
+                    title={t("zoomTo", { name: dataset.title })}
+                    onClick={() => onZoom(dataset.id)}
+                  >
+                    <FocusIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="layer-row__remove"
+                    aria-label={t("remove", { name: dataset.title })}
+                    title={t("remove", { name: dataset.title })}
+                    onClick={() => onRemove(dataset.id)}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
               <label className="layer-opacity">
                 <span>{t("opacity", { name: dataset.title })}</span>

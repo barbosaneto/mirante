@@ -117,6 +117,7 @@ button,
 
 .shell-icon svg,
 .action-dock svg,
+.layer-row__zoom svg,
 .layer-row__remove svg,
 .dataset-catalog svg,
 .dataset-catalog-toggle svg {
@@ -248,6 +249,12 @@ button,
   color: #fca5a5;
 }
 
+.layer-row__actions {
+  display: flex;
+  gap: var(--mirante-space-1);
+}
+
+.layer-row__zoom,
 .layer-row__remove {
   display: grid;
   width: 1.75rem;
@@ -259,6 +266,12 @@ button,
   color: var(--mirante-color-text-muted);
   background: transparent;
   cursor: pointer;
+}
+
+.layer-row__zoom:hover,
+.layer-row__zoom:focus-visible {
+  color: #99f6e4;
+  background: rgb(20 184 166 / 10%);
 }
 
 .layer-row__remove:hover,
@@ -684,6 +697,162 @@ button,
   place-items: center;
   background: rgb(2 6 14 / 78%);
   backdrop-filter: blur(8px);
+}
+
+.feature-info-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  padding: var(--mirante-space-4);
+  place-items: center;
+  background: rgb(2 6 14 / 72%);
+  backdrop-filter: blur(6px);
+}
+
+.feature-info-dialog {
+  display: flex;
+  width: min(42rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-large);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel);
+  box-shadow: var(--mirante-shadow-panel);
+}
+
+.feature-info-dialog__header {
+  display: flex;
+  gap: var(--mirante-space-4);
+  align-items: flex-start;
+  padding: var(--mirante-space-5);
+  border-bottom: 1px solid var(--mirante-color-border);
+}
+
+.feature-info-dialog h2,
+.feature-info-dialog h3,
+.feature-info-dialog p {
+  margin: 0;
+}
+
+.feature-info-dialog h2 {
+  margin-top: var(--mirante-space-1);
+  font-size: 1.125rem;
+}
+
+.feature-info-dialog__header p:not(.feature-info-dialog__eyebrow) {
+  margin-top: var(--mirante-space-2);
+  color: var(--mirante-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.feature-info-dialog__eyebrow {
+  color: var(--mirante-color-primary);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feature-info-dialog__close {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+  border: 1px solid var(--mirante-color-border);
+  border-radius: 50%;
+  color: var(--mirante-color-text-muted);
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.feature-info-dialog__content {
+  min-height: 8rem;
+  padding: var(--mirante-space-4);
+  overflow-y: auto;
+}
+
+.feature-info__feature {
+  overflow: hidden;
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-medium);
+  background: rgb(15 23 42 / 42%);
+}
+
+.feature-info__feature + .feature-info__feature {
+  margin-top: var(--mirante-space-3);
+}
+
+.feature-info__feature > header {
+  padding: var(--mirante-space-3) var(--mirante-space-4);
+  border-bottom: 1px solid var(--mirante-color-border);
+}
+
+.feature-info__feature h3 {
+  font-size: 0.8125rem;
+}
+
+.feature-info__feature header p {
+  margin-top: var(--mirante-space-1);
+  color: var(--mirante-color-text-muted);
+  font-size: 0.625rem;
+}
+
+.feature-info__table-wrapper {
+  overflow-x: auto;
+}
+
+.feature-info__feature table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.feature-info__feature th,
+.feature-info__feature td {
+  padding: var(--mirante-space-2) var(--mirante-space-4);
+  border-bottom: 1px solid var(--mirante-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.feature-info__feature thead th {
+  color: var(--mirante-color-text-muted);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.feature-info__feature tbody th {
+  width: 38%;
+  color: #99f6e4;
+  font-weight: 650;
+}
+
+.feature-info__feature td {
+  overflow-wrap: anywhere;
+  color: var(--mirante-color-text);
+}
+
+.feature-info__feature tbody tr:last-child th,
+.feature-info__feature tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.feature-info__state {
+  padding: var(--mirante-space-5);
+  color: var(--mirante-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.feature-info__state--error {
+  color: #fca5a5;
 }
 
 .map-library-dialog {

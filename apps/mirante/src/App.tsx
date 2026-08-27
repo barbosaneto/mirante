@@ -9,12 +9,13 @@ import {
   type GeoNodeMapClient,
   type UploadDatasetOptions,
 } from "@mirante/geonode";
-import { createMap, type MapFacade } from "@mirante/map";
+import { createMap, type FeatureInfoEvent, type MapFacade } from "@mirante/map";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAuthentication } from "./auth/AuthenticationContext";
 import { AuthenticationProvider } from "./auth/AuthenticationProvider";
+import { FeatureInfoDialog } from "./features/FeatureInfoDialog";
 import { mirante } from "./mirante";
 import { MapPersistenceDialog } from "./maps/MapPersistenceDialog";
 import { ActionDock } from "./shell/ActionDock";
@@ -62,6 +63,7 @@ function ApplicationShell({
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [mapLibraryOpen, setMapLibraryOpen] = useState(false);
+  const [featureInfo, setFeatureInfo] = useState<FeatureInfoEvent | null>(null);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
   const { config } = mirante;
@@ -83,10 +85,13 @@ function ApplicationShell({
       initialCenter: config.map.initialCenter,
       initialZoom: config.map.initialZoom,
     });
+    const unsubscribeFeatureInfo =
+      mapFacade.subscribeFeatureInfo(setFeatureInfo);
 
     setMap(mapFacade);
 
     return () => {
+      unsubscribeFeatureInfo();
       mapFacade.destroy();
     };
   }, [config.map.initialCenter, config.map.initialZoom]);
@@ -236,6 +241,10 @@ function ApplicationShell({
     );
   }
 
+  function zoomToDataset(id: number) {
+    map?.fitDatasetLayer(id);
+  }
+
   const managementPath = config.geonode.datasetManagementPath.startsWith("/")
     ? config.geonode.datasetManagementPath
     : `/${config.geonode.datasetManagementPath}`;
@@ -262,6 +271,7 @@ function ApplicationShell({
         onOpacityChange={changeOpacity}
         onRemove={removeDataset}
         onVisibilityChange={changeVisibility}
+        onZoom={zoomToDataset}
       />
       <DatasetCatalogDrawer
         activeDatasetIds={datasets.map((item) => item.dataset.id)}
@@ -302,6 +312,12 @@ function ApplicationShell({
           onUpload={(file, customizations) =>
             void uploadDataset(file, customizations)
           }
+        />
+      ) : null}
+      {featureInfo ? (
+        <FeatureInfoDialog
+          result={featureInfo}
+          onClose={() => setFeatureInfo(null)}
         />
       ) : null}
     </main>
