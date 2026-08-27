@@ -1,9 +1,43 @@
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, type ProxyOptions } from "vite";
+
+const geonodeProxyRoutes = [
+  "/api",
+  "/accounts",
+  "/avatar",
+  "/geoserver",
+  "/media",
+  "/oauth2",
+  "/static",
+  "/uploaded",
+];
+
+function createGeoNodeProxy(target: string): Record<string, ProxyOptions> {
+  return Object.fromEntries(
+    geonodeProxyRoutes.map((route) => [
+      route,
+      {
+        target,
+        changeOrigin: false,
+      },
+    ]),
+  );
+}
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    strictPort: true,
+    watch: {
+      usePolling: process.env.MIRANTE_USE_POLLING === "true",
+    },
+    proxy: createGeoNodeProxy(
+      process.env.GEONODE_INTERNAL_URL ?? "http://localhost:8000",
+    ),
+  },
   test: {
     environment: "jsdom",
     globals: true,

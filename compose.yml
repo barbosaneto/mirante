@@ -22,6 +22,39 @@ x-geonode-service: &geonode-service
     - geonode
 
 services:
+  mirante:
+    image: mirante/frontend:development
+    build:
+      context: .
+      dockerfile: docker/mirante/Dockerfile
+    environment:
+      GEONODE_INTERNAL_URL: http://nginx
+      MIRANTE_USE_POLLING: "true"
+      VITE_GEONODE_BASE_URL: /
+    ports:
+      - "${MIRANTE_PORT:-5173}:5173"
+    volumes:
+      - .:/workspace
+      - mirante-dependencies:/workspace/node_modules
+    restart: unless-stopped
+    depends_on:
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5173/').then(response=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - geonode
+
   django:
     <<: *geonode-service
     environment:
@@ -221,6 +254,8 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-mirante}-geoserver
   media-data:
     name: ${COMPOSE_PROJECT_NAME:-mirante}-media
+  mirante-dependencies:
+    name: ${COMPOSE_PROJECT_NAME:-mirante}-dependencies
   nginx-certificates:
     name: ${COMPOSE_PROJECT_NAME:-mirante}-nginx-certificates
   nginx-configuration:

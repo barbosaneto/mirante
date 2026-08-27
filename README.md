@@ -6,7 +6,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 ## Current status
 
-This repository currently contains the initial workspace and the local GeoNode infrastructure. OpenLayers, Mirante-to-GeoNode integration, authentication, dataset upload, extension APIs, and the final interface will be added incrementally.
+This repository currently contains the initial workspace and a containerized local development stack for Mirante and GeoNode. OpenLayers, authentication, dataset upload, extension APIs, and the final interface will be added incrementally.
 
 ## Requirements
 
@@ -23,16 +23,20 @@ npm run dev
 
 The development server is available at `http://localhost:5173` by default.
 
+When running outside Docker, the development proxy forwards GeoNode routes to `http://localhost:8000`. Set `GEONODE_INTERNAL_URL` to use another target.
+
 ## Local GeoNode
 
 Mirante targets GeoNode 5.1.0. The local Docker environment includes GeoNode, GeoServer, PostgreSQL/PostGIS, Celery, Redis, and an Nginx reverse proxy.
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
+docker compose up --build -d --wait
 ```
 
-GeoNode is then available at `http://localhost:8000`. See the [local GeoNode guide](docs/development/geonode.md) for health checks, logs, administrator creation, migrations, persistence, and cleanup.
+Mirante is then available at `http://localhost:5173`, and GeoNode remains directly available at `http://localhost:8000`. Requests from Mirante to `/api`, `/geoserver`, and the other reserved GeoNode paths are proxied through the internal Docker network.
+
+Source files are mounted into the Mirante container and update through Vite hot reload. Rebuild the container after changing workspace dependencies.
 
 ## Quality checks
 
