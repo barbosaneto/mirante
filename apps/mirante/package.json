@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mirante/core": "0.0.0",
+    "@mirante/geonode": "0.0.0",
     "@mirante/i18n": "0.0.0",
     "@mirante/map": "0.0.0",
     "@mirante/sdk": "0.0.0",

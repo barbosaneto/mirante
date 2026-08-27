@@ -24,7 +24,12 @@ describe("internationalization", () => {
   });
 
   it("keeps bundled locale keys in sync", () => {
-    for (const namespace of ["common", "layers", "map"] as const) {
+    for (const namespace of [
+      "authentication",
+      "common",
+      "layers",
+      "map",
+    ] as const) {
       expect(
         findMissingTranslationKeys(
           translationResources.en[namespace],

@@ -39,3 +39,5 @@ export const mirante = createMirante({
 ```
 
 The registry validates extension identifiers, rejects duplicates, isolates translation namespaces, and renders native and external toolbar actions through the same path.
+
+Set `requiresAuthentication: true` on a toolbar item when its command must only run for an authenticated GeoNode session. The shell keeps that action disabled until session restoration or sign-in succeeds.

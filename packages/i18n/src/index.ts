@@ -1,9 +1,11 @@
 import i18n, { type ResourceLanguage } from "i18next";
 import { initReactI18next } from "react-i18next";
 
+import enAuthentication from "./locales/en/authentication.json";
 import enCommon from "./locales/en/common.json";
 import enLayers from "./locales/en/layers.json";
 import enMap from "./locales/en/map.json";
+import ptBrAuthentication from "./locales/pt-BR/authentication.json";
 import ptBrCommon from "./locales/pt-BR/common.json";
 import ptBrLayers from "./locales/pt-BR/layers.json";
 import ptBrMap from "./locales/pt-BR/map.json";
@@ -15,8 +17,18 @@ export const fallbackLocale: SupportedLocale = "en";
 export const localeStorageKey = "mirante.locale";
 
 export const translationResources = {
-  en: { common: enCommon, layers: enLayers, map: enMap },
-  "pt-BR": { common: ptBrCommon, layers: ptBrLayers, map: ptBrMap },
+  en: {
+    authentication: enAuthentication,
+    common: enCommon,
+    layers: enLayers,
+    map: enMap,
+  },
+  "pt-BR": {
+    authentication: ptBrAuthentication,
+    common: ptBrCommon,
+    layers: ptBrLayers,
+    map: ptBrMap,
+  },
 } as const;
 
 function normalizeLocale(locale: string): SupportedLocale | undefined {
@@ -84,7 +96,7 @@ if (!i18n.isInitialized) {
     fallbackLng: fallbackLocale,
     lng: initialLocale,
     defaultNS: "common",
-    ns: ["common", "layers", "map"],
+    ns: ["authentication", "common", "layers", "map"],
     resources: translationResources,
     interpolation: {
       escapeValue: false,

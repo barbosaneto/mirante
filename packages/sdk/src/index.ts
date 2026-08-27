@@ -17,6 +17,7 @@ export interface MapToolbarItemDefinition {
   id: string;
   labelKey: string;
   icon: ToolbarIcon;
+  requiresAuthentication?: boolean;
   onClick(context: ToolbarActionContext): void;
 }
 

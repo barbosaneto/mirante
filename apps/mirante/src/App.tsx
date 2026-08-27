@@ -1,7 +1,13 @@
+import {
+  createGeoNodeAuthenticationClient,
+  type GeoNodeAuthenticationClient,
+} from "@mirante/geonode";
 import { createMap, type MapFacade } from "@mirante/map";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAuthentication } from "./auth/AuthenticationContext";
+import { AuthenticationProvider } from "./auth/AuthenticationProvider";
 import { mirante } from "./mirante";
 import { ActionDock } from "./shell/ActionDock";
 import { Brand } from "./shell/Brand";
@@ -9,8 +15,13 @@ import { LanguageSelector } from "./shell/LanguageSelector";
 import { LayersPanel } from "./shell/LayersPanel";
 import { UserArea } from "./shell/UserArea";
 
-export function App() {
+const defaultAuthenticationClient = createGeoNodeAuthenticationClient({
+  baseUrl: mirante.config.geonode.baseUrl,
+});
+
+function ApplicationShell() {
   const { t } = useTranslation("map");
+  const { status } = useAuthentication();
   const mapTargetRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapFacade | null>(null);
   const { config } = mirante;
@@ -60,7 +71,23 @@ export function App() {
       <LayersPanel />
       <LanguageSelector locales={config.i18n.supportedLocales} />
       <UserArea />
-      <ActionDock actions={mirante.mapToolbar} map={map} />
+      <ActionDock
+        actions={mirante.mapToolbar}
+        authenticated={status === "authenticated"}
+        map={map}
+      />
     </main>
+  );
+}
+
+export function App({
+  authenticationClient = defaultAuthenticationClient,
+}: {
+  authenticationClient?: GeoNodeAuthenticationClient;
+}) {
+  return (
+    <AuthenticationProvider client={authenticationClient}>
+      <ApplicationShell />
+    </AuthenticationProvider>
   );
 }

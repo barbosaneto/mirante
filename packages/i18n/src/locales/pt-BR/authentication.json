@@ -1,0 +1,24 @@
+{
+  "areaLabel": "Conta do usuário",
+  "checkSession": "Verificando sessão",
+  "signIn": "Entrar",
+  "signOut": "Sair",
+  "signingOut": "Saindo",
+  "signedInAs": "Autenticado como {{name}}",
+  "dialog": {
+    "title": "Entrar no GeoNode",
+    "description": "Use as credenciais da sua conta do GeoNode.",
+    "username": "Usuário",
+    "password": "Senha",
+    "cancel": "Cancelar",
+    "submit": "Entrar",
+    "submitting": "Entrando"
+  },
+  "errors": {
+    "csrf-unavailable": "O GeoNode não conseguiu iniciar uma solicitação segura de login.",
+    "invalid-credentials": "O usuário ou a senha estão incorretos.",
+    "network": "Não foi possível acessar o GeoNode.",
+    "session-expired": "Sua sessão do GeoNode expirou.",
+    "unexpected-response": "O GeoNode retornou uma resposta inesperada."
+  }
+}

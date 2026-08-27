@@ -4,11 +4,13 @@ import { defineConfig, type ProxyOptions } from "vite";
 
 const geonodeProxyRoutes = [
   "/api",
+  "/account",
   "/accounts",
   "/avatar",
   "/geoserver",
   "/media",
   "/oauth2",
+  "/o",
   "/static",
   "/uploaded",
 ];

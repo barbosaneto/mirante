@@ -1,0 +1,24 @@
+{
+  "areaLabel": "User account",
+  "checkSession": "Checking session",
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "signingOut": "Signing out",
+  "signedInAs": "Signed in as {{name}}",
+  "dialog": {
+    "title": "Sign in to GeoNode",
+    "description": "Use your GeoNode account credentials.",
+    "username": "Username",
+    "password": "Password",
+    "cancel": "Cancel",
+    "submit": "Sign in",
+    "submitting": "Signing in"
+  },
+  "errors": {
+    "csrf-unavailable": "GeoNode could not start a secure sign-in request.",
+    "invalid-credentials": "The username or password is incorrect.",
+    "network": "GeoNode could not be reached.",
+    "session-expired": "Your GeoNode session has expired.",
+    "unexpected-response": "GeoNode returned an unexpected response."
+  }
+}

@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   font-family:
     Inter,
     ui-sans-serif,
@@ -230,6 +231,18 @@ button,
   border-radius: 999px;
   color: #ccfbf1;
   background: rgb(13 148 136 / 88%);
+  cursor: pointer;
+  transition: background var(--mirante-transition-fast);
+}
+
+.user-area:hover:not(:disabled),
+.user-area:focus-visible {
+  background: var(--mirante-color-primary-strong);
+}
+
+.user-area:disabled {
+  cursor: wait;
+  opacity: 0.75;
 }
 
 .language-selector {
@@ -258,9 +271,159 @@ button,
 }
 
 .user-area__label {
+  max-width: 6rem;
   margin-left: var(--mirante-space-2);
+  overflow: hidden;
   font-size: 0.75rem;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu {
+  position: absolute;
+  z-index: 20;
+  top: 4.25rem;
+  right: var(--mirante-space-4);
+  width: min(17rem, calc(100vw - 2rem));
+  padding: var(--mirante-space-3);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-medium);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel);
+  box-shadow: var(--mirante-shadow-panel);
+}
+
+.user-menu p {
+  margin: 0 0 var(--mirante-space-3);
+  color: var(--mirante-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.user-menu button {
+  width: 100%;
+  min-height: 2.25rem;
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-small);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel-strong);
+  cursor: pointer;
+}
+
+.authentication-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  padding: var(--mirante-space-4);
+  place-items: center;
+  background: rgb(2 6 14 / 72%);
+  backdrop-filter: blur(6px);
+}
+
+.authentication-dialog {
+  width: min(25rem, 100%);
+  overflow: hidden;
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-large);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel);
+  box-shadow: var(--mirante-shadow-panel);
+}
+
+.authentication-dialog header {
+  padding: var(--mirante-space-5);
+  border-bottom: 1px solid var(--mirante-color-border);
+}
+
+.authentication-dialog h2,
+.authentication-dialog p {
+  margin: 0;
+}
+
+.authentication-dialog h2 {
+  font-size: 1rem;
+}
+
+.authentication-dialog header p {
+  margin-top: var(--mirante-space-2);
+  color: var(--mirante-color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.authentication-dialog form {
+  display: grid;
+  gap: var(--mirante-space-4);
+  padding: var(--mirante-space-5);
+}
+
+.authentication-dialog label {
+  display: grid;
+  gap: var(--mirante-space-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.authentication-dialog input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 var(--mirante-space-3);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-small);
+  color: var(--mirante-color-text);
+  background: var(--mirante-color-panel-strong);
+}
+
+.authentication-dialog input:focus-visible {
+  border-color: var(--mirante-color-focus);
+  outline: 2px solid rgb(94 234 212 / 25%);
+  outline-offset: 1px;
+}
+
+.authentication-dialog input:-webkit-autofill,
+.authentication-dialog input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--mirante-color-text);
+  box-shadow: 0 0 0 1000px var(--mirante-color-panel-strong) inset;
+}
+
+.authentication-error {
+  color: #fca5a5 !important;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.authentication-dialog footer {
+  display: flex;
+  gap: var(--mirante-space-3);
+  justify-content: flex-end;
+}
+
+.button {
+  min-height: 2.5rem;
+  padding: 0 var(--mirante-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--mirante-radius-small);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.button--primary {
+  color: #042f2e;
+  background: var(--mirante-color-primary);
+}
+
+.button--secondary {
+  border-color: var(--mirante-color-border);
+  color: var(--mirante-color-text);
+  background: transparent;
 }
 
 .action-dock {
@@ -391,6 +554,11 @@ button,
 
   .user-area__label {
     display: none;
+  }
+
+  .user-menu {
+    top: 4.25rem;
+    right: var(--mirante-space-3);
   }
 
   .action-dock {

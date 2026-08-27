@@ -11,10 +11,11 @@ const icons = {
 
 interface ActionDockProps {
   actions: readonly RegisteredToolbarItem[];
+  authenticated: boolean;
   map: MapFacade | null;
 }
 
-export function ActionDock({ actions, map }: ActionDockProps) {
+export function ActionDock({ actions, authenticated, map }: ActionDockProps) {
   const { t } = useTranslation("common");
 
   return (
@@ -34,9 +35,14 @@ export function ActionDock({ actions, map }: ActionDockProps) {
             type="button"
             aria-label={label}
             title={label}
-            disabled={!map}
+            disabled={
+              !map || (action.requiresAuthentication === true && !authenticated)
+            }
             onClick={() => {
-              if (map) {
+              if (
+                map &&
+                (action.requiresAuthentication !== true || authenticated)
+              ) {
                 action.onClick({ map });
               }
             }}
