@@ -43,7 +43,7 @@ function ApplicationShell({
   datasetClient: GeoNodeDatasetClient;
 }) {
   const { t } = useTranslation("map");
-  const { status } = useAuthentication();
+  const { status, user } = useAuthentication();
   const mapTargetRef = useRef<HTMLDivElement>(null);
   const activeDatasetIdsRef = useRef(new Set<number>());
   const [map, setMap] = useState<MapFacade | null>(null);
@@ -214,6 +214,7 @@ function ApplicationShell({
       <ActionDock
         actions={mirante.mapToolbar}
         authenticated={status === "authenticated"}
+        canUploadDatasets={user?.canUploadDatasets === true}
         map={map}
         uploadEnabled={config.features.datasetUpload}
         onUpload={() => {

@@ -29,6 +29,7 @@ export interface DatasetIngestionProgress {
 export type DatasetIngestionErrorCode =
   | "csrf-unavailable"
   | "network"
+  | "permission-denied"
   | "processing-failed"
   | "session-expired"
   | "timeout"
@@ -377,10 +378,17 @@ export function createGeoNodeDatasetClient({
         signal,
       });
 
-      if (uploadResponse.status === 401 || uploadResponse.status === 403) {
+      if (uploadResponse.status === 401) {
         throw new GeoNodeDatasetIngestionError(
           "session-expired",
           "The GeoNode session is not authenticated.",
+        );
+      }
+
+      if (uploadResponse.status === 403) {
+        throw new GeoNodeDatasetIngestionError(
+          "permission-denied",
+          "The GeoNode user does not have permission to upload datasets.",
         );
       }
 

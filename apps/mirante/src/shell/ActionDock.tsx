@@ -12,6 +12,7 @@ const icons = {
 interface ActionDockProps {
   actions: readonly RegisteredToolbarItem[];
   authenticated: boolean;
+  canUploadDatasets: boolean;
   map: MapFacade | null;
   uploadEnabled: boolean;
   onUpload: () => void;
@@ -20,6 +21,7 @@ interface ActionDockProps {
 export function ActionDock({
   actions,
   authenticated,
+  canUploadDatasets,
   map,
   onUpload,
   uploadEnabled,
@@ -33,12 +35,12 @@ export function ActionDock({
       role="toolbar"
       aria-label={t("shell.tools.toolbarLabel")}
     >
-      {uploadEnabled ? (
+      {uploadEnabled && canUploadDatasets ? (
         <button
           type="button"
           aria-label={uploadTranslation("toolbarLabel")}
           title={uploadTranslation("toolbarLabel")}
-          disabled={!map || !authenticated}
+          disabled={!map}
           onClick={onUpload}
         >
           <UploadIcon />

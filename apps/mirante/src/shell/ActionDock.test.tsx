@@ -29,6 +29,7 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[action]}
         authenticated={false}
+        canUploadDatasets={false}
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
@@ -42,6 +43,7 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[action]}
         authenticated={true}
+        canUploadDatasets={false}
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
@@ -53,7 +55,7 @@ describe("ActionDock", () => {
     expect(onClick).toHaveBeenCalledWith({ map });
   });
 
-  it("opens dataset upload only for authenticated users", () => {
+  it("exposes dataset upload only to users with the GeoNode capability", () => {
     const onUpload = vi.fn();
     const map: MapFacade = {
       addDatasetLayer: vi.fn(),
@@ -67,23 +69,26 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[]}
         authenticated={false}
+        canUploadDatasets={false}
+        map={map}
+        uploadEnabled
+        onUpload={onUpload}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Upload dataset" }),
+    ).not.toBeInTheDocument();
+    rerender(
+      <ActionDock
+        actions={[]}
+        authenticated
+        canUploadDatasets
         map={map}
         uploadEnabled
         onUpload={onUpload}
       />,
     );
     const button = screen.getByRole("button", { name: "Upload dataset" });
-
-    expect(button).toBeDisabled();
-    rerender(
-      <ActionDock
-        actions={[]}
-        authenticated
-        map={map}
-        uploadEnabled
-        onUpload={onUpload}
-      />,
-    );
     fireEvent.click(button);
 
     expect(onUpload).toHaveBeenCalledOnce();

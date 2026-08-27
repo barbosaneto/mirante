@@ -9,6 +9,7 @@ const userPayload = {
   last_name: "Administrator",
   email: "admin@example.test",
   avatar: "http://localhost:8000/static/avatar.png",
+  perms: ["add_resource"],
   is_superuser: true,
   is_staff: true,
 };
@@ -57,6 +58,8 @@ describe("GeoNode authentication client", () => {
       email: "admin@example.test",
       avatarUrl: "http://localhost:8000/static/avatar.png",
       isAdministrator: true,
+      permissions: ["add_resource"],
+      canUploadDatasets: true,
     });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -78,6 +81,35 @@ describe("GeoNode authentication client", () => {
       "mirante.geonode.user-id",
       "1000",
     );
+  });
+
+  it("maps upload capability from the user's compact GeoNode permissions", async () => {
+    storage.getItem.mockReturnValue("7");
+    fetchMock.mockResolvedValueOnce(
+      Response.json(
+        {
+          user: {
+            ...userPayload,
+            pk: 7,
+            username: "viewer",
+            perms: [],
+            is_superuser: false,
+            is_staff: false,
+          },
+        },
+        { status: 200 },
+      ),
+    );
+    const client = createGeoNodeAuthenticationClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+      storage,
+    });
+
+    await expect(client.restoreSession()).resolves.toMatchObject({
+      permissions: [],
+      canUploadDatasets: false,
+    });
   });
 
   it("reports invalid credentials without persisting a user", async () => {

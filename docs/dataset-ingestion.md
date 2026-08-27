@@ -4,7 +4,7 @@ The initial Mirante proof of concept uploads GeoJSON, KML, and zipped Shapefile 
 
 ## User flow
 
-1. Sign in with a GeoNode account that can add resources.
+1. Sign in with a GeoNode account that has the resource creation permission described in [Upload permissions](upload-permissions.md).
 2. Open **Upload dataset** from the map toolbar.
 3. Select or drop one `.geojson`, `.kml`, or `.zip` file. ZIP archives must contain the components of one Shapefile.
 4. Review the local validation result and start the upload.

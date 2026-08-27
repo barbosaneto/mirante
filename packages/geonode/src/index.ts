@@ -5,6 +5,8 @@ export interface GeoNodeUser {
   email: string;
   avatarUrl: string;
   isAdministrator: boolean;
+  permissions: readonly string[];
+  canUploadDatasets: boolean;
 }
 
 export * from "./datasets";
@@ -44,6 +46,7 @@ interface GeoNodeUserPayload {
   last_name: string;
   email: string;
   avatar: string;
+  perms: string[];
   is_superuser: boolean;
   is_staff: boolean;
 }
@@ -83,6 +86,8 @@ function parseUserPayload(value: unknown): GeoNodeUserPayload {
     typeof value.last_name !== "string" ||
     typeof value.email !== "string" ||
     typeof value.avatar !== "string" ||
+    !Array.isArray(value.perms) ||
+    !value.perms.every((permission) => typeof permission === "string") ||
     typeof value.is_superuser !== "boolean" ||
     typeof value.is_staff !== "boolean"
   ) {
@@ -107,6 +112,8 @@ function mapUser(payload: GeoNodeUserPayload): GeoNodeUser {
     email: payload.email,
     avatarUrl: payload.avatar,
     isAdministrator: payload.is_superuser || payload.is_staff,
+    permissions: payload.perms,
+    canUploadDatasets: payload.perms.includes("add_resource"),
   };
 }
 

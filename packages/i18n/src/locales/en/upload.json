@@ -36,6 +36,7 @@
     "title": "Dataset could not be published",
     "csrf-unavailable": "GeoNode could not start a secure upload session.",
     "network": "Mirante could not reach GeoNode. Check the connection and try again.",
+    "permission-denied": "Your GeoNode account does not have permission to upload datasets.",
     "processing-failed": "GeoNode could not process this dataset.",
     "session-expired": "Your GeoNode session expired. Sign in again and retry.",
     "timeout": "GeoNode took too long to process this dataset.",

@@ -30,6 +30,18 @@ const authenticatedUser: GeoNodeUser = {
   email: "admin@example.test",
   avatarUrl: "/avatar.png",
   isAdministrator: true,
+  permissions: ["add_resource"],
+  canUploadDatasets: true,
+};
+
+const viewerUser: GeoNodeUser = {
+  ...authenticatedUser,
+  id: 1001,
+  username: "viewer",
+  displayName: "Viewer",
+  isAdministrator: false,
+  permissions: [],
+  canUploadDatasets: false,
 };
 
 const authenticationMock: GeoNodeAuthenticationClient = {
@@ -227,6 +239,21 @@ describe("App", () => {
         screen.getByRole("button", { name: "User account" }),
       ).toHaveTextContent("Sign in");
     });
+  });
+
+  it("does not expose upload to an authenticated user without permission", async () => {
+    vi.mocked(authenticationMock.restoreSession).mockResolvedValue(viewerUser);
+
+    render(<App authenticationClient={authenticationMock} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "User account" }),
+      ).toHaveTextContent("Viewer"),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Upload dataset" }),
+    ).not.toBeInTheDocument();
   });
 
   it("adds catalogue datasets to the map and removes active layers locally", async () => {

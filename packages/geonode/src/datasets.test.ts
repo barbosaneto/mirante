@@ -242,4 +242,21 @@ describe("GeoNode dataset client", () => {
         "GeoNode rejected the dataset upload with status 400: Invalid or unsafe ZIP archive.",
     });
   });
+
+  it("reports permission denial separately from an expired session", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 403 }));
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.uploadDataset(new File(["{}"], "dataset.geojson")),
+    ).rejects.toMatchObject({
+      code: "permission-denied",
+    });
+  });
 });
