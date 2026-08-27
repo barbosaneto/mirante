@@ -6,7 +6,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 ## Current status
 
-This repository currently contains the initial workspace, a containerized local development stack, and a minimal OpenLayers map. Authentication, dataset upload, extension APIs, and the final interface will be added incrementally.
+This repository currently contains the initial workspace, a containerized local development stack, a minimal OpenLayers map, and the first responsive application shell. Authentication, dataset upload, extension APIs, and functional map tools will be added incrementally.
 
 ## Requirements
 

@@ -32,4 +32,21 @@ describe("App", () => {
 
     expect(mapMock.destroy).toHaveBeenCalledOnce();
   });
+
+  it("renders the initial application shell", () => {
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Layers" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Base map" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Dark Matter")).toBeInTheDocument();
+    expect(screen.getByLabelText("User area")).toHaveTextContent("Guest");
+
+    const toolbar = screen.getByRole("toolbar", { name: "Map tools" });
+    expect(toolbar).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inspect map" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Measure" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Draw" })).toBeDisabled();
+  });
 });

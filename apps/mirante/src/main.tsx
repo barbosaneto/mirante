@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import "@mirante/i18n";
+import "@mirante/ui/tokens.css";
 
 import { App } from "./App";
 import "./styles.css";

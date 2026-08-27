@@ -5,5 +5,25 @@
   },
   "map": {
     "ariaLabel": "Interactive map centered on Brazil"
+  },
+  "shell": {
+    "layers": {
+      "title": "Layers",
+      "count_one": "{{count}} layer",
+      "count_other": "{{count}} layers",
+      "baseMap": "Base map",
+      "darkMatter": "Dark Matter",
+      "empty": "Published datasets will appear here."
+    },
+    "user": {
+      "areaLabel": "User area",
+      "guest": "Guest"
+    },
+    "tools": {
+      "toolbarLabel": "Map tools",
+      "inspect": "Inspect map",
+      "measure": "Measure",
+      "draw": "Draw"
+    }
   }
 }
