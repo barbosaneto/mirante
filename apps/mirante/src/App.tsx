@@ -3,6 +3,7 @@ import {
   createGeoNodeDatasetClient,
   GeoNodeDatasetIngestionError,
   type GeoNodeAuthenticationClient,
+  type GeoNodeDataset,
   type GeoNodeDatasetClient,
 } from "@mirante/geonode";
 import { createMap, type MapFacade } from "@mirante/map";
@@ -14,6 +15,7 @@ import { AuthenticationProvider } from "./auth/AuthenticationProvider";
 import { mirante } from "./mirante";
 import { ActionDock } from "./shell/ActionDock";
 import { Brand } from "./shell/Brand";
+import { DatasetCatalogDrawer } from "./shell/DatasetCatalogDrawer";
 import { LanguageSelector } from "./shell/LanguageSelector";
 import { type DisplayedDataset, LayersPanel } from "./shell/LayersPanel";
 import { UserArea } from "./shell/UserArea";
@@ -43,8 +45,11 @@ function ApplicationShell({
   const { t } = useTranslation("map");
   const { status } = useAuthentication();
   const mapTargetRef = useRef<HTMLDivElement>(null);
+  const activeDatasetIdsRef = useRef(new Set<number>());
   const [map, setMap] = useState<MapFacade | null>(null);
   const [datasets, setDatasets] = useState<DisplayedDataset[]>([]);
+  const [catalogueOpen, setCatalogueOpen] = useState(false);
+  const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
@@ -79,6 +84,33 @@ function ApplicationShell({
     document.title = config.branding.applicationName;
   }, [config.branding.applicationName]);
 
+  function addDatasetToMap(dataset: GeoNodeDataset) {
+    if (!map || activeDatasetIdsRef.current.has(dataset.id)) {
+      return;
+    }
+
+    activeDatasetIdsRef.current.add(dataset.id);
+    setDatasets((currentDatasets) => [
+      {
+        dataset,
+        loadStatus: "loading",
+        opacity: 1,
+        visible: true,
+      },
+      ...currentDatasets,
+    ]);
+    map.addDatasetLayer({
+      ...dataset,
+      onLoadStatusChange(loadStatus) {
+        setDatasets((currentDatasets) =>
+          currentDatasets.map((item) =>
+            item.dataset.id === dataset.id ? { ...item, loadStatus } : item,
+          ),
+        );
+      },
+    });
+  }
+
   async function uploadDataset(file: File) {
     if (!map) {
       return;
@@ -96,27 +128,8 @@ function ApplicationShell({
           });
         },
       });
-      const displayedDataset: DisplayedDataset = {
-        dataset,
-        loadStatus: "loading",
-        opacity: 1,
-        visible: true,
-      };
-
-      setDatasets((currentDatasets) => [
-        displayedDataset,
-        ...currentDatasets.filter((item) => item.dataset.id !== dataset.id),
-      ]);
-      map.addDatasetLayer({
-        ...dataset,
-        onLoadStatusChange(loadStatus) {
-          setDatasets((currentDatasets) =>
-            currentDatasets.map((item) =>
-              item.dataset.id === dataset.id ? { ...item, loadStatus } : item,
-            ),
-          );
-        },
-      });
+      addDatasetToMap(dataset);
+      setCatalogueRefreshKey((key) => key + 1);
       setUploadState({
         status: "success",
         progress: 100,
@@ -153,6 +166,22 @@ function ApplicationShell({
     );
   }
 
+  function removeDataset(id: number) {
+    map?.removeDatasetLayer(id);
+    activeDatasetIdsRef.current.delete(id);
+    setDatasets((currentDatasets) =>
+      currentDatasets.filter((item) => item.dataset.id !== id),
+    );
+  }
+
+  const managementPath = config.geonode.datasetManagementPath.startsWith("/")
+    ? config.geonode.datasetManagementPath
+    : `/${config.geonode.datasetManagementPath}`;
+  const datasetManagementUrl =
+    config.geonode.baseUrl === "/" || config.geonode.baseUrl === ""
+      ? managementPath
+      : `${config.geonode.baseUrl.replace(/\/$/, "")}${managementPath}`;
+
   return (
     <main className="app-shell" style={themeStyle}>
       <div
@@ -169,10 +198,19 @@ function ApplicationShell({
       <LayersPanel
         datasets={datasets}
         onOpacityChange={changeOpacity}
+        onRemove={removeDataset}
         onVisibilityChange={changeVisibility}
       />
+      <DatasetCatalogDrawer
+        activeDatasetIds={datasets.map((item) => item.dataset.id)}
+        client={datasetClient}
+        open={catalogueOpen}
+        refreshKey={catalogueRefreshKey}
+        onAdd={addDatasetToMap}
+        onOpenChange={setCatalogueOpen}
+      />
       <LanguageSelector locales={config.i18n.supportedLocales} />
-      <UserArea />
+      <UserArea datasetManagementUrl={datasetManagementUrl} />
       <ActionDock
         actions={mirante.mapToolbar}
         authenticated={status === "authenticated"}

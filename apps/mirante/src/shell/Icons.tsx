@@ -56,3 +56,44 @@ export function UploadIcon() {
     </Icon>
   );
 }
+
+export function PlusIcon() {
+  return (
+    <Icon>
+      <path d="M12 5v14M5 12h14" />
+    </Icon>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <Icon>
+      <path d="m5 12 4.5 4.5L19 7" />
+    </Icon>
+  );
+}
+
+export function CloseIcon() {
+  return (
+    <Icon>
+      <path d="m6 6 12 12M18 6 6 18" />
+    </Icon>
+  );
+}
+
+export function TrashIcon() {
+  return (
+    <Icon>
+      <path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+    </Icon>
+  );
+}
+
+export function ExternalLinkIcon() {
+  return (
+    <Icon>
+      <path d="M14 5h5v5M19 5l-8 8" />
+      <path d="M17 13v6H5V7h6" />
+    </Icon>
+  );
+}

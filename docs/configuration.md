@@ -6,7 +6,7 @@ The current contract covers:
 
 - Application name and logo URL.
 - Primary theme colors.
-- GeoNode base URL.
+- GeoNode base URL and dataset management path.
 - Supported and fallback locales.
 - Initial map center and zoom.
 - Dataset upload, drawing, and measurement feature flags.
@@ -25,6 +25,7 @@ export const config = defineMiranteConfig({
   },
   geonode: {
     baseUrl: "/",
+    datasetManagementPath: "/catalogue/#/",
   },
   i18n: {
     supportedLocales: ["en", "pt-BR"],

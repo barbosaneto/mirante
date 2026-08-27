@@ -33,6 +33,7 @@ export interface DatasetMapLayerOptions {
 
 export interface MapFacade extends MapCommandApi {
   addDatasetLayer(options: DatasetMapLayerOptions): void;
+  removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
   destroy(): void;
@@ -134,6 +135,14 @@ export function createMap({
         duration: 250,
         zoom,
       });
+    },
+    removeDatasetLayer(id) {
+      const layer = datasetLayers.get(id);
+
+      if (layer) {
+        map.removeLayer(layer);
+        datasetLayers.delete(id);
+      }
     },
     setDatasetLayerOpacity(id, opacity) {
       datasetLayers.get(id)?.setOpacity(Math.max(0, Math.min(1, opacity)));

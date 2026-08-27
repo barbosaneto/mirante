@@ -6,6 +6,19 @@ export interface GeoNodeDataset {
   extent: readonly [minX: number, minY: number, maxX: number, maxY: number];
 }
 
+export interface GeoNodeDatasetPage {
+  datasets: readonly GeoNodeDataset[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ListGeoNodeDatasetsOptions {
+  page?: number;
+  pageSize?: number;
+  signal?: AbortSignal;
+}
+
 export type DatasetIngestionStage = "uploading" | "processing" | "retrieving";
 
 export interface DatasetIngestionProgress {
@@ -38,6 +51,9 @@ export interface UploadDatasetOptions {
 }
 
 export interface GeoNodeDatasetClient {
+  listDatasets(
+    options?: ListGeoNodeDatasetsOptions,
+  ): Promise<GeoNodeDatasetPage>;
   uploadDataset(
     file: File,
     options?: UploadDatasetOptions,
@@ -153,6 +169,67 @@ function parseDatasetPayload(baseUrl: string, value: unknown): GeoNodeDataset {
   };
 }
 
+function parseCatalogDataset(
+  baseUrl: string,
+  value: unknown,
+): GeoNodeDataset | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const extent = value.extent;
+  const rawId = value.pk;
+  const id = typeof rawId === "string" ? Number(rawId) : rawId;
+
+  if (
+    typeof id !== "number" ||
+    !Number.isInteger(id) ||
+    typeof value.title !== "string" ||
+    typeof value.alternate !== "string" ||
+    value.is_published !== true ||
+    value.processed !== true ||
+    !isRecord(extent) ||
+    extent.srid !== "EPSG:4326" ||
+    !Array.isArray(extent.coords) ||
+    extent.coords.length !== 4 ||
+    !extent.coords.every((coordinate) => typeof coordinate === "number")
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    title: value.title,
+    layerName: value.alternate,
+    wmsUrl: joinUrl(baseUrl, "/geoserver/ows"),
+    extent: extent.coords as [number, number, number, number],
+  };
+}
+
+function parseDatasetPage(baseUrl: string, value: unknown): GeoNodeDatasetPage {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.datasets) ||
+    typeof value.total !== "number" ||
+    typeof value.page !== "number" ||
+    typeof value.page_size !== "number"
+  ) {
+    throw new GeoNodeDatasetIngestionError(
+      "unexpected-response",
+      "GeoNode returned an invalid dataset catalogue response.",
+    );
+  }
+
+  return {
+    datasets: value.datasets
+      .map((dataset) => parseCatalogDataset(baseUrl, dataset))
+      .filter((dataset): dataset is GeoNodeDataset => dataset !== null),
+    total: value.total,
+    page: value.page,
+    pageSize: value.page_size,
+  };
+}
+
 function delay(milliseconds: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const timeout = globalThis.setTimeout(resolve, milliseconds);
@@ -256,6 +333,29 @@ export function createGeoNodeDatasetClient({
   }
 
   return {
+    async listDatasets({ page = 1, pageSize = 20, signal } = {}) {
+      const query = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+      });
+      const response = await request(`/api/v2/datasets/?${query}`, { signal });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session cannot access the dataset catalogue.",
+        );
+      }
+
+      if (!response.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "unexpected-response",
+          `GeoNode dataset catalogue request failed with status ${response.status}.`,
+        );
+      }
+
+      return parseDatasetPage(baseUrl, await response.json());
+    },
     async uploadDataset(file, options = {}) {
       const { onProgress, signal } = options;
       onProgress?.({ stage: "uploading", percentage: 5 });

@@ -2,9 +2,13 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAuthentication } from "../auth/AuthenticationContext";
-import { UserIcon } from "./Icons";
+import { ExternalLinkIcon, UserIcon } from "./Icons";
 
-export function UserArea() {
+export function UserArea({
+  datasetManagementUrl,
+}: {
+  datasetManagementUrl: string;
+}) {
   const { t } = useTranslation("authentication");
   const { clearError, error, signIn, signOut, status, user } =
     useAuthentication();
@@ -70,6 +74,18 @@ export function UserArea() {
               {t(`errors.${error}`)}
             </p>
           ) : null}
+          <a
+            href={datasetManagementUrl}
+            target="_blank"
+            rel="noreferrer"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+          >
+            <span>{t("manageDatasets")}</span>
+            <span className="shell-icon">
+              <ExternalLinkIcon />
+            </span>
+          </a>
           <button
             type="button"
             role="menuitem"

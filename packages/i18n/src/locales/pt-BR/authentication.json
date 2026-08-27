@@ -5,6 +5,7 @@
   "signOut": "Sair",
   "signingOut": "Saindo",
   "signedInAs": "Autenticado como {{name}}",
+  "manageDatasets": "Gerenciar datasets no GeoNode",
   "dialog": {
     "title": "Entrar no GeoNode",
     "description": "Use as credenciais da sua conta do GeoNode.",

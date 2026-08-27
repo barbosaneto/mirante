@@ -12,6 +12,63 @@ function csrfResponse(): Response {
 }
 
 describe("GeoNode dataset client", () => {
+  it("lists published datasets from the vanilla GeoNode catalogue", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        total: 2,
+        page: 1,
+        page_size: 20,
+        datasets: [
+          {
+            pk: "7",
+            title: "Municipal boundaries",
+            alternate: "geonode:municipal_boundaries",
+            is_published: true,
+            processed: true,
+            extent: {
+              coords: [-54, -16, -45, -8],
+              srid: "EPSG:4326",
+            },
+          },
+          {
+            pk: "8",
+            title: "Still processing",
+            alternate: "geonode:still_processing",
+            is_published: true,
+            processed: false,
+            extent: {
+              coords: [-54, -16, -45, -8],
+              srid: "EPSG:4326",
+            },
+          },
+        ],
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(client.listDatasets()).resolves.toEqual({
+      datasets: [
+        {
+          id: 7,
+          title: "Municipal boundaries",
+          layerName: "geonode:municipal_boundaries",
+          wmsUrl: "/geoserver/ows",
+          extent: [-54, -16, -45, -8],
+        },
+      ],
+      total: 2,
+      page: 1,
+      pageSize: 20,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v2/datasets/?page=1&page_size=20",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
   it("uploads, follows execution, and retrieves a vanilla GeoNode dataset", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

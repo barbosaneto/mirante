@@ -2,7 +2,7 @@ import type { GeoNodeDataset } from "@mirante/geonode";
 import type { DatasetLayerLoadStatus } from "@mirante/map";
 import { useTranslation } from "react-i18next";
 
-import { LayersIcon } from "./Icons";
+import { LayersIcon, TrashIcon } from "./Icons";
 
 export interface DisplayedDataset {
   dataset: GeoNodeDataset;
@@ -14,16 +14,18 @@ export interface DisplayedDataset {
 interface LayersPanelProps {
   datasets: readonly DisplayedDataset[];
   onOpacityChange: (id: number, opacity: number) => void;
+  onRemove: (id: number) => void;
   onVisibilityChange: (id: number, visible: boolean) => void;
 }
 
 export function LayersPanel({
   datasets,
   onOpacityChange,
+  onRemove,
   onVisibilityChange,
 }: LayersPanelProps) {
   const { t } = useTranslation("layers");
-  const layerCount = datasets.length + 1;
+  const layerCount = datasets.length;
 
   return (
     <aside className="layers-panel" aria-labelledby="layers-panel-title">
@@ -67,6 +69,15 @@ export function LayersPanel({
                 >
                   {loadStatus === "ready" ? "WMS" : t(`status.${loadStatus}`)}
                 </span>
+                <button
+                  type="button"
+                  className="layer-row__remove"
+                  aria-label={t("remove", { name: dataset.title })}
+                  title={t("remove", { name: dataset.title })}
+                  onClick={() => onRemove(dataset.id)}
+                >
+                  <TrashIcon />
+                </button>
               </div>
               <label className="layer-opacity">
                 <span>{t("opacity", { name: dataset.title })}</span>

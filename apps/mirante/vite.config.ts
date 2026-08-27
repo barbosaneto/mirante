@@ -7,6 +7,7 @@ const geonodeProxyRoutes = [
   "/account",
   "/accounts",
   "/avatar",
+  "/catalogue",
   "/geoserver",
   "/media",
   "/oauth2",

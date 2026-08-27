@@ -17,6 +17,7 @@ const mapMock = vi.hoisted(() => ({
   create: vi.fn(),
   addDatasetLayer: vi.fn(),
   destroy: vi.fn(),
+  removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
   setView: vi.fn(),
@@ -38,7 +39,22 @@ const authenticationMock: GeoNodeAuthenticationClient = {
 };
 
 const uploadDatasetMock = vi.fn<GeoNodeDatasetClient["uploadDataset"]>();
+const listDatasetsMock = vi.fn<GeoNodeDatasetClient["listDatasets"]>();
 const datasetMock: GeoNodeDatasetClient = {
+  listDatasets: listDatasetsMock.mockResolvedValue({
+    datasets: [
+      {
+        id: 7,
+        title: "Municipal boundaries",
+        layerName: "geonode:municipal_boundaries",
+        wmsUrl: "/geoserver/ows",
+        extent: [-54, -16, -45, -8],
+      },
+    ],
+    page: 1,
+    pageSize: 20,
+    total: 1,
+  }),
   uploadDataset: uploadDatasetMock.mockResolvedValue({
     id: 42,
     title: "Conservation areas",
@@ -61,6 +77,7 @@ describe("App", () => {
     mapMock.create.mockReset();
     mapMock.addDatasetLayer.mockReset();
     mapMock.destroy.mockReset();
+    mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
     mapMock.setView.mockReset();
@@ -71,6 +88,21 @@ describe("App", () => {
     vi.mocked(authenticationMock.signOut).mockReset();
     vi.mocked(authenticationMock.signOut).mockResolvedValue(undefined);
     uploadDatasetMock.mockReset();
+    listDatasetsMock.mockReset();
+    listDatasetsMock.mockResolvedValue({
+      datasets: [
+        {
+          id: 7,
+          title: "Municipal boundaries",
+          layerName: "geonode:municipal_boundaries",
+          wmsUrl: "/geoserver/ows",
+          extent: [-54, -16, -45, -8],
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
     uploadDatasetMock.mockResolvedValue({
       id: 42,
       title: "Conservation areas",
@@ -81,6 +113,7 @@ describe("App", () => {
     mapMock.create.mockReturnValue({
       addDatasetLayer: mapMock.addDatasetLayer,
       destroy: mapMock.destroy,
+      removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
       setDatasetLayerVisibility: mapMock.setDatasetLayerVisibility,
       setView: mapMock.setView,
@@ -183,6 +216,9 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "User account" }));
     expect(screen.getByText("Signed in as Administrator")).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Manage datasets in GeoNode" }),
+    ).toHaveAttribute("href", "/catalogue/#/");
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
@@ -191,6 +227,52 @@ describe("App", () => {
         screen.getByRole("button", { name: "User account" }),
       ).toHaveTextContent("Sign in");
     });
+  });
+
+  it("adds catalogue datasets to the map and removes active layers locally", async () => {
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Published datasets" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Browse datasets" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Published datasets" }),
+    ).toBeInTheDocument();
+    const addButton = await screen.findByRole("button", {
+      name: "Add Municipal boundaries to the map",
+    });
+    fireEvent.click(addButton);
+
+    expect(mapMock.addDatasetLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 7,
+        layerName: "geonode:municipal_boundaries",
+      }),
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "Municipal boundaries is already on the map",
+      }),
+    ).toBeDisabled();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Remove Municipal boundaries from the map",
+      }),
+    );
+    expect(mapMock.removeDatasetLayer).toHaveBeenCalledWith(7);
+    expect(
+      screen.getByRole("button", {
+        name: "Add Municipal boundaries to the map",
+      }),
+    ).toBeEnabled();
   });
 
   it("uploads a valid GeoJSON and exposes map layer controls", async () => {

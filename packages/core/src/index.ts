@@ -20,6 +20,7 @@ export interface MiranteConfig {
   };
   geonode: {
     baseUrl: string;
+    datasetManagementPath: string;
   };
   i18n: {
     supportedLocales: readonly SupportedLocale[];

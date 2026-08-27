@@ -7,7 +7,7 @@ import { createMirante, defineMiranteConfig } from "./index";
 const config = defineMiranteConfig({
   branding: { applicationName: "Test", logoUrl: "/logo.svg" },
   theme: { primaryColor: "#14b8a6", primaryColorStrong: "#0d9488" },
-  geonode: { baseUrl: "/" },
+  geonode: { baseUrl: "/", datasetManagementPath: "/catalogue/#/" },
   i18n: { supportedLocales: ["en", "pt-BR"], fallbackLocale: "en" },
   map: { initialCenter: [-52, -15], initialZoom: 4 },
   features: { datasetUpload: true, drawings: true, measurements: true },

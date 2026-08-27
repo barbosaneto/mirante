@@ -14,6 +14,7 @@ export const miranteConfig = defineMiranteConfig({
   },
   geonode: {
     baseUrl: import.meta.env.VITE_GEONODE_BASE_URL ?? "/",
+    datasetManagementPath: "/catalogue/#/",
   },
   i18n: {
     supportedLocales,
