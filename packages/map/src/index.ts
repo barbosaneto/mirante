@@ -27,6 +27,7 @@ export interface CreateMapOptions {
 
 export type DatasetLayerLoadStatus = "error" | "loading" | "ready";
 export type BaseMapId = "dark-matter" | "open-street-map";
+export const defaultBaseMapId: BaseMapId = "open-street-map";
 
 export interface DatasetMapLayerOptions {
   id: number;
@@ -86,7 +87,7 @@ export function createMap({
     }),
   };
   const baseMapLayer = new TileLayer({
-    source: baseMapSources["dark-matter"],
+    source: baseMapSources[defaultBaseMapId],
   });
   const map = new OlMap({
     target,

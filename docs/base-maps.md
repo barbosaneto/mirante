@@ -11,6 +11,6 @@ The OpenLayers facade owns the tile sources and switches the source of a single 
 
 ## Current limits
 
-- Dark Matter is the default after every application reload.
+- OpenStreetMap is the default after every application reload.
 - The selected base map is not yet stored in GeoNode map resources.
 - Institutional distributions cannot yet register additional base maps through public configuration.

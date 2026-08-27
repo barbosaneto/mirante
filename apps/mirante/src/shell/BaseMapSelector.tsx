@@ -1,4 +1,4 @@
-import type { BaseMapId, MapFacade } from "@mirante/map";
+import { defaultBaseMapId, type BaseMapId, type MapFacade } from "@mirante/map";
 import { type FocusEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -12,7 +12,7 @@ export function BaseMapSelector({ map }: BaseMapSelectorProps) {
   const { t } = useTranslation("map");
   const selectId = useId();
   const [open, setOpen] = useState(false);
-  const [baseMap, setBaseMap] = useState<BaseMapId>("dark-matter");
+  const [baseMap, setBaseMap] = useState<BaseMapId>(defaultBaseMapId);
 
   function closeWhenFocusLeaves(event: FocusEvent<HTMLDivElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) {

@@ -99,6 +99,7 @@ let featureInfoListener: ((event: FeatureInfoEvent) => void) | undefined;
 
 vi.mock("@mirante/map", () => ({
   createMap: mapMock.create,
+  defaultBaseMapId: "open-street-map",
 }));
 
 import { App } from "./App";
@@ -247,9 +248,9 @@ describe("App", () => {
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Choose base map" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Base map" }), {
-      target: { value: "open-street-map" },
+      target: { value: "dark-matter" },
     });
-    expect(mapMock.setBaseMap).toHaveBeenCalledWith("open-street-map");
+    expect(mapMock.setBaseMap).toHaveBeenCalledWith("dark-matter");
   });
 
   it("changes and persists the interface locale at runtime", async () => {
