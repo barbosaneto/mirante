@@ -1,0 +1,6 @@
+{
+  "application": {
+    "name": "Mirante",
+    "tagline": "An extensible Web GIS client for GeoNode."
+  }
+}

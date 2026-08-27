@@ -1,0 +1,6 @@
+{
+  "application": {
+    "name": "Mirante",
+    "tagline": "Um cliente Web GIS extensível para GeoNode."
+  }
+}

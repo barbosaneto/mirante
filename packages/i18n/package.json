@@ -1,0 +1,11 @@
+{
+  "name": "@mirante/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "i18next": "21.8.1",
+    "react-i18next": "11.16.9"
+  }
+}
