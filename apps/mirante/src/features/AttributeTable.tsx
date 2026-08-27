@@ -7,6 +7,7 @@ import {
   type GeoNodeAttributeType,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
+  type GeoNodeDatasetExportFormat,
   type GeoNodeDatasetFeature,
   type GeoNodeDatasetFeaturePage,
 } from "@mirante/geonode";
@@ -54,6 +55,11 @@ type AttributeTableState =
   | { status: "error" }
   | { status: "loading" }
   | { status: "ready"; result: GeoNodeDatasetFeaturePage };
+
+type ExportState =
+  | { status: "error" }
+  | { status: "exporting"; format: GeoNodeDatasetExportFormat }
+  | { status: "idle" };
 
 const pageSize = 25;
 
@@ -111,6 +117,15 @@ function formatAttributeValue(
   return emptyLabel;
 }
 
+function downloadBlob(blob: Blob, filename: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export function AttributeTable({
   client,
   dataset,
@@ -134,6 +149,23 @@ export function AttributeTable({
   const [state, setState] = useState<AttributeTableState>({
     status: "loading",
   });
+  const [exportState, setExportState] = useState<ExportState>({
+    status: "idle",
+  });
+
+  async function exportFeatures(format: GeoNodeDatasetExportFormat) {
+    setExportState({ status: "exporting", format });
+    try {
+      const result = await client.exportDatasetFeatures(dataset, {
+        filter,
+        format,
+      });
+      downloadBlob(result.blob, result.filename);
+      setExportState({ status: "idle" });
+    } catch {
+      setExportState({ status: "error" });
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -237,6 +269,32 @@ export function AttributeTable({
                 })}
           </p>
         ) : null}
+        <div className="attribute-table__exports">
+          <button
+            type="button"
+            className="button button--secondary"
+            disabled={exportState.status === "exporting"}
+            onClick={() => void exportFeatures("csv")}
+          >
+            {exportState.status === "exporting" && exportState.format === "csv"
+              ? t("export.exporting")
+              : t("export.csv")}
+          </button>
+          <button
+            type="button"
+            className="button button--secondary"
+            disabled={exportState.status === "exporting"}
+            onClick={() => void exportFeatures("geojson")}
+          >
+            {exportState.status === "exporting" &&
+            exportState.format === "geojson"
+              ? t("export.exporting")
+              : t("export.geojson")}
+          </button>
+          {exportState.status === "error" ? (
+            <span role="alert">{t("export.error")}</span>
+          ) : null}
+        </div>
         <button
           type="button"
           className="attribute-table__close"

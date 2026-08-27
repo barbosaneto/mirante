@@ -193,6 +193,73 @@ describe("GeoNode dataset client", () => {
     });
   });
 
+  it("exports every filtered feature through vanilla GeoServer WFS", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response('name,population\n"Brasília",2817381', {
+        headers: { "Content-Type": "text/csv" },
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    const result = await client.exportDatasetFeatures(
+      {
+        id: 7,
+        title: "Limites municipais",
+        layerName: "geonode:municipal_boundaries",
+        wmsUrl: "/geoserver/ows",
+        extent: [-54, -16, -45, -8],
+      },
+      {
+        format: "csv",
+        filter: {
+          field: "name",
+          operator: "contains",
+          type: "text",
+          value: "Brasília",
+        },
+      },
+    );
+
+    expect(result.filename).toBe("limites-municipais.csv");
+    expect(await result.blob.text()).toBe(
+      'name,population\n"Brasília",2817381',
+    );
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=geonode%3Amunicipal_boundaries&outputFormat=csv&srsName=EPSG%3A4326&cql_filter=%22name%22+ILIKE+%27%25Bras%C3%ADlia%25%27",
+    );
+  });
+
+  it("requests GeoJSON when exporting spatial features", async () => {
+    const featureCollection = { type: "FeatureCollection", features: [] };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(featureCollection));
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    const result = await client.exportDatasetFeatures(
+      {
+        id: 7,
+        title: "Municipal boundaries",
+        layerName: "geonode:municipal_boundaries",
+        wmsUrl: "/geoserver/ows",
+        extent: [-54, -16, -45, -8],
+      },
+      { format: "geojson" },
+    );
+
+    expect(result.filename).toBe("municipal-boundaries.geojson");
+    expect(JSON.parse(await result.blob.text())).toEqual(featureCollection);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain(
+      "outputFormat=application%2Fjson",
+    );
+  });
+
   it("uploads, follows execution, and retrieves a vanilla GeoNode dataset", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

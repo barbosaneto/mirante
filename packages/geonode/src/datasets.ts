@@ -53,6 +53,19 @@ export interface ListGeoNodeDatasetFeaturesOptions {
   signal?: AbortSignal;
 }
 
+export type GeoNodeDatasetExportFormat = "csv" | "geojson";
+
+export interface ExportGeoNodeDatasetFeaturesOptions {
+  filter?: GeoNodeAttributeFilter;
+  format: GeoNodeDatasetExportFormat;
+  signal?: AbortSignal;
+}
+
+export interface GeoNodeDatasetFeatureExport {
+  blob: Blob;
+  filename: string;
+}
+
 export type DatasetIngestionStage =
   | "metadata"
   | "processing"
@@ -100,6 +113,10 @@ export interface DatasetUploadMetadata {
 }
 
 export interface GeoNodeDatasetClient {
+  exportDatasetFeatures(
+    dataset: GeoNodeDataset,
+    options: ExportGeoNodeDatasetFeaturesOptions,
+  ): Promise<GeoNodeDatasetFeatureExport>;
   getDataset(id: number, signal?: AbortSignal): Promise<GeoNodeDataset>;
   listDatasetFeatures(
     dataset: GeoNodeDataset,
@@ -139,6 +156,19 @@ function joinUrl(baseUrl: string, path: string): string {
   }
 
   return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+function datasetExportFilename(
+  dataset: GeoNodeDataset,
+  format: GeoNodeDatasetExportFormat,
+): string {
+  const stem = dataset.title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+  return `${stem || `dataset-${dataset.id}`}.${format === "csv" ? "csv" : "geojson"}`;
 }
 
 function normalizeBackendUrl(baseUrl: string, value: string): string {
@@ -698,6 +728,40 @@ export function createGeoNodeDatasetClient({
   }
 
   return {
+    async exportDatasetFeatures(dataset, { filter, format, signal }) {
+      const query = new URLSearchParams({
+        service: "WFS",
+        version: "2.0.0",
+        request: "GetFeature",
+        typeNames: dataset.layerName,
+        outputFormat: format === "csv" ? "csv" : "application/json",
+        srsName: "EPSG:4326",
+      });
+      if (filter) {
+        query.set("cql_filter", serializeGeoNodeAttributeFilter(filter));
+      }
+      const response = await request(appendQuery(dataset.wmsUrl, query), {
+        signal,
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session cannot export this dataset's features.",
+        );
+      }
+      if (!response.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "unexpected-response",
+          `GeoServer WFS export failed with status ${response.status}.`,
+        );
+      }
+
+      return {
+        blob: await response.blob(),
+        filename: datasetExportFilename(dataset, format),
+      };
+    },
     getDataset: retrieveDataset,
     async listDatasetFeatures(
       dataset,

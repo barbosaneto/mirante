@@ -63,11 +63,14 @@ const authenticationMock: GeoNodeAuthenticationClient = {
 };
 
 const uploadDatasetMock = vi.fn<GeoNodeDatasetClient["uploadDataset"]>();
+const exportDatasetFeaturesMock =
+  vi.fn<GeoNodeDatasetClient["exportDatasetFeatures"]>();
 const listDatasetsMock = vi.fn<GeoNodeDatasetClient["listDatasets"]>();
 const listDatasetFeaturesMock =
   vi.fn<GeoNodeDatasetClient["listDatasetFeatures"]>();
 const getDatasetMock = vi.fn<GeoNodeDatasetClient["getDataset"]>();
 const datasetMock: GeoNodeDatasetClient = {
+  exportDatasetFeatures: exportDatasetFeaturesMock,
   getDataset: getDatasetMock,
   listDatasetFeatures: listDatasetFeaturesMock,
   listDatasets: listDatasetsMock.mockResolvedValue({
@@ -142,6 +145,11 @@ describe("App", () => {
     vi.mocked(authenticationMock.signOut).mockReset();
     vi.mocked(authenticationMock.signOut).mockResolvedValue(undefined);
     uploadDatasetMock.mockReset();
+    exportDatasetFeaturesMock.mockReset();
+    exportDatasetFeaturesMock.mockResolvedValue({
+      blob: new Blob(["name\nTest municipality"]),
+      filename: "municipal-boundaries.csv",
+    });
     getDatasetMock.mockReset();
     listDatasetFeaturesMock.mockReset();
     listDatasetsMock.mockReset();
@@ -586,6 +594,52 @@ describe("App", () => {
       7,
       '("name" ILIKE \'%Test%\') OR ("population" = 1000)',
     );
+
+    const createObjectUrlMock = vi.fn(() => "blob:mirante-export");
+    const revokeObjectUrlMock = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectUrlMock,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectUrlMock,
+    });
+    const downloadClickMock = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+    fireEvent.click(
+      within(tablePanel).getByRole("button", { name: "Export CSV" }),
+    );
+    await waitFor(() =>
+      expect(exportDatasetFeaturesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 7 }),
+        {
+          format: "csv",
+          filter: {
+            combinator: "or",
+            conditions: [
+              {
+                field: "name",
+                operator: "contains",
+                type: "text",
+                value: "Test",
+              },
+              {
+                field: "population",
+                operator: "equals",
+                type: "number",
+                value: "1000",
+              },
+            ],
+          },
+        },
+      ),
+    );
+    expect(createObjectUrlMock).toHaveBeenCalledWith(expect.any(Blob));
+    expect(downloadClickMock).toHaveBeenCalledOnce();
+    expect(revokeObjectUrlMock).toHaveBeenCalledWith("blob:mirante-export");
+    downloadClickMock.mockRestore();
 
     const locateButton = await within(tablePanel).findByRole("button", {
       name: "Locate feature municipal_boundaries.14 on the map",

@@ -15,6 +15,12 @@
   "next": "Próxima",
   "page": "Página {{page}} de {{totalPages}}",
   "pageWithoutTotal": "Página {{page}}",
+  "export": {
+    "csv": "Exportar CSV",
+    "geojson": "Exportar GeoJSON",
+    "exporting": "Exportando…",
+    "error": "Não foi possível exportar o dataset."
+  },
   "filter": {
     "field": "Atributo",
     "operator": "Operador",

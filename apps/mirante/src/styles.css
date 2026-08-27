@@ -1073,6 +1073,24 @@ button,
   font-size: 0.6875rem;
 }
 
+.attribute-table__exports {
+  display: flex;
+  gap: var(--mirante-space-2);
+  align-items: center;
+}
+
+.attribute-table__exports .button {
+  min-height: 2rem;
+  padding: 0 var(--mirante-space-3);
+  white-space: nowrap;
+}
+
+.attribute-table__exports [role="alert"] {
+  max-width: 12rem;
+  color: var(--mirante-color-danger);
+  font-size: 0.625rem;
+}
+
 .attribute-table__close {
   width: 2rem;
   height: 2rem;
@@ -1947,6 +1965,24 @@ button,
 
   .attribute-table__summary {
     display: none;
+  }
+
+  .attribute-table__header {
+    flex-wrap: wrap;
+  }
+
+  .attribute-table__header > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .attribute-table__exports {
+    width: 100%;
+    order: 3;
+  }
+
+  .attribute-table__exports .button {
+    flex: 1 1 0;
   }
 
   .attribute-table__pagination {
