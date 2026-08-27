@@ -51,4 +51,34 @@ describe("GeoNode attribute filters", () => {
       }),
     ).toThrow("numeric filter value is invalid");
   });
+
+  it("serializes multiple conditions with explicit AND and OR grouping", () => {
+    const conditions = [
+      {
+        field: "population",
+        operator: "greater-or-equal" as const,
+        type: "number" as const,
+        value: "1000",
+      },
+      {
+        field: "name",
+        operator: "contains" as const,
+        type: "text" as const,
+        value: "São",
+      },
+    ];
+
+    expect(
+      serializeGeoNodeAttributeFilter({ combinator: "and", conditions }),
+    ).toBe(`("population" >= 1000) AND ("name" ILIKE '%São%')`);
+    expect(
+      serializeGeoNodeAttributeFilter({ combinator: "or", conditions }),
+    ).toBe(`("population" >= 1000) OR ("name" ILIKE '%São%')`);
+  });
+
+  it("rejects an empty condition group", () => {
+    expect(() =>
+      serializeGeoNodeAttributeFilter({ combinator: "and", conditions: [] }),
+    ).toThrow("At least one filter condition");
+  });
 });

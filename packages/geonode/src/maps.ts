@@ -3,6 +3,7 @@ import type { MapViewOptions } from "@mirante/sdk";
 import {
   serializeGeoNodeAttributeFilter,
   type GeoNodeAttributeFilter,
+  type GeoNodeAttributeFilterCondition,
   type GeoNodeAttributeFilterOperator,
   type GeoNodeAttributeType,
 } from "./filters";
@@ -149,7 +150,9 @@ const filterOperators = new Set<GeoNodeAttributeFilterOperator>([
   "not-equals",
 ]);
 
-function parseFilter(value: unknown): GeoNodeAttributeFilter | undefined {
+function parseFilterCondition(
+  value: unknown,
+): GeoNodeAttributeFilterCondition | undefined {
   if (
     !isRecord(value) ||
     typeof value.field !== "string" ||
@@ -162,13 +165,45 @@ function parseFilter(value: unknown): GeoNodeAttributeFilter | undefined {
     return undefined;
   }
 
-  const filter: GeoNodeAttributeFilter = {
+  const filter: GeoNodeAttributeFilterCondition = {
     field: value.field,
     type: value.type as GeoNodeAttributeType,
     operator: value.operator as GeoNodeAttributeFilterOperator,
     value: value.value,
   };
 
+  try {
+    serializeGeoNodeAttributeFilter(filter);
+    return filter;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseFilter(value: unknown): GeoNodeAttributeFilter | undefined {
+  const condition = parseFilterCondition(value);
+  if (condition) return condition;
+
+  if (
+    !isRecord(value) ||
+    (value.combinator !== "and" && value.combinator !== "or") ||
+    !Array.isArray(value.conditions)
+  ) {
+    return undefined;
+  }
+
+  const conditions = value.conditions
+    .map(parseFilterCondition)
+    .filter(
+      (item): item is GeoNodeAttributeFilterCondition => item !== undefined,
+    );
+  if (conditions.length !== value.conditions.length || conditions.length === 0)
+    return undefined;
+
+  const filter: GeoNodeAttributeFilter = {
+    combinator: value.combinator,
+    conditions,
+  };
   try {
     serializeGeoNodeAttributeFilter(filter);
     return filter;
@@ -279,9 +314,9 @@ function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
       projection: "EPSG:3857",
       backgrounds: [],
     },
-    version: 2,
+    version: 3,
     mirante: {
-      version: 2,
+      version: 3,
       layers: input.layers.map((layer) => ({
         datasetId: layer.datasetId,
         layerName: layer.layerName,

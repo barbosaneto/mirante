@@ -566,7 +566,28 @@ describe("App", () => {
       "\"name\" ILIKE '%Test%'",
     );
 
-    const locateButton = within(tablePanel).getByRole("button", {
+    fireEvent.change(within(tablePanel).getByLabelText("Attribute"), {
+      target: { value: "population" },
+    });
+    fireEvent.change(within(tablePanel).getByLabelText("Value"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(
+      within(tablePanel).getByRole("button", { name: "Add condition" }),
+    );
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenLastCalledWith(
+      7,
+      '("name" ILIKE \'%Test%\') AND ("population" = 1000)',
+    );
+    fireEvent.change(within(tablePanel).getByLabelText("Match"), {
+      target: { value: "or" },
+    });
+    expect(mapMock.setDatasetLayerFilter).toHaveBeenLastCalledWith(
+      7,
+      '("name" ILIKE \'%Test%\') OR ("population" = 1000)',
+    );
+
+    const locateButton = await within(tablePanel).findByRole("button", {
       name: "Locate feature municipal_boundaries.14 on the map",
     });
     fireEvent.click(locateButton);

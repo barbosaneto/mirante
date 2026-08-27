@@ -1,5 +1,8 @@
 import {
+  isGeoNodeAttributeFilterGroup,
   type GeoNodeAttributeFilter,
+  type GeoNodeAttributeFilterCombinator,
+  type GeoNodeAttributeFilterCondition,
   type GeoNodeAttributeFilterOperator,
   type GeoNodeAttributeType,
   type GeoNodeDataset,
@@ -21,6 +24,30 @@ interface AttributeTableProps {
   onFilterChange: (filter: GeoNodeAttributeFilter | undefined) => void;
   onLocate: (feature: GeoNodeDatasetFeature) => void;
   selectedFeatureId?: string;
+}
+
+function filterConditions(
+  filter: GeoNodeAttributeFilter | undefined,
+): readonly GeoNodeAttributeFilterCondition[] {
+  if (!filter) return [];
+  return isGeoNodeAttributeFilterGroup(filter) ? filter.conditions : [filter];
+}
+
+function filterCombinator(
+  filter: GeoNodeAttributeFilter | undefined,
+): GeoNodeAttributeFilterCombinator {
+  return filter && isGeoNodeAttributeFilterGroup(filter)
+    ? filter.combinator
+    : "and";
+}
+
+function createFilter(
+  conditions: readonly GeoNodeAttributeFilterCondition[],
+  combinator: GeoNodeAttributeFilterCombinator,
+): GeoNodeAttributeFilter | undefined {
+  if (conditions.length === 0) return undefined;
+  if (conditions.length === 1) return conditions[0];
+  return { combinator, conditions };
 }
 
 type AttributeTableState =
@@ -98,12 +125,12 @@ export function AttributeTable({
   const [page, setPage] = useState(1);
   const [requestKey, setRequestKey] = useState(0);
   const [fields, setFields] = useState<AttributeField[]>(
-    filter ? [{ name: filter.field, type: filter.type }] : [],
+    filterConditions(filter).map(({ field: name, type }) => ({ name, type })),
   );
-  const [draftField, setDraftField] = useState(filter?.field ?? "");
+  const [draftField, setDraftField] = useState("");
   const [draftOperator, setDraftOperator] =
-    useState<GeoNodeAttributeFilterOperator>(filter?.operator ?? "contains");
-  const [draftValue, setDraftValue] = useState(filter?.value ?? "");
+    useState<GeoNodeAttributeFilterOperator>("contains");
+  const [draftValue, setDraftValue] = useState("");
   const [state, setState] = useState<AttributeTableState>({
     status: "loading",
   });
@@ -170,6 +197,8 @@ export function AttributeTable({
     selectedField?.type === "text"
       ? (["contains", "equals", "not-equals"] as const)
       : comparisonOperators;
+  const activeConditions = filterConditions(filter);
+  const activeCombinator = filterCombinator(filter);
 
   const result = state.status === "ready" ? state.result : null;
   const totalPages =
@@ -225,14 +254,20 @@ export function AttributeTable({
             event.preventDefault();
             if (!selectedField || !draftValue.trim()) return;
 
-            const nextFilter: GeoNodeAttributeFilter = {
+            const nextCondition: GeoNodeAttributeFilterCondition = {
               field: selectedField.name,
               operator: draftOperator,
               type: selectedField.type,
               value: draftValue.trim(),
             };
             setPage(1);
-            onFilterChange(nextFilter);
+            setDraftValue("");
+            onFilterChange(
+              createFilter(
+                [...activeConditions, nextCondition],
+                activeCombinator,
+              ),
+            );
           }}
         >
           <label>
@@ -301,7 +336,9 @@ export function AttributeTable({
             className="button button--primary"
             disabled={!selectedField || !draftValue.trim()}
           >
-            {t("filter.apply")}
+            {activeConditions.length > 0
+              ? t("filter.addCondition")
+              : t("filter.apply")}
           </button>
           {filter ? (
             <button
@@ -317,6 +354,67 @@ export function AttributeTable({
             </button>
           ) : null}
         </form>
+        {activeConditions.length > 0 ? (
+          <div className="attribute-table__active-filters">
+            <div className="attribute-table__active-filter-heading">
+              <strong>{t("filter.activeConditions")}</strong>
+              {activeConditions.length > 1 ? (
+                <label>
+                  <span>{t("filter.match")}</span>
+                  <select
+                    value={activeCombinator}
+                    onChange={(event) => {
+                      setPage(1);
+                      onFilterChange({
+                        combinator: event.currentTarget
+                          .value as GeoNodeAttributeFilterCombinator,
+                        conditions: activeConditions,
+                      });
+                    }}
+                  >
+                    <option value="and">{t("filter.combinators.and")}</option>
+                    <option value="or">{t("filter.combinators.or")}</option>
+                  </select>
+                </label>
+              ) : null}
+            </div>
+            <ol>
+              {activeConditions.map((condition, index) => (
+                <li
+                  key={`${condition.field}:${condition.operator}:${condition.value}:${index}`}
+                >
+                  <span>
+                    <strong>{condition.field}</strong>{" "}
+                    {t(`filter.operators.${condition.operator}`)}{" "}
+                    <code>{condition.value}</code>
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t("filter.removeCondition", {
+                      field: condition.field,
+                    })}
+                    title={t("filter.removeCondition", {
+                      field: condition.field,
+                    })}
+                    onClick={() => {
+                      setPage(1);
+                      onFilterChange(
+                        createFilter(
+                          activeConditions.filter(
+                            (_, conditionIndex) => conditionIndex !== index,
+                          ),
+                          activeCombinator,
+                        ),
+                      );
+                    }}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
         {state.status === "loading" ? (
           <p className="attribute-table__state" role="status">
             {t("loading")}

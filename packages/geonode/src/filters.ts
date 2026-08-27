@@ -9,11 +9,28 @@ export type GeoNodeAttributeFilterOperator =
   | "less-than"
   | "not-equals";
 
-export interface GeoNodeAttributeFilter {
+export interface GeoNodeAttributeFilterCondition {
   field: string;
   operator: GeoNodeAttributeFilterOperator;
   type: GeoNodeAttributeType;
   value: string;
+}
+
+export type GeoNodeAttributeFilterCombinator = "and" | "or";
+
+export interface GeoNodeAttributeFilterGroup {
+  combinator: GeoNodeAttributeFilterCombinator;
+  conditions: readonly GeoNodeAttributeFilterCondition[];
+}
+
+export type GeoNodeAttributeFilter =
+  | GeoNodeAttributeFilterCondition
+  | GeoNodeAttributeFilterGroup;
+
+export function isGeoNodeAttributeFilterGroup(
+  filter: GeoNodeAttributeFilter,
+): filter is GeoNodeAttributeFilterGroup {
+  return "conditions" in filter;
 }
 
 const comparisonOperators: Record<
@@ -50,9 +67,7 @@ function comparisonOperator(operator: GeoNodeAttributeFilterOperator): string {
   return comparisonOperators[operator];
 }
 
-export function serializeGeoNodeAttributeFilter(
-  filter: GeoNodeAttributeFilter,
-): string {
+function serializeCondition(filter: GeoNodeAttributeFilterCondition): string {
   const field = quoteIdentifier(filter.field);
   const value = filter.value.trim();
 
@@ -87,4 +102,19 @@ export function serializeGeoNodeAttributeFilter(
   }
 
   return `${field} ${comparisonOperator(filter.operator)} DATE ${quoteText(value)}`;
+}
+
+export function serializeGeoNodeAttributeFilter(
+  filter: GeoNodeAttributeFilter,
+): string {
+  if (!isGeoNodeAttributeFilterGroup(filter)) return serializeCondition(filter);
+
+  if (filter.conditions.length === 0) {
+    throw new Error("At least one filter condition is required.");
+  }
+
+  const separator = filter.combinator === "and" ? " AND " : " OR ";
+  return filter.conditions
+    .map((condition) => `(${serializeCondition(condition)})`)
+    .join(separator);
 }

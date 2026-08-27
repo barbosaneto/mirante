@@ -10,7 +10,7 @@ Mirante infers field types from the attributes returned by GeoServer:
 - Number fields support equality and ordered comparisons.
 - Date fields support equality and ordered comparisons through a native date input.
 
-Only one filter expression is active per layer in the current increment. Applying another expression replaces the previous one. Clearing the filter restores the complete WFS result and the unfiltered WMS visualization.
+Each layer accepts multiple conditions. Users can require every condition with `AND` or accept any condition with `OR`, remove individual conditions, or clear the complete expression. Clearing the filter restores the complete WFS result and the unfiltered WMS visualization.
 
 ## GeoServer integration
 
@@ -23,7 +23,6 @@ Field identifiers and text literals are escaped before serialization. Numeric va
 
 ## Current limits
 
-- A layer supports one active condition at a time.
-- Compound `AND` and `OR` groups are not yet available.
+- Conditions use a single flat `AND` or `OR` group; nested groups are not yet available.
 - Field types are inferred from the first loaded attribute page rather than a separate WFS schema request.
 - Filters created by other GeoNode clients can only be restored when they use Mirante's structured filter metadata.

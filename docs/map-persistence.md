@@ -9,7 +9,7 @@ Authenticated users with GeoNode's `add_resource` permission can open the map li
 - The geographic center and zoom in the standard map `data` document.
 - WMS layer descriptions in the standard map layer array.
 - Dataset relations, visibility, opacity, and ordering in `maplayers`.
-- A versioned `mirante` section inside `data` for faithful restoration by Mirante, including structured attribute filters.
+- A versioned `mirante` section inside `data` for faithful restoration by Mirante, including simple filters and compound `AND`/`OR` groups.
 
 Active filters are also serialized into the standard WMS layer `CQL_FILTER` parameter so the GeoNode map representation retains the filtered visualization outside Mirante when supported by the consuming client.
 

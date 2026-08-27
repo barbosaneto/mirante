@@ -53,7 +53,7 @@ describe("GeoNode map client", () => {
       data: {
         map: { zoom: 8, center: { x: -47.9, y: -15.8, crs: "EPSG:4326" } },
         mirante: {
-          version: 2,
+          version: 3,
           layers: [
             {
               datasetId: 7,
@@ -81,6 +81,86 @@ describe("GeoNode map client", () => {
           },
         },
       ],
+    });
+  });
+
+  it("persists and restores compound layer filters", async () => {
+    const compoundFilter = {
+      combinator: "or" as const,
+      conditions: [
+        {
+          field: "status",
+          operator: "equals" as const,
+          type: "text" as const,
+          value: "approved",
+        },
+        {
+          field: "population",
+          operator: "greater-than" as const,
+          type: "number" as const,
+          value: "1000",
+        },
+      ],
+    };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(
+        Response.json({ map: { pk: 21, title: "Filtered map" } }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          map: {
+            pk: 21,
+            title: "Filtered map",
+            data: {
+              map: { zoom: 6, center: { x: -50, y: -15 } },
+              mirante: {
+                version: 3,
+                layers: [
+                  {
+                    datasetId: 7,
+                    layerName: "geonode:municipal_boundaries",
+                    title: "Municipal boundaries",
+                    opacity: 1,
+                    visible: true,
+                    order: 0,
+                    filter: compoundFilter,
+                  },
+                ],
+              },
+            },
+            maplayers: [],
+          },
+        }),
+      );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await client.createMap({
+      title: "Filtered map",
+      view: { center: [-50, -15], zoom: 6 },
+      layers: [
+        {
+          datasetId: 7,
+          layerName: "geonode:municipal_boundaries",
+          title: "Municipal boundaries",
+          opacity: 1,
+          visible: true,
+          order: 0,
+          filter: compoundFilter,
+        },
+      ],
+    });
+
+    const requestBody = fetchMock.mock.calls[1]?.[1]?.body;
+    const body = JSON.parse(requestBody as string) as {
+      maplayers: Array<{ extra_params: { CQL_FILTER: string } }>;
+    };
+    expect(body.maplayers[0]?.extra_params.CQL_FILTER).toBe(
+      '("status" = \'approved\') OR ("population" > 1000)',
+    );
+    await expect(client.getMap(21)).resolves.toMatchObject({
+      layers: [{ filter: compoundFilter }],
     });
   });
 

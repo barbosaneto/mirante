@@ -22,8 +22,16 @@
     "placeholder": "Valor do filtro",
     "noFields": "Nenhum atributo disponível",
     "apply": "Aplicar filtro",
+    "addCondition": "Adicionar condição",
     "clear": "Limpar filtro",
     "empty": "Nenhuma feição corresponde ao filtro ativo.",
+    "activeConditions": "Condições ativas",
+    "match": "Combinar",
+    "removeCondition": "Remover a condição de {{field}}",
+    "combinators": {
+      "and": "Todas as condições (E)",
+      "or": "Qualquer condição (OU)"
+    },
     "operators": {
       "contains": "Contém",
       "equals": "Igual a",

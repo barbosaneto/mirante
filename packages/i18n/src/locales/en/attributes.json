@@ -22,8 +22,16 @@
     "placeholder": "Filter value",
     "noFields": "No attributes available",
     "apply": "Apply filter",
+    "addCondition": "Add condition",
     "clear": "Clear filter",
     "empty": "No features match the active filter.",
+    "activeConditions": "Active conditions",
+    "match": "Match",
+    "removeCondition": "Remove the condition for {{field}}",
+    "combinators": {
+      "and": "All conditions (AND)",
+      "or": "Any condition (OR)"
+    },
     "operators": {
       "contains": "Contains",
       "equals": "Equals",
