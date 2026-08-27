@@ -30,28 +30,20 @@ export function UserIcon() {
   );
 }
 
-export function PointerIcon() {
+export function HomeIcon() {
   return (
     <Icon>
-      <path d="m6 3 12 9-6 1-3 5L6 3Z" />
+      <path d="m4 11 8-7 8 7" />
+      <path d="M6.5 9.5V20h11V9.5M10 20v-6h4v6" />
     </Icon>
   );
 }
 
-export function MeasureIcon() {
+export function GlobeIcon() {
   return (
     <Icon>
-      <path d="m5 17 12-12 3 3L8 20l-3-3Z" />
-      <path d="m12 10 2 2M9 13l2 2M15 7l2 2" />
-    </Icon>
-  );
-}
-
-export function DrawIcon() {
-  return (
-    <Icon>
-      <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
-      <path d="m13 7 4 4" />
+      <circle cx="12" cy="12" r="8" />
+      <path d="M4 12h16M12 4c2.5 2.2 3.5 4.9 3.5 8s-1 5.8-3.5 8c-2.5-2.2-3.5-4.9-3.5-8S9.5 6.2 12 4Z" />
     </Icon>
   );
 }

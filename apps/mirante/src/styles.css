@@ -53,6 +53,7 @@ button,
 
 .brand,
 .layers-panel,
+.language-selector,
 .user-area,
 .action-dock {
   position: absolute;
@@ -62,6 +63,17 @@ button,
   background: var(--mirante-color-panel);
   box-shadow: var(--mirante-shadow-panel);
   backdrop-filter: blur(14px);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .brand {
@@ -220,6 +232,31 @@ button,
   background: rgb(13 148 136 / 88%);
 }
 
+.language-selector {
+  top: var(--mirante-space-4);
+  right: 8.6rem;
+  display: grid;
+  min-height: 2.5rem;
+  padding: 0 var(--mirante-space-2);
+  place-items: center;
+  border-radius: 999px;
+}
+
+.language-selector select {
+  max-width: 7rem;
+  border: 0;
+  color: var(--mirante-color-text);
+  background: transparent;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.language-selector select:focus-visible {
+  outline: 2px solid var(--mirante-color-focus);
+  outline-offset: 3px;
+}
+
 .user-area__label {
   margin-left: var(--mirante-space-2);
   font-size: 0.75rem;
@@ -251,6 +288,19 @@ button,
 .action-dock button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.action-dock button:not(:disabled) {
+  cursor: pointer;
+  transition:
+    color var(--mirante-transition-fast),
+    background var(--mirante-transition-fast);
+}
+
+.action-dock button:not(:disabled):hover,
+.action-dock button:not(:disabled):focus-visible {
+  color: #ccfbf1;
+  background: var(--mirante-color-primary-strong);
 }
 
 .map-viewport .ol-zoom {
@@ -327,6 +377,16 @@ button,
     min-height: 2.75rem;
     padding: 0;
     justify-content: center;
+  }
+
+  .language-selector {
+    top: var(--mirante-space-3);
+    right: 4.25rem;
+    min-height: 2.75rem;
+  }
+
+  .language-selector select {
+    max-width: 4.75rem;
   }
 
   .user-area__label {

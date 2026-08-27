@@ -1,0 +1,8 @@
+{
+  "title": "Camadas",
+  "count_one": "{{count}} camada",
+  "count_other": "{{count}} camadas",
+  "baseMap": "Mapa-base",
+  "darkMatter": "Dark Matter",
+  "empty": "Os datasets publicados aparecerão aqui."
+}

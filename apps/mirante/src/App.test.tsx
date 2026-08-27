@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { changeLocale } from "@mirante/i18n";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mapMock = vi.hoisted(() => ({
   create: vi.fn(),
   destroy: vi.fn(),
+  setView: vi.fn(),
 }));
 
 vi.mock("@mirante/map", () => ({
@@ -13,10 +15,16 @@ vi.mock("@mirante/map", () => ({
 import { App } from "./App";
 
 describe("App", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await changeLocale("en");
+    localStorage.clear();
     mapMock.create.mockReset();
     mapMock.destroy.mockReset();
-    mapMock.create.mockReturnValue({ destroy: mapMock.destroy });
+    mapMock.setView.mockReset();
+    mapMock.create.mockReturnValue({
+      destroy: mapMock.destroy,
+      setView: mapMock.setView,
+    });
   });
 
   it("creates and destroys the map through the public facade", () => {
@@ -26,14 +34,18 @@ describe("App", () => {
       name: "Interactive map centered on Brazil",
     });
 
-    expect(mapMock.create).toHaveBeenCalledWith({ target: mapRegion });
+    expect(mapMock.create).toHaveBeenCalledWith({
+      target: mapRegion,
+      initialCenter: [-52, -15],
+      initialZoom: 4,
+    });
 
     unmount();
 
     expect(mapMock.destroy).toHaveBeenCalledOnce();
   });
 
-  it("renders the initial application shell", () => {
+  it("renders registered toolbar actions", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Layers" })).toBeInTheDocument();
@@ -45,8 +57,33 @@ describe("App", () => {
 
     const toolbar = screen.getByRole("toolbar", { name: "Map tools" });
     expect(toolbar).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Inspect map" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Measure" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Draw" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Reset map view" }));
+    expect(mapMock.setView).toHaveBeenCalledWith({
+      center: [-52, -15],
+      zoom: 4,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom to Brazil" }));
+    expect(mapMock.setView).toHaveBeenCalledWith({
+      center: [-52, -14],
+      zoom: 4.5,
+    });
+  });
+
+  it("changes and persists the interface locale at runtime", async () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+      target: { value: "pt-BR" },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Camadas" }),
+      ).toBeInTheDocument();
+    });
+
+    expect(localStorage.getItem("mirante.locale")).toBe("pt-BR");
+    expect(document.documentElement.lang).toBe("pt-BR");
   });
 });

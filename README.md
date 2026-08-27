@@ -6,7 +6,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 ## Current status
 
-This repository currently contains the initial workspace, a containerized local development stack, a minimal OpenLayers map, and the first responsive application shell. Authentication, dataset upload, extension APIs, and functional map tools will be added incrementally.
+This repository currently contains the initial workspace, a containerized local development stack, an OpenLayers map, a responsive application shell, runtime internationalization, public distribution configuration, and the first build-time extension API. Authentication and dataset upload will be added incrementally.
 
 ## Requirements
 
@@ -46,6 +46,12 @@ npm run lint
 npm test
 npm run build
 ```
+
+## Customization
+
+The official distribution keeps branding, theme, GeoNode URL, map defaults, locales, and feature flags in a single public configuration. See [Configuration](docs/configuration.md) for the supported contract.
+
+Mirante extensions are installed at build time and use only the root exports from `@mirante/sdk`. See [Extensions](docs/extensions.md) for a minimal toolbar example and [Internationalization](docs/internationalization.md) for locale behavior and translation validation.
 
 ## Workspace structure
 

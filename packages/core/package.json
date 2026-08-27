@@ -3,5 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": "./src/index.ts"
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@mirante/i18n": "0.0.0",
+    "@mirante/sdk": "0.0.0"
+  }
 }

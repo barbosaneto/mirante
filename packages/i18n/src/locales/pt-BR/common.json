@@ -3,27 +3,18 @@
     "name": "Mirante",
     "tagline": "Um cliente Web GIS extensível para GeoNode."
   },
-  "map": {
-    "ariaLabel": "Mapa interativo centralizado no Brasil"
-  },
   "shell": {
-    "layers": {
-      "title": "Camadas",
-      "count_one": "{{count}} camada",
-      "count_other": "{{count}} camadas",
-      "baseMap": "Mapa-base",
-      "darkMatter": "Dark Matter",
-      "empty": "Os datasets publicados aparecerão aqui."
-    },
     "user": {
       "areaLabel": "Área do usuário",
       "guest": "Visitante"
     },
+    "language": {
+      "label": "Idioma",
+      "en": "English",
+      "pt-BR": "Português (Brasil)"
+    },
     "tools": {
-      "toolbarLabel": "Ferramentas do mapa",
-      "inspect": "Inspecionar mapa",
-      "measure": "Medir",
-      "draw": "Desenhar"
+      "toolbarLabel": "Ferramentas do mapa"
     }
   }
 }

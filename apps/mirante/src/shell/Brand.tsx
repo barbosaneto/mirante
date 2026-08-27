@@ -1,14 +1,13 @@
-import { useTranslation } from "react-i18next";
+interface BrandProps {
+  applicationName: string;
+  logoUrl: string;
+}
 
-import miranteLogo from "../assets/mirante.png";
-
-export function Brand() {
-  const { t } = useTranslation("common");
-
+export function Brand({ applicationName, logoUrl }: BrandProps) {
   return (
-    <div className="brand" aria-label={t("application.name")}>
-      <img className="brand__logo" src={miranteLogo} alt="" />
-      <span className="brand__name">{t("application.name")}</span>
+    <div className="brand" aria-label={applicationName}>
+      <img className="brand__logo" src={logoUrl} alt="" />
+      <span className="brand__name">{applicationName}</span>
     </div>
   );
 }

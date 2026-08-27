@@ -1,5 +1,6 @@
 import "ol/ol.css";
 
+import type { MapCommandApi, MapViewOptions } from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
 import TileLayer from "ol/layer/Tile.js";
 import OlMap from "ol/Map.js";
@@ -18,7 +19,7 @@ export interface CreateMapOptions {
   initialZoom?: number;
 }
 
-export interface MapFacade {
+export interface MapFacade extends MapCommandApi {
   destroy(): void;
 }
 
@@ -58,6 +59,13 @@ export function createMap({
   });
 
   return {
+    setView({ center, zoom }: MapViewOptions) {
+      map.getView().animate({
+        center: fromLonLat([center[0], center[1]]),
+        duration: 250,
+        zoom,
+      });
+    },
     destroy() {
       map.setTarget(undefined);
       map.dispose();
