@@ -511,6 +511,63 @@ button,
   overflow-y: auto;
 }
 
+.dataset-catalog__search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--mirante-space-2);
+  align-items: center;
+  min-height: 2.75rem;
+  margin-bottom: var(--mirante-space-3);
+  padding: 0 var(--mirante-space-3);
+  border: 1px solid var(--mirante-color-border);
+  border-radius: var(--mirante-radius-medium);
+  color: var(--mirante-color-text-muted);
+  background: var(--mirante-color-panel-strong);
+}
+
+.dataset-catalog__search:focus-within {
+  border-color: var(--mirante-color-primary);
+  box-shadow: 0 0 0 2px rgb(20 184 166 / 14%);
+}
+
+.dataset-catalog__search .shell-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dataset-catalog__search input {
+  min-width: 0;
+  height: 2.65rem;
+  border: 0;
+  outline: 0;
+  color: var(--mirante-color-text);
+  background: transparent;
+  font-size: 0.75rem;
+}
+
+.dataset-catalog__search input::placeholder {
+  color: var(--mirante-color-text-muted);
+}
+
+.dataset-catalog__search button {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0.35rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--mirante-color-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dataset-catalog__search button:hover,
+.dataset-catalog__search button:focus-visible {
+  color: var(--mirante-color-text);
+  background: rgb(148 163 184 / 10%);
+}
+
 .dataset-catalog__state {
   padding: var(--mirante-space-5) var(--mirante-space-3);
   color: var(--mirante-color-text-muted);

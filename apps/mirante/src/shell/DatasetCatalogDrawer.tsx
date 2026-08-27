@@ -1,8 +1,14 @@
 import type { GeoNodeDataset, GeoNodeDatasetClient } from "@mirante/geonode";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { CheckIcon, CloseIcon, LayersIcon, PlusIcon } from "./Icons";
+import {
+  CheckIcon,
+  CloseIcon,
+  LayersIcon,
+  PlusIcon,
+  SearchIcon,
+} from "./Icons";
 
 type CatalogueStatus = "error" | "loading" | "loading-more" | "ready";
 
@@ -27,11 +33,23 @@ export function DatasetCatalogDrawer({
 }: DatasetCatalogDrawerProps) {
   const { t } = useTranslation("layers");
   const [datasets, setDatasets] = useState<readonly GeoNodeDataset[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [status, setStatus] = useState<CatalogueStatus>("loading");
   const [total, setTotal] = useState(0);
+  const activeSearchRef = useRef("");
   const activeIds = new Set(activeDatasetIds);
   const hasMore = page * pageSize < total;
+
+  useEffect(() => {
+    const timeout = globalThis.setTimeout(
+      () => setDebouncedSearch(search.trim()),
+      300,
+    );
+
+    return () => globalThis.clearTimeout(timeout);
+  }, [search]);
 
   useEffect(() => {
     if (!open) {
@@ -39,13 +57,19 @@ export function DatasetCatalogDrawer({
     }
 
     const controller = new AbortController();
+    activeSearchRef.current = debouncedSearch;
     setDatasets([]);
     setPage(0);
     setTotal(0);
     setStatus("loading");
 
     void client
-      .listDatasets({ page: 1, pageSize, signal: controller.signal })
+      .listDatasets({
+        page: 1,
+        pageSize,
+        search: debouncedSearch || undefined,
+        signal: controller.signal,
+      })
       .then((result) => {
         setDatasets(result.datasets);
         setPage(result.page);
@@ -59,7 +83,7 @@ export function DatasetCatalogDrawer({
       });
 
     return () => controller.abort();
-  }, [client, open, refreshKey]);
+  }, [client, debouncedSearch, open, refreshKey]);
 
   useEffect(() => {
     if (!open) {
@@ -82,12 +106,17 @@ export function DatasetCatalogDrawer({
     }
 
     setStatus("loading-more");
+    const requestSearch = debouncedSearch;
 
     try {
       const result = await client.listDatasets({
         page: page + 1,
         pageSize,
+        search: requestSearch || undefined,
       });
+      if (activeSearchRef.current !== requestSearch) {
+        return;
+      }
       setDatasets((current) => {
         const merged = new Map(current.map((dataset) => [dataset.id, dataset]));
         result.datasets.forEach((dataset) => merged.set(dataset.id, dataset));
@@ -97,7 +126,9 @@ export function DatasetCatalogDrawer({
       setTotal(result.total);
       setStatus("ready");
     } catch {
-      setStatus("error");
+      if (activeSearchRef.current === requestSearch) {
+        setStatus("error");
+      }
     }
   }
 
@@ -140,6 +171,29 @@ export function DatasetCatalogDrawer({
           </header>
 
           <div className="dataset-catalog__content">
+            <div className="dataset-catalog__search">
+              <span className="shell-icon" aria-hidden="true">
+                <SearchIcon />
+              </span>
+              <input
+                type="search"
+                value={search}
+                aria-label={t("catalogue.search.label")}
+                placeholder={t("catalogue.search.placeholder")}
+                onChange={(event) => setSearch(event.currentTarget.value)}
+              />
+              {search ? (
+                <button
+                  type="button"
+                  aria-label={t("catalogue.search.clear")}
+                  title={t("catalogue.search.clear")}
+                  onClick={() => setSearch("")}
+                >
+                  <CloseIcon />
+                </button>
+              ) : null}
+            </div>
+
             {status === "loading" ? (
               <p className="dataset-catalog__state" role="status">
                 {t("catalogue.loading")}
@@ -155,7 +209,11 @@ export function DatasetCatalogDrawer({
                   onClick={() => {
                     setStatus("loading");
                     void client
-                      .listDatasets({ page: 1, pageSize })
+                      .listDatasets({
+                        page: 1,
+                        pageSize,
+                        search: debouncedSearch || undefined,
+                      })
                       .then((result) => {
                         setDatasets(result.datasets);
                         setPage(result.page);
@@ -171,7 +229,11 @@ export function DatasetCatalogDrawer({
             ) : null}
 
             {status === "ready" && datasets.length === 0 ? (
-              <p className="dataset-catalog__state">{t("catalogue.empty")}</p>
+              <p className="dataset-catalog__state">
+                {debouncedSearch
+                  ? t("catalogue.search.empty", { query: debouncedSearch })
+                  : t("catalogue.empty")}
+              </p>
             ) : null}
 
             {datasets.length > 0 ? (

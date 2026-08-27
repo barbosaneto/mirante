@@ -106,3 +106,12 @@ export function ExternalLinkIcon() {
     </Icon>
   );
 }
+
+export function SearchIcon() {
+  return (
+    <Icon>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 4 4" />
+    </Icon>
+  );
+}

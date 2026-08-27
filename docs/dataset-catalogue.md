@@ -8,6 +8,8 @@ The collapsed drawer on the right loads paginated resources from `GET /api/v2/da
 
 Opening the drawer loads the first page. Additional pages are requested only when the user selects **Load more datasets**. A newly uploaded dataset refreshes the catalogue and remains automatically active on the map.
 
+The search field queries GeoNode after a short input delay. It uses the standard `search` parameter with `search_fields=title` and `search_fields=abstract`, so filtering, permissions, and pagination remain server-side. Clearing the field restores the unfiltered first page.
+
 ## Active layers
 
 The panel on the left contains only datasets added to the current map session. Each active layer supports:
@@ -25,5 +27,5 @@ The management link combines `geonode.webUrl` with `geonode.datasetManagementPat
 ## Current limits
 
 - Unsaved active-layer changes are cleared by a page reload. Users can persist the current view and layer state as a GeoNode map.
-- The first catalogue version supports pagination but does not provide text or faceted search.
+- Search currently covers title and description; faceted filters are not yet available.
 - Removing a layer from the map does not modify its server-side permissions or publication state.

@@ -323,6 +323,20 @@ describe("App", () => {
     expect(
       await screen.findByRole("heading", { name: "Published datasets" }),
     ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search datasets" }),
+      {
+        target: { value: "municipal" },
+      },
+    );
+    await waitFor(() =>
+      expect(listDatasetsMock).toHaveBeenCalledWith(
+        expect.objectContaining({ search: "municipal" }),
+      ),
+    );
+    expect(
+      screen.getByRole("button", { name: "Clear dataset search" }),
+    ).toBeInTheDocument();
     const addButton = await screen.findByRole("button", {
       name: "Add Municipal boundaries to the map",
     });

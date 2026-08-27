@@ -86,6 +86,29 @@ describe("GeoNode dataset client", () => {
     );
   });
 
+  it("searches dataset titles and descriptions through the vanilla API", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        total: 0,
+        page: 1,
+        page_size: 20,
+        datasets: [],
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.listDatasets({ search: "  protected areas  " }),
+    ).resolves.toMatchObject({ total: 0, datasets: [] });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v2/datasets/?page=1&page_size=20&search=protected+areas&search_fields=title&search_fields=abstract",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
   it("uploads, follows execution, and retrieves a vanilla GeoNode dataset", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

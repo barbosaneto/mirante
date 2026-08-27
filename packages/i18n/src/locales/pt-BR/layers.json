@@ -21,7 +21,13 @@
     "retry": "Tentar novamente",
     "empty": "Nenhum dataset publicado está disponível.",
     "add": "Adicionar {{name}} ao mapa",
-    "added": "{{name}} já está no mapa"
+    "added": "{{name}} já está no mapa",
+    "search": {
+      "label": "Pesquisar datasets",
+      "placeholder": "Pesquisar por título ou descrição",
+      "clear": "Limpar pesquisa de datasets",
+      "empty": "Nenhum dataset corresponde a “{{query}}”."
+    }
   },
   "status": {
     "loading": "Carregando",

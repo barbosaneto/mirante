@@ -21,7 +21,13 @@
     "retry": "Try again",
     "empty": "No published datasets are available.",
     "add": "Add {{name}} to the map",
-    "added": "{{name}} is already on the map"
+    "added": "{{name}} is already on the map",
+    "search": {
+      "label": "Search datasets",
+      "placeholder": "Search by title or description",
+      "clear": "Clear dataset search",
+      "empty": "No datasets match “{{query}}”."
+    }
   },
   "status": {
     "loading": "Loading",

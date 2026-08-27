@@ -18,6 +18,7 @@ export interface GeoNodeDatasetPage {
 export interface ListGeoNodeDatasetsOptions {
   page?: number;
   pageSize?: number;
+  search?: string;
   signal?: AbortSignal;
 }
 
@@ -533,11 +534,18 @@ export function createGeoNodeDatasetClient({
 
   return {
     getDataset: retrieveDataset,
-    async listDatasets({ page = 1, pageSize = 20, signal } = {}) {
+    async listDatasets({ page = 1, pageSize = 20, search, signal } = {}) {
       const query = new URLSearchParams({
         page: String(page),
         page_size: String(pageSize),
       });
+      const normalizedSearch = search?.trim();
+
+      if (normalizedSearch) {
+        query.set("search", normalizedSearch);
+        query.append("search_fields", "title");
+        query.append("search_fields", "abstract");
+      }
       const response = await request(`/api/v2/datasets/?${query}`, { signal });
 
       if (response.status === 401 || response.status === 403) {
