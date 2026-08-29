@@ -44,10 +44,23 @@
     "fillColor": "Fill color",
     "strokeColor": "Outline color"
   },
+  "visibility": {
+    "legend": "Visibility",
+    "help": "Choose who can discover, view, and download this dataset. You and GeoNode administrators keep management access.",
+    "access": "Dataset access",
+    "public": "Everyone",
+    "private": "Only me and administrators",
+    "group": "Me, my group, and administrators",
+    "groupLabel": "GeoNode group",
+    "loadingGroups": "Loading your GeoNode groups…",
+    "groupsUnavailable": "Your groups could not be loaded. You can still choose public or private access.",
+    "noGroups": "Your account does not belong to a GeoNode group."
+  },
   "progress": {
     "uploading": "Sending file to GeoNode",
     "processing": "GeoNode is publishing the dataset",
     "metadata": "Updating dataset metadata",
+    "permissions": "Applying dataset visibility",
     "styling": "Publishing dataset style",
     "retrieving": "Retrieving the published dataset",
     "percentage": "{{value}}%",
@@ -63,6 +76,7 @@
     "metadata-update-failed": "The dataset was published, but GeoNode could not apply its metadata.",
     "network": "Mirante could not reach GeoNode. Check the connection and try again.",
     "permission-denied": "Your GeoNode account does not have permission to upload datasets.",
+    "permissions-update-failed": "The dataset was published, but GeoNode could not apply the selected visibility.",
     "processing-failed": "GeoNode could not process this dataset.",
     "session-expired": "Your GeoNode session expired. Sign in again and retry.",
     "style-update-failed": "The dataset was published, but GeoNode could not apply its style.",

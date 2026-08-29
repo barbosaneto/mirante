@@ -19,6 +19,12 @@ export interface GeoNodeDatasetPage {
   total: number;
 }
 
+export interface GeoNodeGroup {
+  id: number;
+  profileId: number;
+  title: string;
+}
+
 export interface GeoNodeDatasetFeature {
   id: string;
   attributes: Readonly<Record<string, unknown>>;
@@ -68,6 +74,7 @@ export interface GeoNodeDatasetFeatureExport {
 
 export type DatasetIngestionStage =
   | "metadata"
+  | "permissions"
   | "processing"
   | "retrieving"
   | "styling"
@@ -83,6 +90,7 @@ export type DatasetIngestionErrorCode =
   | "metadata-update-failed"
   | "network"
   | "permission-denied"
+  | "permissions-update-failed"
   | "processing-failed"
   | "session-expired"
   | "style-update-failed"
@@ -105,7 +113,13 @@ export interface UploadDatasetOptions {
   onProgress?: (progress: DatasetIngestionProgress) => void;
   signal?: AbortSignal;
   style?: DatasetUploadStyle;
+  visibility?: DatasetUploadVisibility;
 }
+
+export type DatasetUploadVisibility =
+  | { access: "group"; groupId: number }
+  | { access: "private" }
+  | { access: "public" };
 
 export interface DatasetUploadMetadata {
   title?: string;
@@ -125,6 +139,7 @@ export interface GeoNodeDatasetClient {
   listDatasets(
     options?: ListGeoNodeDatasetsOptions,
   ): Promise<GeoNodeDatasetPage>;
+  listUserGroups(userId: number, signal?: AbortSignal): Promise<GeoNodeGroup[]>;
   uploadDataset(
     file: File,
     options?: UploadDatasetOptions,
@@ -146,9 +161,37 @@ interface ExecutionPayload {
   };
 }
 
+type GeoNodeCompactPermission =
+  | "download"
+  | "edit"
+  | "manage"
+  | "none"
+  | "owner"
+  | "view";
+
+interface GeoNodeCompactPermissionEntry {
+  id: number;
+  name?: string;
+  permissions: GeoNodeCompactPermission;
+}
+
+interface GeoNodeCompactPermissionSpec {
+  groups: GeoNodeCompactPermissionEntry[];
+  organizations: GeoNodeCompactPermissionEntry[];
+  users: GeoNodeCompactPermissionEntry[];
+}
+
 const maximumDiagnosticDetailLength = 500;
 const maximumGeometryValues = 100_000;
 const maximumSearchLength = 255;
+const compactPermissions = new Set<GeoNodeCompactPermission>([
+  "download",
+  "edit",
+  "manage",
+  "none",
+  "owner",
+  "view",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -249,7 +292,10 @@ function parseCsrfToken(html: string): string {
   return match[1];
 }
 
-function parseExecutionPayload(value: unknown): ExecutionPayload {
+function parseExecutionPayload(
+  value: unknown,
+  errorCode: DatasetIngestionErrorCode = "unexpected-response",
+): ExecutionPayload {
   if (
     !isRecord(value) ||
     !["failed", "finished", "ready", "running"].includes(
@@ -259,7 +305,7 @@ function parseExecutionPayload(value: unknown): ExecutionPayload {
     !isRecord(value.output_params)
   ) {
     throw new GeoNodeDatasetIngestionError(
-      "unexpected-response",
+      errorCode,
       "GeoNode returned an invalid execution response.",
     );
   }
@@ -372,6 +418,144 @@ function parseDatasetPage(baseUrl: string, value: unknown): GeoNodeDatasetPage {
     page: value.page,
     pageSize: value.page_size,
   };
+}
+
+function parseUserGroupsPayload(value: unknown): GeoNodeGroup[] {
+  if (!Array.isArray(value) || value.length > 500) {
+    throw new GeoNodeDatasetIngestionError(
+      "unexpected-response",
+      "GeoNode returned an invalid user groups response.",
+    );
+  }
+
+  return value.map((candidate) => {
+    if (
+      !isRecord(candidate) ||
+      typeof candidate.pk !== "number" ||
+      !Number.isSafeInteger(candidate.pk) ||
+      candidate.pk < 1 ||
+      typeof candidate.title !== "string" ||
+      !candidate.title.trim() ||
+      !isRecord(candidate.group) ||
+      typeof candidate.group.pk !== "number" ||
+      !Number.isSafeInteger(candidate.group.pk) ||
+      candidate.group.pk < 1
+    ) {
+      throw new GeoNodeDatasetIngestionError(
+        "unexpected-response",
+        "GeoNode returned an invalid user group.",
+      );
+    }
+
+    return {
+      id: candidate.group.pk,
+      profileId: candidate.pk,
+      title: candidate.title.trim().slice(0, 255),
+    };
+  });
+}
+
+function parseCompactPermissionEntry(
+  value: unknown,
+): GeoNodeCompactPermissionEntry {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== "number" ||
+    !Number.isSafeInteger(value.id) ||
+    value.id < 1 ||
+    typeof value.permissions !== "string" ||
+    !compactPermissions.has(value.permissions as GeoNodeCompactPermission) ||
+    !(value.name === undefined || typeof value.name === "string")
+  ) {
+    throw new GeoNodeDatasetIngestionError(
+      "permissions-update-failed",
+      "GeoNode returned an invalid permission entry.",
+    );
+  }
+
+  return {
+    id: value.id,
+    permissions: value.permissions as GeoNodeCompactPermission,
+    ...(typeof value.name === "string" ? { name: value.name } : {}),
+  };
+}
+
+function parseCompactPermissionSpec(
+  value: unknown,
+): GeoNodeCompactPermissionSpec {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.groups) ||
+    !Array.isArray(value.organizations) ||
+    !Array.isArray(value.users) ||
+    value.groups.length > 10 ||
+    value.organizations.length > 500 ||
+    value.users.length > 500
+  ) {
+    throw new GeoNodeDatasetIngestionError(
+      "permissions-update-failed",
+      "GeoNode returned an invalid permission specification.",
+    );
+  }
+
+  return {
+    groups: value.groups.map(parseCompactPermissionEntry),
+    organizations: value.organizations.map(parseCompactPermissionEntry),
+    users: value.users.map(parseCompactPermissionEntry),
+  };
+}
+
+function permissionPayload(
+  current: GeoNodeCompactPermissionSpec,
+  visibility: DatasetUploadVisibility,
+): GeoNodeCompactPermissionSpec {
+  const publicAccess = visibility.access === "public";
+  const organizations =
+    visibility.access === "group"
+      ? [
+          {
+            id: requirePositiveInteger(visibility.groupId, "Group id"),
+            permissions: "download" as const,
+          },
+        ]
+      : [];
+
+  return {
+    users: current.users,
+    organizations,
+    groups: current.groups.map((group) => ({
+      id: group.id,
+      ...(group.name ? { name: group.name } : {}),
+      permissions: publicAccess ? "download" : "none",
+    })),
+  };
+}
+
+function permissionUpdateMatches(
+  permissions: GeoNodeCompactPermissionSpec,
+  visibility: DatasetUploadVisibility,
+): boolean {
+  const expectedSpecialPermission =
+    visibility.access === "public" ? "download" : "none";
+  const specialGroupsMatch =
+    permissions.groups.length > 0 &&
+    permissions.groups.every(
+      (group) => group.permissions === expectedSpecialPermission,
+    );
+  if (!specialGroupsMatch) return false;
+
+  const activeOrganizations = permissions.organizations.filter(
+    (organization) => organization.permissions !== "none",
+  );
+  if (visibility.access === "group") {
+    return (
+      activeOrganizations.length === 1 &&
+      activeOrganizations[0]?.id === visibility.groupId &&
+      activeOrganizations[0].permissions === "download"
+    );
+  }
+
+  return activeOrganizations.length === 0;
 }
 
 function geometryExtent(
@@ -772,7 +956,10 @@ export function createGeoNodeDatasetClient({
         );
       }
 
-      const execution = parseExecutionPayload(await executionResponse.json());
+      const execution = parseExecutionPayload(
+        await executionResponse.json(),
+        "style-update-failed",
+      );
 
       if (execution.status === "failed") {
         throw new GeoNodeDatasetIngestionError(
@@ -790,6 +977,141 @@ export function createGeoNodeDatasetClient({
     throw new GeoNodeDatasetIngestionError(
       "style-update-failed",
       "GeoNode did not finish applying the dataset style in time.",
+    );
+  }
+
+  async function retrieveDatasetPermissions(
+    datasetId: number,
+    signal?: AbortSignal,
+  ): Promise<GeoNodeCompactPermissionSpec> {
+    const safeDatasetId = requirePositiveInteger(datasetId, "Dataset id");
+    const response = await request(
+      `/api/v2/resources/${safeDatasetId}/permissions`,
+      { signal },
+    );
+
+    if (response.status === 401) {
+      throw new GeoNodeDatasetIngestionError(
+        "session-expired",
+        "The GeoNode session expired while dataset permissions were being updated.",
+      );
+    }
+    if (response.status === 403) {
+      throw new GeoNodeDatasetIngestionError(
+        "permissions-update-failed",
+        "GeoNode did not allow this user to manage dataset permissions.",
+      );
+    }
+    if (!response.ok) {
+      throw new GeoNodeDatasetIngestionError(
+        "permissions-update-failed",
+        `GeoNode permission request failed with status ${response.status}.`,
+      );
+    }
+
+    return parseCompactPermissionSpec(await response.json());
+  }
+
+  async function updateDatasetPermissions(
+    datasetId: number,
+    visibility: DatasetUploadVisibility,
+    csrfToken: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const currentPermissions = await retrieveDatasetPermissions(
+      datasetId,
+      signal,
+    );
+    const response = await request(
+      `/api/v2/resources/${datasetId}/permissions`,
+      {
+        method: "PUT",
+        body: JSON.stringify(permissionPayload(currentPermissions, visibility)),
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        signal,
+      },
+    );
+
+    if (response.status === 401) {
+      throw new GeoNodeDatasetIngestionError(
+        "session-expired",
+        "The GeoNode session expired before dataset permissions could be updated.",
+      );
+    }
+    if (response.status === 403) {
+      throw new GeoNodeDatasetIngestionError(
+        "permissions-update-failed",
+        "GeoNode did not allow this user to manage dataset permissions.",
+      );
+    }
+    if (!response.ok) {
+      const detail = await responseErrorDetail(response);
+      throw new GeoNodeDatasetIngestionError(
+        "permissions-update-failed",
+        `GeoNode published the dataset but rejected its permissions with status ${response.status}${detail ? `: ${detail}` : "."}`,
+      );
+    }
+
+    const payload: unknown = await response.json();
+    if (!isRecord(payload) || typeof payload.execution_id !== "string") {
+      throw new GeoNodeDatasetIngestionError(
+        "permissions-update-failed",
+        "GeoNode returned an invalid permission execution response.",
+      );
+    }
+
+    for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
+      if (attempt > 0) await delay(pollIntervalMs, signal);
+      const executionResponse = await request(
+        executionStatusPath(payload.execution_id, "permissions-update-failed"),
+        { signal },
+      );
+
+      if (executionResponse.status === 401) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session expired while dataset permissions were being updated.",
+        );
+      }
+      if (!executionResponse.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "permissions-update-failed",
+          `GeoNode permission execution failed with status ${executionResponse.status}.`,
+        );
+      }
+
+      const execution = parseExecutionPayload(
+        await executionResponse.json(),
+        "permissions-update-failed",
+      );
+      if (execution.status === "failed") {
+        throw new GeoNodeDatasetIngestionError(
+          "permissions-update-failed",
+          sanitizeDiagnosticDetail(execution.log) ||
+            "GeoNode failed to update dataset permissions.",
+        );
+      }
+      if (execution.status === "finished") {
+        const confirmedPermissions = await retrieveDatasetPermissions(
+          datasetId,
+          signal,
+        );
+        if (!permissionUpdateMatches(confirmedPermissions, visibility)) {
+          throw new GeoNodeDatasetIngestionError(
+            "permissions-update-failed",
+            "GeoNode completed the permission request without applying the selected visibility.",
+          );
+        }
+        return;
+      }
+    }
+
+    throw new GeoNodeDatasetIngestionError(
+      "permissions-update-failed",
+      "GeoNode did not finish updating dataset permissions in time.",
     );
   }
 
@@ -904,8 +1226,29 @@ export function createGeoNodeDatasetClient({
 
       return parseDatasetPage(baseUrl, await response.json());
     },
+    async listUserGroups(userId, signal) {
+      const safeUserId = requirePositiveInteger(userId, "User id");
+      const response = await request(`/api/v2/users/${safeUserId}/groups`, {
+        signal,
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new GeoNodeDatasetIngestionError(
+          "session-expired",
+          "The GeoNode session cannot list this user's groups.",
+        );
+      }
+      if (!response.ok) {
+        throw new GeoNodeDatasetIngestionError(
+          "unexpected-response",
+          `GeoNode user groups request failed with status ${response.status}.`,
+        );
+      }
+
+      return parseUserGroupsPayload(await response.json());
+    },
     async uploadDataset(file, options = {}) {
-      const { metadata, onProgress, signal, style } = options;
+      const { metadata, onProgress, signal, style, visibility } = options;
       const normalizedMetadata = normalizeMetadata(metadata);
       onProgress?.({ stage: "uploading", percentage: 5 });
       const csrfToken = await getCsrfToken(signal);
@@ -1031,13 +1374,23 @@ export function createGeoNodeDatasetClient({
           }
 
           if (style) {
-            onProgress?.({ stage: "styling", percentage: 97 });
+            onProgress?.({ stage: "styling", percentage: 96 });
             await uploadDatasetStyle(dataset, style, csrfToken, signal);
           }
 
           if (normalizedMetadata || style) {
-            onProgress?.({ stage: "retrieving", percentage: 99 });
+            onProgress?.({ stage: "retrieving", percentage: 97 });
             dataset = await retrieveDataset(datasetId, signal);
+          }
+
+          if (visibility) {
+            onProgress?.({ stage: "permissions", percentage: 98 });
+            await updateDatasetPermissions(
+              datasetId,
+              visibility,
+              csrfToken,
+              signal,
+            );
           }
 
           onProgress?.({ stage: "retrieving", percentage: 100 });

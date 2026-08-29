@@ -77,6 +77,7 @@ const listDatasetsMock = vi.fn<GeoNodeDatasetClient["listDatasets"]>();
 const listDatasetFeaturesMock =
   vi.fn<GeoNodeDatasetClient["listDatasetFeatures"]>();
 const getDatasetMock = vi.fn<GeoNodeDatasetClient["getDataset"]>();
+const listUserGroupsMock = vi.fn<GeoNodeDatasetClient["listUserGroups"]>();
 const datasetMock: GeoNodeDatasetClient = {
   exportDatasetFeatures: exportDatasetFeaturesMock,
   getDataset: getDatasetMock,
@@ -95,6 +96,7 @@ const datasetMock: GeoNodeDatasetClient = {
     pageSize: 20,
     total: 1,
   }),
+  listUserGroups: listUserGroupsMock,
   uploadDataset: uploadDatasetMock.mockResolvedValue({
     id: 42,
     title: "Conservation areas",
@@ -162,6 +164,7 @@ describe("App", () => {
     getDatasetMock.mockReset();
     listDatasetFeaturesMock.mockReset();
     listDatasetsMock.mockReset();
+    listUserGroupsMock.mockReset();
     listMapsMock.mockReset();
     createSavedMapMock.mockReset();
     updateSavedMapMock.mockReset();
@@ -198,6 +201,13 @@ describe("App", () => {
       pageSize: 25,
       total: 1,
     });
+    listUserGroupsMock.mockResolvedValue([
+      {
+        id: 12,
+        profileId: 4,
+        title: "Environmental team",
+      },
+    ]);
     uploadDatasetMock.mockResolvedValue({
       id: 42,
       title: "Conservation areas",
@@ -821,6 +831,12 @@ describe("App", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Upload a dataset" });
     await within(dialog).findByText("Dataset file ready to upload.");
+    await waitFor(() =>
+      expect(listUserGroupsMock).toHaveBeenCalledWith(
+        1000,
+        expect.any(AbortSignal),
+      ),
+    );
     fireEvent.change(
       within(dialog).getByRole("textbox", { name: "Dataset title" }),
       { target: { value: "Protected areas" } },
@@ -843,6 +859,15 @@ describe("App", () => {
     fireEvent.change(within(dialog).getByLabelText("Outline color"), {
       target: { value: "#14532d" },
     });
+    fireEvent.change(
+      within(dialog).getByRole("combobox", { name: "Dataset access" }),
+      { target: { value: "group" } },
+    );
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole("combobox", { name: "GeoNode group" }),
+      ).toHaveValue("12"),
+    );
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Upload dataset" }),
     );
@@ -861,6 +886,10 @@ describe("App", () => {
         fillColor: "#22c55e",
         strokeColor: "#14532d",
         shape: "square",
+      },
+      visibility: {
+        access: "group",
+        groupId: 12,
       },
     });
     expect(typeof uploadCall?.[1]?.onProgress).toBe("function");

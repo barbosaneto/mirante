@@ -1,12 +1,14 @@
 import { formatFileSize } from "@mirante/i18n";
 import type {
-  DatasetUploadMetadata,
-  DatasetUploadStyle,
+  DatasetUploadVisibility,
+  GeoNodeGroup,
+  UploadDatasetOptions,
 } from "@mirante/geonode";
 import {
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -29,30 +31,44 @@ export type UploadWorkflowStatus =
 export interface UploadWorkflowState {
   status: UploadWorkflowStatus;
   progress: number;
-  stage?: "metadata" | "processing" | "retrieving" | "styling" | "uploading";
+  stage?:
+    | "metadata"
+    | "permissions"
+    | "processing"
+    | "retrieving"
+    | "styling"
+    | "uploading";
   errorCode?: string;
   errorDetail?: string;
   datasetTitle?: string;
 }
 
 interface DatasetUploadDialogProps {
+  groups?: readonly GeoNodeGroup[];
+  groupsLoading?: boolean;
+  groupsUnavailable?: boolean;
   maximumFileSize?: number;
   state: UploadWorkflowState;
   onClose: () => void;
   onUpload: (
     file: File,
-    customizations: {
-      metadata?: DatasetUploadMetadata;
-      style?: DatasetUploadStyle;
-    },
+    customizations: Pick<
+      UploadDatasetOptions,
+      "metadata" | "style" | "visibility"
+    >,
   ) => void;
+  visibilityControlEnabled?: boolean;
 }
 
 export function DatasetUploadDialog({
+  groups = [],
+  groupsLoading = false,
+  groupsUnavailable = false,
   maximumFileSize = defaultMaximumDatasetFileSize,
   onClose,
   onUpload,
   state,
+  visibilityControlEnabled = false,
 }: DatasetUploadDialogProps) {
   const { t } = useTranslation("upload");
   const descriptionId = useId();
@@ -69,7 +85,20 @@ export function DatasetUploadDialog({
   const [fillColor, setFillColor] = useState("#14b8a6");
   const [strokeColor, setStrokeColor] = useState("#0f172a");
   const [pointShape, setPointShape] = useState<"circle" | "square">("circle");
+  const [visibilityAccess, setVisibilityAccess] =
+    useState<DatasetUploadVisibility["access"]>("private");
+  const [visibilityGroupId, setVisibilityGroupId] = useState("");
   const busy = state.status === "uploading" || state.status === "processing";
+
+  useEffect(() => {
+    if (
+      visibilityAccess === "group" &&
+      !groups.some((group) => String(group.id) === visibilityGroupId) &&
+      groups[0]
+    ) {
+      setVisibilityGroupId(String(groups[0].id));
+    }
+  }, [groups, visibilityAccess, visibilityGroupId]);
 
   async function selectFile(selectedFile: File | null) {
     setFile(selectedFile);
@@ -121,8 +150,27 @@ export function DatasetUploadDialog({
                 strokeColor,
                 shape: pointShape,
               };
+      const selectedGroup = groups.find(
+        (group) => String(group.id) === visibilityGroupId,
+      );
+      const visibility: DatasetUploadVisibility | undefined =
+        !visibilityControlEnabled
+          ? undefined
+          : visibilityAccess === "group"
+            ? selectedGroup
+              ? { access: "group", groupId: selectedGroup.id }
+              : undefined
+            : { access: visibilityAccess };
 
-      onUpload(file, { metadata, style });
+      if (
+        visibilityControlEnabled &&
+        visibilityAccess === "group" &&
+        !visibility
+      ) {
+        return;
+      }
+
+      onUpload(file, { metadata, style, visibility });
     }
   }
 
@@ -242,6 +290,64 @@ export function DatasetUploadDialog({
                 </label>
               </fieldset>
 
+              {visibilityControlEnabled ? (
+                <fieldset className="upload-options" disabled={busy}>
+                  <legend>{t("visibility.legend")}</legend>
+                  <p>{t("visibility.help")}</p>
+                  <label>
+                    <span>{t("visibility.access")}</span>
+                    <select
+                      value={visibilityAccess}
+                      onChange={(event) =>
+                        setVisibilityAccess(
+                          event.currentTarget
+                            .value as DatasetUploadVisibility["access"],
+                        )
+                      }
+                    >
+                      <option value="private">{t("visibility.private")}</option>
+                      <option value="public">{t("visibility.public")}</option>
+                      <option
+                        value="group"
+                        disabled={
+                          groupsLoading ||
+                          groupsUnavailable ||
+                          groups.length === 0
+                        }
+                      >
+                        {t("visibility.group")}
+                      </option>
+                    </select>
+                  </label>
+                  {visibilityAccess === "group" ? (
+                    <label>
+                      <span>{t("visibility.groupLabel")}</span>
+                      <select
+                        value={visibilityGroupId}
+                        disabled={groupsLoading || groupsUnavailable}
+                        onChange={(event) =>
+                          setVisibilityGroupId(event.currentTarget.value)
+                        }
+                      >
+                        {groups.map((group) => (
+                          <option value={group.id} key={group.id}>
+                            {group.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  {groupsLoading ? (
+                    <p>{t("visibility.loadingGroups")}</p>
+                  ) : null}
+                  {groupsUnavailable ? (
+                    <p role="alert">{t("visibility.groupsUnavailable")}</p>
+                  ) : !groupsLoading && groups.length === 0 ? (
+                    <p>{t("visibility.noGroups")}</p>
+                  ) : null}
+                </fieldset>
+              ) : null}
+
               <fieldset className="upload-options" disabled={busy}>
                 <legend>{t("style.legend")}</legend>
                 <p>{t("style.help")}</p>
@@ -352,7 +458,16 @@ export function DatasetUploadDialog({
               <button
                 type="submit"
                 className="button button--primary"
-                disabled={!file || Boolean(validationError) || busy}
+                disabled={
+                  !file ||
+                  Boolean(validationError) ||
+                  busy ||
+                  (visibilityControlEnabled &&
+                    visibilityAccess === "group" &&
+                    !groups.some(
+                      (group) => String(group.id) === visibilityGroupId,
+                    ))
+                }
               >
                 {busy ? t("actions.working") : t("actions.upload")}
               </button>

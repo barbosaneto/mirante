@@ -8,6 +8,7 @@ import {
   type GeoNodeAuthenticationClient,
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
+  type GeoNodeGroup,
   type GeoNodeMapClient,
   type GeoNodeMapSummary,
   type UploadDatasetOptions,
@@ -71,6 +72,10 @@ type SelectedFeature = Pick<
   DatasetFeatureInfo,
   "datasetId" | "featureId" | "geometry"
 >;
+
+type UploadGroupsState =
+  | { status: "error" | "idle" | "loading"; groups: readonly GeoNodeGroup[] }
+  | { status: "ready"; groups: readonly GeoNodeGroup[] };
 
 function publicIngestionErrorDetail(error: unknown): string | undefined {
   if (!(error instanceof GeoNodeDatasetIngestionError)) return undefined;
@@ -155,8 +160,13 @@ function ApplicationShell({
     useState<SelectedFeature | null>(null);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
+  const [uploadGroupsState, setUploadGroupsState] = useState<UploadGroupsState>(
+    { status: "idle", groups: [] },
+  );
 
   const themeStyle = createThemeStyle(config.theme);
+  const visibilityControlEnabled =
+    config.features.datasetUploadVisibilityControl === true;
 
   useEffect(() => {
     const target = mapTargetRef.current;
@@ -208,6 +218,26 @@ function ApplicationShell({
   useEffect(() => {
     document.title = config.branding.applicationName;
   }, [config.branding.applicationName]);
+
+  useEffect(() => {
+    if (!uploadOpen || !visibilityControlEnabled || !user) {
+      setUploadGroupsState({ status: "idle", groups: [] });
+      return;
+    }
+
+    const controller = new AbortController();
+    setUploadGroupsState({ status: "loading", groups: [] });
+    void datasetClient
+      .listUserGroups(user.id, controller.signal)
+      .then((groups) => setUploadGroupsState({ status: "ready", groups }))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setUploadGroupsState({ status: "error", groups: [] });
+        }
+      });
+
+    return () => controller.abort();
+  }, [datasetClient, uploadOpen, user, visibilityControlEnabled]);
 
   function addDatasetToMap(
     dataset: GeoNodeDataset,
@@ -326,7 +356,10 @@ function ApplicationShell({
 
   async function uploadDataset(
     file: File,
-    customizations: Pick<UploadDatasetOptions, "metadata" | "style">,
+    customizations: Pick<
+      UploadDatasetOptions,
+      "metadata" | "style" | "visibility"
+    >,
   ) {
     if (!map) {
       return;
@@ -551,12 +584,16 @@ function ApplicationShell({
       ) : null}
       {uploadOpen ? (
         <DatasetUploadDialog
+          groups={uploadGroupsState.groups}
+          groupsLoading={uploadGroupsState.status === "loading"}
+          groupsUnavailable={uploadGroupsState.status === "error"}
           maximumFileSize={config.features.datasetUploadMaximumFileSizeBytes}
           state={uploadState}
           onClose={() => setUploadOpen(false)}
           onUpload={(file, customizations) =>
             void uploadDataset(file, customizations)
           }
+          visibilityControlEnabled={visibilityControlEnabled}
         />
       ) : null}
       {featureInfo ? (

@@ -109,6 +109,34 @@ describe("GeoNode dataset client", () => {
     );
   });
 
+  it("lists the authenticated user's vanilla GeoNode groups", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json([
+        {
+          pk: 4,
+          title: "Environmental team",
+          group: { pk: 12, name: "environmental-team" },
+        },
+      ]),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(client.listUserGroups(1000)).resolves.toEqual([
+      {
+        id: 12,
+        profileId: 4,
+        title: "Environmental team",
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v2/users/1000/groups",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
   it("lists a paginated attribute page through vanilla GeoServer WFS", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
       Response.json({
@@ -341,7 +369,140 @@ describe("GeoNode dataset client", () => {
       stage: "retrieving",
       percentage: 100,
     });
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        typeof url === "string" ? url.includes("/permissions") : false,
+      ),
+    ).toBe(false);
   });
+
+  it.each([
+    {
+      label: "public",
+      visibility: { access: "public" } as const,
+      specialPermission: "download",
+      organizations: [],
+    },
+    {
+      label: "private",
+      visibility: { access: "private" } as const,
+      specialPermission: "none",
+      organizations: [],
+    },
+    {
+      label: "group",
+      visibility: { access: "group", groupId: 12 } as const,
+      specialPermission: "none",
+      organizations: [{ id: 12, permissions: "download" }],
+    },
+  ])(
+    "applies $label visibility through vanilla GeoNode permissions",
+    async ({ visibility, specialPermission, organizations }) => {
+      const datasetPayload = {
+        dataset: {
+          pk: "42",
+          title: "Conservation areas",
+          alternate: "geonode:conservation_areas",
+          dataset_ows_url: "http://localhost:8000/geoserver/ows",
+          extent: {
+            coords: [-54, -16, -45, -8],
+            srid: "EPSG:4326",
+          },
+        },
+      };
+      const users = [{ id: 1000, permissions: "owner" }];
+      const currentGroups = [
+        { id: 1, name: "anonymous", permissions: "download" },
+        {
+          id: 2,
+          name: "registered-members",
+          permissions: "download",
+        },
+      ];
+      const expectedGroups = currentGroups.map((group) => ({
+        ...group,
+        permissions: specialPermission,
+      }));
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(csrfResponse())
+        .mockResolvedValueOnce(
+          Response.json({ execution_id: "dataset-execution" }, { status: 201 }),
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            status: "finished",
+            log: null,
+            output_params: { resources: [{ id: 42 }] },
+          }),
+        )
+        .mockResolvedValueOnce(Response.json(datasetPayload))
+        .mockResolvedValueOnce(
+          Response.json({
+            users,
+            groups: currentGroups,
+            organizations: [{ id: 99, permissions: "download" }],
+          }),
+        )
+        .mockResolvedValueOnce(
+          Response.json(
+            { execution_id: "permissions-execution" },
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            status: "finished",
+            log: null,
+            output_params: {},
+          }),
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            users,
+            groups: expectedGroups,
+            organizations,
+          }),
+        );
+      const client = createGeoNodeDatasetClient({
+        baseUrl: "/",
+        fetch: fetchMock,
+        pollIntervalMs: 0,
+      });
+
+      await expect(
+        client.uploadDataset(new File(["{}"], "areas.geojson"), {
+          visibility,
+        }),
+      ).resolves.toMatchObject({ id: 42 });
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        5,
+        "/api/v2/resources/42/permissions",
+        expect.objectContaining({ credentials: "include" }),
+      );
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        6,
+        "/api/v2/resources/42/permissions",
+        expect.objectContaining({
+          method: "PUT",
+          credentials: "include",
+        }),
+      );
+      const permissionRequest = fetchMock.mock.calls[5]?.[1];
+      expect(typeof permissionRequest?.body).toBe("string");
+      expect(JSON.parse(permissionRequest?.body as string)).toEqual({
+        users,
+        groups: expectedGroups,
+        organizations,
+      });
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        8,
+        "/api/v2/resources/42/permissions",
+        expect.objectContaining({ credentials: "include" }),
+      );
+    },
+  );
 
   it("applies optional metadata and a persistent SLD style after ingestion", async () => {
     const initialDataset = {

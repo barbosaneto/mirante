@@ -62,6 +62,7 @@ export interface MiranteConfig {
   features: {
     datasetUpload: boolean;
     datasetUploadMaximumFileSizeBytes?: number;
+    datasetUploadVisibilityControl?: boolean;
   };
 }
 

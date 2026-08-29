@@ -15,6 +15,7 @@ The contract covers:
 - Initial center and zoom.
 - Feature availability.
 - Maximum dataset upload file size.
+- Optional dataset visibility selection during upload.
 
 ```ts
 import { defineMiranteConfig } from "@mirante/core";
@@ -72,6 +73,7 @@ export const config = defineMiranteConfig({
   features: {
     datasetUpload: true,
     datasetUploadMaximumFileSizeBytes: 100 * 1024 * 1024,
+    datasetUploadVisibilityControl: true,
   },
 });
 ```
@@ -81,6 +83,17 @@ be a positive integer expressed in bytes. The configured value controls both
 the upload dialog message and its client-side file-size validation. GeoNode's
 server-side upload limit remains authoritative and must be configured
 separately.
+
+`datasetUploadVisibilityControl` controls whether the upload dialog offers
+public, private, and group access. The official distribution reads it from
+`VITE_DATASET_UPLOAD_VISIBILITY_CONTROL` and enables it by default. Set the
+environment variable to `false` to hide the whole visibility section and skip
+all group and permission requests. In that mode Mirante leaves the new
+resource's permissions untouched, so GeoNode's
+`DEFAULT_ANONYMOUS_PERMISSIONS` and
+`DEFAULT_REGISTERED_MEMBERS_PERMISSIONS` settings determine access exactly as
+they did before this feature. The supplied local stack keeps both defaults at
+`download`, which publishes the dataset for everyone.
 
 Theme values are installed on the application root as semantic
 `--mirante-color-*` properties. Derived translucent states use `color-mix`, so

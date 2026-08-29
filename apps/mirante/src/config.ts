@@ -9,6 +9,9 @@ const geonodeWebUrl =
   (geonodeBaseUrl === "/" || geonodeBaseUrl === ""
     ? "http://localhost:8000"
     : geonodeBaseUrl);
+const datasetUploadVisibilityControl =
+  import.meta.env.VITE_DATASET_UPLOAD_VISIBILITY_CONTROL?.toLowerCase() !==
+  "false";
 
 export const miranteConfig = defineMiranteConfig({
   authentication: {
@@ -81,5 +84,6 @@ export const miranteConfig = defineMiranteConfig({
   features: {
     datasetUpload: true,
     datasetUploadMaximumFileSizeBytes: 100 * 1024 * 1024,
+    datasetUploadVisibilityControl,
   },
 });

@@ -44,10 +44,23 @@
     "fillColor": "Cor de preenchimento",
     "strokeColor": "Cor do contorno"
   },
+  "visibility": {
+    "legend": "Visibilidade",
+    "help": "Escolha quem pode encontrar, visualizar e baixar este dataset. Você e os administradores do GeoNode mantêm acesso de gerenciamento.",
+    "access": "Acesso ao dataset",
+    "public": "Todos",
+    "private": "Somente eu e administradores",
+    "group": "Eu, meu grupo e administradores",
+    "groupLabel": "Grupo do GeoNode",
+    "loadingGroups": "Carregando seus grupos do GeoNode…",
+    "groupsUnavailable": "Não foi possível carregar seus grupos. Você ainda pode escolher acesso público ou privado.",
+    "noGroups": "Sua conta não pertence a um grupo do GeoNode."
+  },
   "progress": {
     "uploading": "Enviando arquivo ao GeoNode",
     "processing": "O GeoNode está publicando o dataset",
     "metadata": "Atualizando os metadados do dataset",
+    "permissions": "Aplicando a visibilidade do dataset",
     "styling": "Publicando o estilo do dataset",
     "retrieving": "Recuperando o dataset publicado",
     "percentage": "{{value}}%",
@@ -63,6 +76,7 @@
     "metadata-update-failed": "O dataset foi publicado, mas o GeoNode não conseguiu aplicar seus metadados.",
     "network": "O Mirante não conseguiu acessar o GeoNode. Verifique a conexão e tente novamente.",
     "permission-denied": "Sua conta do GeoNode não possui permissão para enviar datasets.",
+    "permissions-update-failed": "O dataset foi publicado, mas o GeoNode não conseguiu aplicar a visibilidade selecionada.",
     "processing-failed": "O GeoNode não conseguiu processar este dataset.",
     "session-expired": "Sua sessão do GeoNode expirou. Entre novamente e repita o envio.",
     "style-update-failed": "O dataset foi publicado, mas o GeoNode não conseguiu aplicar seu estilo.",
