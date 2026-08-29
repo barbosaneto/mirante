@@ -21,6 +21,7 @@ describe("GeoNode map client", () => {
 
     await expect(
       client.createMap({
+        baseMap: "dark-matter",
         title: " Field survey ",
         view: { center: [-47.9, -15.8], zoom: 8 },
         layers: [
@@ -53,7 +54,8 @@ describe("GeoNode map client", () => {
       data: {
         map: { zoom: 8, center: { x: -47.9, y: -15.8, crs: "EPSG:4326" } },
         mirante: {
-          version: 3,
+          version: 4,
+          baseMap: "dark-matter",
           layers: [
             {
               datasetId: 7,
@@ -137,6 +139,7 @@ describe("GeoNode map client", () => {
     const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
 
     await client.createMap({
+      baseMap: "open-street-map",
       title: "Filtered map",
       view: { center: [-50, -15], zoom: 6 },
       layers: [
@@ -169,7 +172,7 @@ describe("GeoNode map client", () => {
       Response.json({
         total: 2,
         page: 1,
-        page_size: 50,
+        page_size: 10,
         maps: [
           { pk: "12", title: "Field survey" },
           { pk: 13, title: "Watersheds" },
@@ -185,12 +188,53 @@ describe("GeoNode map client", () => {
       ],
       total: 2,
       page: 1,
-      pageSize: 50,
+      pageSize: 10,
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v2/maps?page=1&page_size=50",
+      "/api/v2/maps?page=1&page_size=10",
       expect.objectContaining({ credentials: "include" }),
     );
+  });
+
+  it("searches and paginates maps through the GeoNode API", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        total: 1,
+        page: 2,
+        page_size: 8,
+        maps: [{ pk: 12, title: "Field survey" }],
+      }),
+    );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await client.listMaps({ page: 2, pageSize: 8, search: " Field " });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v2/maps?page=2&page_size=8&search=Field&search_fields=title",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
+  it("updates an existing map through the vanilla GeoNode API", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(
+        Response.json({ map: { pk: 12, title: "Field survey" } }),
+      );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await expect(
+      client.updateMap(12, {
+        baseMap: "open-street-map",
+        title: "Field survey",
+        view: { center: [-47.9, -15.8], zoom: 8 },
+        layers: [],
+      }),
+    ).resolves.toEqual({ id: 12, title: "Field survey" });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/v2/maps/12?include[]=data");
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: "PATCH" });
   });
 
   it("recovers view and layer state from a Mirante map", async () => {
@@ -228,6 +272,7 @@ describe("GeoNode map client", () => {
     const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
 
     await expect(client.getMap(12)).resolves.toMatchObject({
+      baseMap: "open-street-map",
       id: 12,
       title: "Field survey",
       view: { center: [-47.9, -15.8], zoom: 8 },

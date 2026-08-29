@@ -1,4 +1,4 @@
-import type { MapFacade } from "@mirante/map";
+import type { BaseMapId, MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
 import { useTranslation } from "react-i18next";
 
@@ -13,19 +13,23 @@ const icons = {
 interface ActionDockProps {
   actions: readonly RegisteredToolbarItem[];
   authenticated: boolean;
+  baseMap: BaseMapId;
   canUploadDatasets: boolean;
   map: MapFacade | null;
   uploadEnabled: boolean;
   onMaps: () => void;
+  onBaseMapChange: (id: BaseMapId) => void;
   onUpload: () => void;
 }
 
 export function ActionDock({
   actions,
   authenticated,
+  baseMap,
   canUploadDatasets,
   map,
   onMaps,
+  onBaseMapChange,
   onUpload,
   uploadEnabled,
 }: ActionDockProps) {
@@ -87,7 +91,7 @@ export function ActionDock({
           </button>
         );
       })}
-      <BaseMapSelector map={map} />
+      <BaseMapSelector baseMap={baseMap} map={map} onChange={onBaseMapChange} />
     </div>
   );
 }

@@ -5,6 +5,8 @@ export interface MapViewOptions {
   zoom: number;
 }
 
+export type BaseMapId = "dark-matter" | "open-street-map";
+
 export interface MapCommandApi {
   setView(options: MapViewOptions): void;
 }

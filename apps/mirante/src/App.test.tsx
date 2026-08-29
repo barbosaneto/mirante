@@ -98,11 +98,13 @@ const datasetMock: GeoNodeDatasetClient = {
 
 const listMapsMock = vi.fn<GeoNodeMapClient["listMaps"]>();
 const createSavedMapMock = vi.fn<GeoNodeMapClient["createMap"]>();
+const updateSavedMapMock = vi.fn<GeoNodeMapClient["updateMap"]>();
 const getSavedMapMock = vi.fn<GeoNodeMapClient["getMap"]>();
 const savedMapMock: GeoNodeMapClient = {
   createMap: createSavedMapMock,
   getMap: getSavedMapMock,
   listMaps: listMapsMock,
+  updateMap: updateSavedMapMock,
 };
 let featureInfoListener: ((event: FeatureInfoEvent) => void) | undefined;
 
@@ -155,6 +157,7 @@ describe("App", () => {
     listDatasetsMock.mockReset();
     listMapsMock.mockReset();
     createSavedMapMock.mockReset();
+    updateSavedMapMock.mockReset();
     getSavedMapMock.mockReset();
     listDatasetsMock.mockResolvedValue({
       datasets: [
@@ -202,7 +205,9 @@ describe("App", () => {
       total: 1,
     });
     createSavedMapMock.mockResolvedValue({ id: 13, title: "New map" });
+    updateSavedMapMock.mockResolvedValue({ id: 12, title: "Field survey" });
     getSavedMapMock.mockResolvedValue({
+      baseMap: "dark-matter",
       id: 12,
       title: "Field survey",
       view: { center: [-47.9, -15.8], zoom: 8 },
@@ -827,6 +832,7 @@ describe("App", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Save map" }));
     await within(dialog).findByText("Map saved in GeoNode.");
     expect(createSavedMapMock).toHaveBeenCalledWith({
+      baseMap: "open-street-map",
       title: "Regional overview",
       view: { center: [-52, -15], zoom: 4 },
       layers: [],
@@ -847,6 +853,35 @@ describe("App", () => {
     expect(mapMock.setView).toHaveBeenCalledWith({
       center: [-47.9, -15.8],
       zoom: 8,
+    });
+    expect(mapMock.setBaseMap).toHaveBeenCalledWith("dark-matter");
+
+    fireEvent.click(mapsButton);
+    const reopenedDialog = await screen.findByRole("dialog", {
+      name: "Saved maps",
+    });
+    expect(
+      within(reopenedDialog).getByText("Current saved map"),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(reopenedDialog).getByRole("button", { name: "Update map" }),
+    );
+    await within(reopenedDialog).findByText("Map updated in GeoNode.");
+    expect(updateSavedMapMock).toHaveBeenCalledWith(12, {
+      baseMap: "dark-matter",
+      title: "Field survey",
+      view: { center: [-52, -15], zoom: 4 },
+      layers: [
+        expect.objectContaining({
+          datasetId: 7,
+          filter: {
+            field: "name",
+            operator: "contains",
+            type: "text",
+            value: "Test",
+          },
+        }),
+      ],
     });
   });
 });

@@ -1,18 +1,23 @@
-import { defaultBaseMapId, type BaseMapId, type MapFacade } from "@mirante/map";
+import type { BaseMapId, MapFacade } from "@mirante/map";
 import { type FocusEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GlobeIcon } from "./Icons";
 
 interface BaseMapSelectorProps {
+  baseMap: BaseMapId;
   map: MapFacade | null;
+  onChange: (id: BaseMapId) => void;
 }
 
-export function BaseMapSelector({ map }: BaseMapSelectorProps) {
+export function BaseMapSelector({
+  baseMap,
+  map,
+  onChange,
+}: BaseMapSelectorProps) {
   const { t } = useTranslation("map");
   const selectId = useId();
   const [open, setOpen] = useState(false);
-  const [baseMap, setBaseMap] = useState<BaseMapId>(defaultBaseMapId);
 
   function closeWhenFocusLeaves(event: FocusEvent<HTMLDivElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -43,8 +48,7 @@ export function BaseMapSelector({ map }: BaseMapSelectorProps) {
             aria-label={t("baseMap.label")}
             onChange={(event) => {
               const selectedBaseMap = event.currentTarget.value as BaseMapId;
-              setBaseMap(selectedBaseMap);
-              map?.setBaseMap(selectedBaseMap);
+              onChange(selectedBaseMap);
               setOpen(false);
             }}
           >

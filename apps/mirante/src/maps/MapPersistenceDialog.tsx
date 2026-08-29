@@ -2,48 +2,67 @@ import type { GeoNodeMapClient, GeoNodeMapSummary } from "@mirante/geonode";
 import { type FormEvent, useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+const pageSize = 8;
+
 interface MapPersistenceDialogProps {
+  activeMap: GeoNodeMapSummary | null;
   canSave: boolean;
   client: GeoNodeMapClient;
   layerCount: number;
   onClose: () => void;
   onOpen: (id: number) => Promise<void>;
   onSave: (title: string) => Promise<void>;
+  onUpdate: (id: number, title: string) => Promise<void>;
 }
 
 export function MapPersistenceDialog({
+  activeMap,
   canSave,
   client,
   layerCount,
   onClose,
   onOpen,
   onSave,
+  onUpdate,
 }: MapPersistenceDialogProps) {
   const { t } = useTranslation("maps");
   const descriptionId = useId();
+  const searchId = useId();
   const [title, setTitle] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [maps, setMaps] = useState<readonly GeoNodeMapSummary[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [listStatus, setListStatus] = useState<"error" | "loading" | "ready">(
     "loading",
   );
   const [saving, setSaving] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [openingId, setOpeningId] = useState<number | null>(null);
   const [operationError, setOperationError] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const busy = saving || openingId !== null;
+  const [success, setSuccess] = useState<"created" | "updated" | null>(null);
+  const busy = saving || updating || openingId !== null;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   const loadMaps = useCallback(
     async (signal?: AbortSignal) => {
       setListStatus("loading");
       try {
-        const page = await client.listMaps({ pageSize: 50, signal });
-        setMaps(page.maps);
+        const result = await client.listMaps({
+          page,
+          pageSize,
+          search,
+          signal,
+        });
+        setMaps(result.maps);
+        setTotal(result.total);
         setListStatus("ready");
       } catch {
         if (!signal?.aborted) setListStatus("error");
       }
     },
-    [client],
+    [client, page, search],
   );
 
   useEffect(() => {
@@ -57,17 +76,36 @@ export function MapPersistenceDialog({
     const normalizedTitle = title.trim();
     if (!normalizedTitle || busy) return;
     setSaving(true);
-    setSaved(false);
+    setSuccess(null);
     setOperationError(false);
     try {
       await onSave(normalizedTitle);
       setTitle("");
-      setSaved(true);
+      setPage(1);
+      setSearch("");
+      setSearchInput("");
+      setSuccess("created");
       await loadMaps();
     } catch {
       setOperationError(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function update() {
+    if (!activeMap || busy) return;
+    setUpdating(true);
+    setSuccess(null);
+    setOperationError(false);
+    try {
+      await onUpdate(activeMap.id, activeMap.title);
+      setSuccess("updated");
+      await loadMaps();
+    } catch {
+      setOperationError(true);
+    } finally {
+      setUpdating(false);
     }
   }
 
@@ -82,6 +120,12 @@ export function MapPersistenceDialog({
       setOperationError(true);
       setOpeningId(null);
     }
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPage(1);
+    setSearch(searchInput.trim());
   }
 
   return (
@@ -111,48 +155,83 @@ export function MapPersistenceDialog({
         </header>
 
         {canSave ? (
-          <form
-            className="map-library-save"
-            onSubmit={(event) => void save(event)}
-          >
-            <div>
-              <label htmlFor="map-title">{t("save.title")}</label>
-              <p>{t("save.help", { count: layerCount })}</p>
-            </div>
-            <div className="map-library-save__controls">
-              <input
-                id="map-title"
-                type="text"
-                maxLength={255}
-                required
-                value={title}
-                placeholder={t("save.placeholder")}
-                disabled={busy}
-                onChange={(event) => setTitle(event.currentTarget.value)}
-              />
-              <button
-                className="button button--primary"
-                type="submit"
-                disabled={busy || !title.trim()}
-              >
-                {saving ? t("save.saving") : t("save.action")}
-              </button>
-            </div>
-            {saved ? (
+          <div className="map-library-write-actions">
+            {activeMap ? (
+              <section className="map-library-current">
+                <div>
+                  <span>{t("update.current")}</span>
+                  <strong>{activeMap.title}</strong>
+                </div>
+                <button
+                  className="button button--primary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void update()}
+                >
+                  {updating ? t("update.updating") : t("update.action")}
+                </button>
+                <p>{t("update.help", { count: layerCount })}</p>
+              </section>
+            ) : null}
+            <form
+              className="map-library-save"
+              onSubmit={(event) => void save(event)}
+            >
+              <div>
+                <label htmlFor="map-title">{t("save.title")}</label>
+                <p>{t("save.help", { count: layerCount })}</p>
+              </div>
+              <div className="map-library-save__controls">
+                <input
+                  id="map-title"
+                  type="text"
+                  maxLength={255}
+                  required
+                  value={title}
+                  placeholder={t("save.placeholder")}
+                  disabled={busy}
+                  onChange={(event) => setTitle(event.currentTarget.value)}
+                />
+                <button
+                  className="button button--primary"
+                  type="submit"
+                  disabled={busy || !title.trim()}
+                >
+                  {saving ? t("save.saving") : t("save.action")}
+                </button>
+              </div>
+            </form>
+            {success ? (
               <p
                 className="map-library-message map-library-message--success"
                 role="status"
               >
-                {t("save.success")}
+                {t(success === "created" ? "save.success" : "update.success")}
               </p>
             ) : null}
-          </form>
+          </div>
         ) : (
           <p className="map-library-permission">{t("save.permission")}</p>
         )}
 
         <div className="map-library-list">
           <h3>{t("list.title")}</h3>
+          <form className="map-library-search" onSubmit={submitSearch}>
+            <label className="visually-hidden" htmlFor={searchId}>
+              {t("list.searchLabel")}
+            </label>
+            <input
+              id={searchId}
+              type="search"
+              value={searchInput}
+              placeholder={t("list.searchPlaceholder")}
+              disabled={busy}
+              onChange={(event) => setSearchInput(event.currentTarget.value)}
+            />
+            <button className="button button--secondary" type="submit">
+              {t("list.searchAction")}
+            </button>
+          </form>
           {listStatus === "loading" ? (
             <p role="status">{t("list.loading")}</p>
           ) : null}
@@ -169,32 +248,67 @@ export function MapPersistenceDialog({
             </div>
           ) : null}
           {listStatus === "ready" && maps.length === 0 ? (
-            <p>{t("list.empty")}</p>
+            <p>{t(search ? "list.noResults" : "list.empty")}</p>
           ) : null}
           {listStatus === "ready" && maps.length > 0 ? (
-            <ul>
-              {maps.map((savedMap) => (
-                <li key={savedMap.id}>
-                  <div>
-                    <strong>{savedMap.title}</strong>
-                    <span>GeoNode #{savedMap.id}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="button button--secondary"
-                    disabled={busy}
-                    onClick={() => void open(savedMap.id)}
+            <>
+              <ul>
+                {maps.map((savedMap) => (
+                  <li
+                    key={savedMap.id}
+                    className={
+                      activeMap?.id === savedMap.id
+                        ? "map-library-list__active"
+                        : undefined
+                    }
                   >
-                    {openingId === savedMap.id
-                      ? t("list.opening")
-                      : t("list.open")}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <div>
+                      <strong>{savedMap.title}</strong>
+                      <span>
+                        GeoNode #{savedMap.id}
+                        {activeMap?.id === savedMap.id
+                          ? ` · ${t("list.current")}`
+                          : ""}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="button button--secondary"
+                      disabled={busy}
+                      onClick={() => void open(savedMap.id)}
+                    >
+                      {openingId === savedMap.id
+                        ? t("list.opening")
+                        : t("list.open")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <nav
+                className="map-library-pagination"
+                aria-label={t("list.paginationLabel")}
+              >
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  disabled={busy || page <= 1}
+                  onClick={() => setPage((current) => current - 1)}
+                >
+                  {t("list.previous")}
+                </button>
+                <span>{t("list.page", { page, pageCount, total })}</span>
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  disabled={busy || page >= pageCount}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  {t("list.next")}
+                </button>
+              </nav>
+            </>
           ) : null}
         </div>
-
         {operationError ? (
           <p
             className="map-library-message map-library-message--error"

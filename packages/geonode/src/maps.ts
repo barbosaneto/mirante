@@ -1,4 +1,4 @@
-import type { MapViewOptions } from "@mirante/sdk";
+import type { BaseMapId, MapViewOptions } from "@mirante/sdk";
 
 import {
   serializeGeoNodeAttributeFilter,
@@ -24,11 +24,13 @@ export interface GeoNodeMapSummary {
 }
 
 export interface GeoNodeSavedMap extends GeoNodeMapSummary {
+  baseMap: BaseMapId;
   view: MapViewOptions;
   layers: readonly GeoNodeMapLayerState[];
 }
 
 export interface SaveGeoNodeMapInput {
+  baseMap: BaseMapId;
   title: string;
   view: MapViewOptions;
   layers: readonly GeoNodeMapLayerState[];
@@ -46,10 +48,16 @@ export interface GeoNodeMapClient {
     input: SaveGeoNodeMapInput,
     signal?: AbortSignal,
   ): Promise<GeoNodeMapSummary>;
+  updateMap(
+    id: number,
+    input: SaveGeoNodeMapInput,
+    signal?: AbortSignal,
+  ): Promise<GeoNodeMapSummary>;
   getMap(id: number, signal?: AbortSignal): Promise<GeoNodeSavedMap>;
   listMaps(options?: {
     page?: number;
     pageSize?: number;
+    search?: string;
     signal?: AbortSignal;
   }): Promise<GeoNodeMapPage>;
 }
@@ -140,6 +148,7 @@ function parseView(data: Record<string, unknown>): MapViewOptions | null {
 }
 
 const filterTypes = new Set<GeoNodeAttributeType>(["date", "number", "text"]);
+const baseMapIds = new Set<BaseMapId>(["dark-matter", "open-street-map"]);
 const filterOperators = new Set<GeoNodeAttributeFilterOperator>([
   "contains",
   "equals",
@@ -264,6 +273,12 @@ function parseSavedMap(value: unknown): GeoNodeSavedMap {
   const data = isRecord(value.map.data) ? value.map.data : null;
   const view = data ? parseView(data) : null;
   const mirante = data && isRecord(data.mirante) ? data.mirante : null;
+  const baseMap =
+    mirante &&
+    typeof mirante.baseMap === "string" &&
+    baseMapIds.has(mirante.baseMap as BaseMapId)
+      ? (mirante.baseMap as BaseMapId)
+      : "open-street-map";
   const customLayers =
     mirante && Array.isArray(mirante.layers) ? mirante.layers : null;
   const standardLayers = Array.isArray(value.map.maplayers)
@@ -282,7 +297,7 @@ function parseSavedMap(value: unknown): GeoNodeSavedMap {
     );
   }
 
-  return { ...summary, view, layers };
+  return { ...summary, baseMap, view, layers };
 }
 
 function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
@@ -314,9 +329,10 @@ function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
       projection: "EPSG:3857",
       backgrounds: [],
     },
-    version: 3,
+    version: 4,
     mirante: {
-      version: 3,
+      version: 4,
+      baseMap: input.baseMap,
       layers: input.layers.map((layer) => ({
         datasetId: layer.datasetId,
         layerName: layer.layerName,
@@ -350,63 +366,87 @@ export function createGeoNodeMapClient({
     }
   }
 
+  async function getCsrfToken(signal?: AbortSignal): Promise<string> {
+    const response = await request("/account/logout/", { signal });
+    if (!response.ok) {
+      throw new GeoNodeMapPersistenceError(
+        "csrf-unavailable",
+        `GeoNode CSRF request failed with status ${response.status}.`,
+      );
+    }
+    return parseCsrfToken(await response.text());
+  }
+
+  function createMapPayload(input: SaveGeoNodeMapInput) {
+    return {
+      title: input.title.trim(),
+      data: createMapData(input),
+      maplayers: input.layers.map((layer) => ({
+        name: layer.layerName,
+        order: layer.order,
+        opacity: layer.opacity,
+        visibility: layer.visible,
+        extra_params: {
+          msId: `mirante-dataset-${layer.datasetId}`,
+          ...(layer.filter
+            ? { CQL_FILTER: serializeGeoNodeAttributeFilter(layer.filter) }
+            : {}),
+        },
+      })),
+    };
+  }
+
+  async function saveMap(
+    path: string,
+    method: "PATCH" | "POST",
+    input: SaveGeoNodeMapInput,
+    signal?: AbortSignal,
+  ): Promise<GeoNodeMapSummary> {
+    const csrfToken = await getCsrfToken(signal);
+    const response = await request(path, {
+      method,
+      body: JSON.stringify(createMapPayload(input)),
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      signal,
+    });
+    if (response.status === 401)
+      throw new GeoNodeMapPersistenceError(
+        "session-expired",
+        "The GeoNode session has expired.",
+      );
+    if (response.status === 403)
+      throw new GeoNodeMapPersistenceError(
+        "permission-denied",
+        "The GeoNode user cannot save this map.",
+      );
+    if (!response.ok)
+      throw new GeoNodeMapPersistenceError(
+        "save-rejected",
+        `GeoNode rejected the map with status ${response.status}.`,
+      );
+    const payload: unknown = await response.json();
+    if (!isRecord(payload) || !("map" in payload))
+      throw new GeoNodeMapPersistenceError(
+        "unexpected-response",
+        "GeoNode returned an invalid map save response.",
+      );
+    return parseSummary(payload.map);
+  }
+
   return {
     async createMap(input, signal) {
-      const csrfResponse = await request("/account/logout/", { signal });
-      if (!csrfResponse.ok) {
-        throw new GeoNodeMapPersistenceError(
-          "csrf-unavailable",
-          `GeoNode CSRF request failed with status ${csrfResponse.status}.`,
-        );
-      }
-      const csrfToken = parseCsrfToken(await csrfResponse.text());
-      const response = await request("/api/v2/maps?include[]=data", {
-        method: "POST",
-        body: JSON.stringify({
-          title: input.title.trim(),
-          data: createMapData(input),
-          maplayers: input.layers.map((layer) => ({
-            name: layer.layerName,
-            order: layer.order,
-            opacity: layer.opacity,
-            visibility: layer.visible,
-            extra_params: {
-              msId: `mirante-dataset-${layer.datasetId}`,
-              ...(layer.filter
-                ? { CQL_FILTER: serializeGeoNodeAttributeFilter(layer.filter) }
-                : {}),
-            },
-          })),
-        }),
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrfToken,
-        },
+      return saveMap("/api/v2/maps?include[]=data", "POST", input, signal);
+    },
+    async updateMap(id, input, signal) {
+      return saveMap(
+        `/api/v2/maps/${id}?include[]=data`,
+        "PATCH",
+        input,
         signal,
-      });
-
-      if (response.status === 401)
-        throw new GeoNodeMapPersistenceError(
-          "session-expired",
-          "The GeoNode session has expired.",
-        );
-      if (response.status === 403)
-        throw new GeoNodeMapPersistenceError(
-          "permission-denied",
-          "The GeoNode user cannot create maps.",
-        );
-      if (!response.ok)
-        throw new GeoNodeMapPersistenceError(
-          "save-rejected",
-          `GeoNode rejected the map with status ${response.status}.`,
-        );
-      const payload: unknown = await response.json();
-      if (!isRecord(payload) || !("map" in payload))
-        throw new GeoNodeMapPersistenceError(
-          "unexpected-response",
-          "GeoNode returned an invalid map creation response.",
-        );
-      return parseSummary(payload.map);
+      );
     },
     async getMap(id, signal) {
       const response = await request(`/api/v2/maps/${id}?include[]=data`, {
@@ -424,11 +464,15 @@ export function createGeoNodeMapClient({
         );
       return parseSavedMap(await response.json());
     },
-    async listMaps({ page = 1, pageSize = 50, signal } = {}) {
+    async listMaps({ page = 1, pageSize = 10, search, signal } = {}) {
       const query = new URLSearchParams({
         page: String(page),
         page_size: String(pageSize),
       });
+      if (search?.trim()) {
+        query.set("search", search.trim());
+        query.set("search_fields", "title");
+      }
       const response = await request(`/api/v2/maps?${query}`, { signal });
       if (response.status === 401 || response.status === 403)
         throw new GeoNodeMapPersistenceError(

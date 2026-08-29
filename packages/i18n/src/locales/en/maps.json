@@ -16,14 +16,31 @@
     "success": "Map saved in GeoNode.",
     "permission": "Your account can open accessible maps, but does not have permission to save new maps."
   },
+  "update": {
+    "current": "Current saved map",
+    "help_one": "Replace this map with the current view, base map, and {{count}} active layer.",
+    "help_other": "Replace this map with the current view, base map, and {{count}} active layers.",
+    "action": "Update map",
+    "updating": "Updating…",
+    "success": "Map updated in GeoNode."
+  },
   "list": {
     "title": "Accessible maps",
     "loading": "Loading maps from GeoNode…",
     "error": "The GeoNode map catalogue could not be loaded.",
     "retry": "Try again",
     "empty": "No accessible maps were found.",
+    "noResults": "No maps match this search.",
+    "searchLabel": "Search saved maps",
+    "searchPlaceholder": "Search by title",
+    "searchAction": "Search",
     "open": "Open",
-    "opening": "Opening…"
+    "opening": "Opening…",
+    "current": "current",
+    "paginationLabel": "Saved maps pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{pageCount}} · {{total}} maps"
   },
   "errors": {
     "operation": "GeoNode could not complete this map operation. Check the session, permissions, and referenced datasets."

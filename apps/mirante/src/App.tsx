@@ -9,10 +9,13 @@ import {
   type GeoNodeDataset,
   type GeoNodeDatasetClient,
   type GeoNodeMapClient,
+  type GeoNodeMapSummary,
   type UploadDatasetOptions,
 } from "@mirante/geonode";
 import {
   createMap,
+  defaultBaseMapId,
+  type BaseMapId,
   type DatasetFeatureInfo,
   type FeatureInfoEvent,
   type MapFacade,
@@ -79,6 +82,9 @@ function ApplicationShell({
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [mapLibraryOpen, setMapLibraryOpen] = useState(false);
+  const [activeSavedMap, setActiveSavedMap] =
+    useState<GeoNodeMapSummary | null>(null);
+  const [baseMap, setBaseMap] = useState<BaseMapId>(defaultBaseMapId);
   const [attributeDataset, setAttributeDataset] =
     useState<GeoNodeDataset | null>(null);
   const [featureInfo, setFeatureInfo] = useState<FeatureInfoEvent | null>(null);
@@ -166,9 +172,10 @@ function ApplicationShell({
     map.setDatasetLayerVisibility(dataset.id, visible);
   }
 
-  async function saveMap(title: string) {
-    if (!map) return;
-    await mapClient.createMap({
+  function currentMapInput(title: string) {
+    if (!map) return null;
+    return {
+      baseMap,
       title,
       view: map.getView(),
       layers: datasets.map((item, order) => ({
@@ -182,7 +189,19 @@ function ApplicationShell({
           ? { filter: datasetFilters[item.dataset.id] }
           : {}),
       })),
-    });
+    };
+  }
+
+  async function saveMap(title: string) {
+    const input = currentMapInput(title);
+    if (!input) return;
+    setActiveSavedMap(await mapClient.createMap(input));
+  }
+
+  async function updateMap(id: number, title: string) {
+    const input = currentMapInput(title);
+    if (!input) return;
+    setActiveSavedMap(await mapClient.updateMap(id, input));
   }
 
   async function openMap(id: number) {
@@ -217,7 +236,15 @@ function ApplicationShell({
       }
     }
     setDatasetFilters(restoredFilters);
+    setBaseMap(savedMap.baseMap);
+    map.setBaseMap(savedMap.baseMap);
     map.setView(savedMap.view);
+    setActiveSavedMap({ id: savedMap.id, title: savedMap.title });
+  }
+
+  function changeBaseMap(id: BaseMapId) {
+    setBaseMap(id);
+    map?.setBaseMap(id);
   }
 
   async function uploadDataset(
@@ -369,6 +396,8 @@ function ApplicationShell({
         authenticated={status === "authenticated"}
         canUploadDatasets={user?.canUploadDatasets === true}
         map={map}
+        baseMap={baseMap}
+        onBaseMapChange={changeBaseMap}
         onMaps={() => setMapLibraryOpen(true)}
         uploadEnabled={config.features.datasetUpload}
         onUpload={() => {
@@ -378,12 +407,14 @@ function ApplicationShell({
       />
       {mapLibraryOpen ? (
         <MapPersistenceDialog
+          activeMap={activeSavedMap}
           canSave={user?.canSaveMaps === true}
           client={mapClient}
           layerCount={datasets.length}
           onClose={() => setMapLibraryOpen(false)}
           onOpen={openMap}
           onSave={saveMap}
+          onUpdate={updateMap}
         />
       ) : null}
       {uploadOpen ? (

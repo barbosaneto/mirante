@@ -16,14 +16,31 @@
     "success": "Mapa salvo no GeoNode.",
     "permission": "Sua conta pode abrir mapas acessíveis, mas não possui permissão para salvar novos mapas."
   },
+  "update": {
+    "current": "Mapa salvo atual",
+    "help_one": "Substitua este mapa pela visualização, mapa-base e {{count}} camada ativa atuais.",
+    "help_other": "Substitua este mapa pela visualização, mapa-base e {{count}} camadas ativas atuais.",
+    "action": "Atualizar mapa",
+    "updating": "Atualizando…",
+    "success": "Mapa atualizado no GeoNode."
+  },
   "list": {
     "title": "Mapas acessíveis",
     "loading": "Carregando mapas do GeoNode…",
     "error": "Não foi possível carregar o catálogo de mapas do GeoNode.",
     "retry": "Tentar novamente",
     "empty": "Nenhum mapa acessível foi encontrado.",
+    "noResults": "Nenhum mapa corresponde a esta busca.",
+    "searchLabel": "Buscar mapas salvos",
+    "searchPlaceholder": "Buscar pelo título",
+    "searchAction": "Buscar",
     "open": "Abrir",
-    "opening": "Abrindo…"
+    "opening": "Abrindo…",
+    "current": "atual",
+    "paginationLabel": "Páginas de mapas salvos",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "page": "Página {{page}} de {{pageCount}} · {{total}} mapas"
   },
   "errors": {
     "operation": "O GeoNode não conseguiu concluir esta operação. Verifique a sessão, as permissões e os datasets referenciados."

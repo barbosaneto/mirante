@@ -36,11 +36,13 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[action]}
         authenticated={false}
+        baseMap="open-street-map"
         canUploadDatasets={false}
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
         onMaps={vi.fn()}
+        onBaseMapChange={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Mirante" });
@@ -51,11 +53,13 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[action]}
         authenticated={true}
+        baseMap="open-street-map"
         canUploadDatasets={false}
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
         onMaps={vi.fn()}
+        onBaseMapChange={vi.fn()}
       />,
     );
     fireEvent.click(button);
@@ -85,11 +89,13 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[]}
         authenticated={false}
+        baseMap="open-street-map"
         canUploadDatasets={false}
         map={map}
         uploadEnabled
         onUpload={onUpload}
         onMaps={vi.fn()}
+        onBaseMapChange={vi.fn()}
       />,
     );
     expect(
@@ -99,11 +105,13 @@ describe("ActionDock", () => {
       <ActionDock
         actions={[]}
         authenticated
+        baseMap="open-street-map"
         canUploadDatasets
         map={map}
         uploadEnabled
         onUpload={onUpload}
         onMaps={vi.fn()}
+        onBaseMapChange={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Upload dataset" });

@@ -1,6 +1,6 @@
 import "ol/ol.css";
 
-import type { MapCommandApi, MapViewOptions } from "@mirante/sdk";
+import type { BaseMapId, MapCommandApi, MapViewOptions } from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
 import Feature from "ol/Feature.js";
 import TileLayer from "ol/layer/Tile.js";
@@ -16,6 +16,7 @@ import View from "ol/View.js";
 import { parseWmsFeatureInfo, type DatasetFeatureInfo } from "./featureInfo";
 
 export type { DatasetFeatureInfo } from "./featureInfo";
+export type { BaseMapId } from "@mirante/sdk";
 
 export type GeographicCoordinate = readonly [
   longitude: number,
@@ -30,7 +31,6 @@ export interface CreateMapOptions {
 }
 
 export type DatasetLayerLoadStatus = "error" | "loading" | "ready";
-export type BaseMapId = "dark-matter" | "open-street-map";
 export const defaultBaseMapId: BaseMapId = "open-street-map";
 
 export interface DatasetMapLayerOptions {
