@@ -399,4 +399,58 @@ describe("GeoNode map client", () => {
       ),
     );
   });
+
+  it("bounds map catalogue paging and search inputs", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        Response.json({ total: 0, page: 1, page_size: 100, maps: [] }),
+      );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await client.listMaps({
+      page: Number.POSITIVE_INFINITY,
+      pageSize: 1_000,
+      search: ` ${"m".repeat(300)} `,
+    });
+
+    const requestUrl = fetchMock.mock.calls[0]?.[0];
+    expect(typeof requestUrl).toBe("string");
+    const url = typeof requestUrl === "string" ? requestUrl : "";
+    expect(url).toContain("page=1&page_size=100");
+    expect(
+      new URL(url, "https://example.test").searchParams.get("search"),
+    ).toHaveLength(255);
+  });
+
+  it("rejects oversized saved maps and invalid save input", async () => {
+    const mapLayers = Array.from({ length: 201 }, (_, index) => ({
+      dataset: { pk: index + 1, title: `Layer ${index}` },
+      name: `geonode:layer_${index}`,
+    }));
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        map: {
+          pk: 20,
+          title: "Oversized map",
+          data: { map: { zoom: 5, center: { x: -52, y: -14 } } },
+          maplayers: mapLayers,
+        },
+      }),
+    );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await expect(client.getMap(20)).rejects.toMatchObject({
+      code: "unsupported-map",
+    });
+    await expect(
+      client.createMap({
+        baseMap: "open-street-map",
+        title: "Invalid map",
+        view: { center: [Number.NaN, -14], zoom: 5 },
+        layers: [],
+      }),
+    ).rejects.toMatchObject({ code: "save-rejected" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

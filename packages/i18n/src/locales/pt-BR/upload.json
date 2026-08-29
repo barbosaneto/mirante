@@ -20,6 +20,7 @@
     "invalid-kml": "O arquivo deve conter um documento KML válido.",
     "invalid-zip": "O arquivo deve ser um ZIP válido contendo os componentes de um Shapefile.",
     "non-ascii-zip-filenames": "Os arquivos dentro do ZIP devem usar nomes iguais, sem acentos ou caracteres especiais, como municipios.shp, municipios.dbf, municipios.shx e municipios.prj.",
+    "unsafe-zip": "O ZIP contém caminhos inseguros, arquivos demais ou uma taxa de compactação potencialmente perigosa.",
     "unsupported-format": "Os formatos aceitos são .geojson, .kml e .zip contendo um Shapefile."
   },
   "metadata": {

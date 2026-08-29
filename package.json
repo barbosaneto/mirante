@@ -19,6 +19,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "security:audit": "npm audit --audit-level=high",
     "test": "vitest run --config apps/mirante/vite.config.ts",
     "typecheck": "tsc --noEmit"
   },

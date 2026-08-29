@@ -310,11 +310,23 @@ export function createGeoNodeAuthenticationClient({
     },
 
     async signIn({ username, password }) {
+      const normalizedUsername = username.trim();
+      if (
+        !normalizedUsername ||
+        normalizedUsername.length > 150 ||
+        !password ||
+        password.length > 4096
+      ) {
+        throw new GeoNodeAuthenticationError(
+          "invalid-credentials",
+          "GeoNode credentials exceed the accepted limits.",
+        );
+      }
       const csrfToken = await getCsrfToken("/account/login/");
       const body = new URLSearchParams({
         csrfmiddlewaretoken: csrfToken,
         password,
-        username,
+        username: normalizedUsername,
       });
       const response = await request("/account/ajax_login", {
         method: "POST",
@@ -339,7 +351,7 @@ export function createGeoNodeAuthenticationClient({
         );
       }
 
-      const user = await getUserByUsername(username);
+      const user = await getUserByUsername(normalizedUsername);
       return user;
     },
 

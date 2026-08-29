@@ -27,6 +27,10 @@ export type GeoNodeAttributeFilter =
   | GeoNodeAttributeFilterCondition
   | GeoNodeAttributeFilterGroup;
 
+export const maximumGeoNodeFilterConditions = 50;
+export const maximumGeoNodeFilterFieldLength = 256;
+export const maximumGeoNodeFilterValueLength = 2_048;
+
 export function isGeoNodeAttributeFilterGroup(
   filter: GeoNodeAttributeFilter,
 ): filter is GeoNodeAttributeFilterGroup {
@@ -51,6 +55,9 @@ function quoteIdentifier(identifier: string): string {
   if (!normalizedIdentifier) {
     throw new Error("An attribute field is required.");
   }
+  if (normalizedIdentifier.length > maximumGeoNodeFilterFieldLength) {
+    throw new Error("The attribute field is too long.");
+  }
 
   return `"${normalizedIdentifier.replaceAll('"', '""')}"`;
 }
@@ -73,6 +80,9 @@ function serializeCondition(filter: GeoNodeAttributeFilterCondition): string {
 
   if (!value) {
     throw new Error("A filter value is required.");
+  }
+  if (value.length > maximumGeoNodeFilterValueLength) {
+    throw new Error("The filter value is too long.");
   }
 
   if (filter.type === "text") {
@@ -111,6 +121,9 @@ export function serializeGeoNodeAttributeFilter(
 
   if (filter.conditions.length === 0) {
     throw new Error("At least one filter condition is required.");
+  }
+  if (filter.conditions.length > maximumGeoNodeFilterConditions) {
+    throw new Error("The filter contains too many conditions.");
   }
 
   const separator = filter.combinator === "and" ? " AND " : " OR ";

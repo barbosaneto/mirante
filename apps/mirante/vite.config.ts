@@ -34,6 +34,11 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true,
+    headers: {
+      "Permissions-Policy": "camera=(), geolocation=(), microphone=()",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Content-Type-Options": "nosniff",
+    },
     watch: {
       usePolling: process.env.MIRANTE_USE_POLLING === "true",
     },

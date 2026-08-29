@@ -592,6 +592,112 @@ describe("GeoNode dataset client", () => {
     });
   });
 
+  it("bounds catalogue paging and search inputs", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        total: 0,
+        page: 1,
+        page_size: 100,
+        datasets: [],
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await client.listDatasets({
+      page: Number.NaN,
+      pageSize: 10_000,
+      search: `  ${"x".repeat(300)}  `,
+    });
+
+    const requestUrl = fetchMock.mock.calls[0]?.[0];
+    expect(typeof requestUrl).toBe("string");
+    const url = typeof requestUrl === "string" ? requestUrl : "";
+    expect(url).toContain("page=1&page_size=100");
+    expect(
+      new URL(url, "https://example.test").searchParams.get("search"),
+    ).toHaveLength(255);
+  });
+
+  it("does not parse more WFS features than one bounded page", async () => {
+    const validFeature = (index: number) => ({
+      id: `dataset.${index}`,
+      properties: { index },
+      geometry: null,
+    });
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        features: [
+          ...Array.from({ length: 26 }, (_, index) => validFeature(index)),
+          "an invalid feature outside the bounded page",
+        ],
+      }),
+    );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    const result = await client.listDatasetFeatures(
+      {
+        id: 7,
+        title: "Dataset",
+        layerName: "geonode:dataset",
+        wmsUrl: "/geoserver/ows",
+        extent: [-1, -1, 1, 1],
+      },
+      { pageSize: 25 },
+    );
+    expect(result.features).toHaveLength(25);
+    expect(result.hasNext).toBe(true);
+  });
+
+  it("rejects an unsafe execution identifier before issuing a status request", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(
+        Response.json(
+          { execution_id: "../../account/logout" },
+          { status: 201 },
+        ),
+      );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    await expect(
+      client.uploadDataset(new File(["{}"], "dataset.geojson")),
+    ).rejects.toMatchObject({ code: "unexpected-response" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("sanitizes and truncates backend diagnostic details", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(csrfResponse())
+      .mockResolvedValueOnce(
+        Response.json(
+          { detail: `failure\u0000${"x".repeat(1_000)}` },
+          { status: 400 },
+        ),
+      );
+    const client = createGeoNodeDatasetClient({
+      baseUrl: "/",
+      fetch: fetchMock,
+    });
+
+    const error = await client
+      .uploadDataset(new File(["{}"], "dataset.geojson"))
+      .catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(GeoNodeDatasetIngestionError);
+    expect((error as Error).message).not.toContain("\u0000");
+    expect((error as Error).message.length).toBeLessThanOrEqual(570);
+  });
+
   it("reports permission denial separately from an expired session", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

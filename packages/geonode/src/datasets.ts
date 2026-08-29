@@ -146,6 +146,10 @@ interface ExecutionPayload {
   };
 }
 
+const maximumDiagnosticDetailLength = 500;
+const maximumGeometryValues = 100_000;
+const maximumSearchLength = 255;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -156,6 +160,56 @@ function joinUrl(baseUrl: string, path: string): string {
   }
 
   return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+function clampPositiveInteger(
+  value: number,
+  fallback: number,
+  maximum: number,
+): number {
+  return Number.isFinite(value)
+    ? Math.max(1, Math.min(maximum, Math.trunc(value)))
+    : fallback;
+}
+
+function requirePositiveInteger(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new GeoNodeDatasetIngestionError(
+      "unexpected-response",
+      `${label} must be a positive integer.`,
+    );
+  }
+  return value;
+}
+
+function sanitizeDiagnosticDetail(value: string | null): string | null {
+  if (!value) return null;
+  const withoutControls = Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return (code < 32 && code !== 9 && code !== 10 && code !== 13) ||
+      code === 127
+      ? " "
+      : character;
+  }).join("");
+  const detail = withoutControls.replace(/\s+/g, " ").trim();
+  return detail ? detail.slice(0, maximumDiagnosticDetailLength) : null;
+}
+
+function executionStatusPath(
+  executionId: unknown,
+  errorCode: DatasetIngestionErrorCode,
+): string {
+  if (
+    typeof executionId !== "string" ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/.test(executionId)
+  ) {
+    throw new GeoNodeDatasetIngestionError(
+      errorCode,
+      "GeoNode returned an invalid execution identifier.",
+    );
+  }
+
+  return `/api/v2/resource-service/execution-status/${encodeURIComponent(executionId)}`;
 }
 
 function datasetExportFilename(
@@ -236,7 +290,10 @@ function parseDatasetPayload(baseUrl: string, value: unknown): GeoNodeDataset {
     extent.srid !== "EPSG:4326" ||
     !Array.isArray(extent.coords) ||
     extent.coords.length !== 4 ||
-    !extent.coords.every((coordinate) => typeof coordinate === "number")
+    !extent.coords.every(
+      (coordinate) =>
+        typeof coordinate === "number" && Number.isFinite(coordinate),
+    )
   ) {
     throw new GeoNodeDatasetIngestionError(
       "unexpected-response",
@@ -276,7 +333,10 @@ function parseCatalogDataset(
     extent.srid !== "EPSG:4326" ||
     !Array.isArray(extent.coords) ||
     extent.coords.length !== 4 ||
-    !extent.coords.every((coordinate) => typeof coordinate === "number")
+    !extent.coords.every(
+      (coordinate) =>
+        typeof coordinate === "number" && Number.isFinite(coordinate),
+    )
   ) {
     return null;
   }
@@ -322,34 +382,34 @@ function geometryExtent(
   let maxLongitude = Number.NEGATIVE_INFINITY;
   let maxLatitude = Number.NEGATIVE_INFINITY;
 
-  function visit(value: unknown): void {
-    if (!Array.isArray(value)) return;
+  const pending: unknown[] = [geometry.coordinates, geometry.geometries];
+  let visitedValues = 0;
 
-    if (typeof value[0] === "number" && typeof value[1] === "number") {
+  while (pending.length > 0) {
+    visitedValues += 1;
+    if (visitedValues > maximumGeometryValues) return undefined;
+
+    const value = pending.pop();
+    if (isRecord(value)) {
+      pending.push(value.coordinates, value.geometries);
+      continue;
+    }
+    if (!Array.isArray(value)) continue;
+
+    if (
+      typeof value[0] === "number" &&
+      Number.isFinite(value[0]) &&
+      typeof value[1] === "number" &&
+      Number.isFinite(value[1])
+    ) {
       minLongitude = Math.min(minLongitude, value[0]);
       minLatitude = Math.min(minLatitude, value[1]);
       maxLongitude = Math.max(maxLongitude, value[0]);
       maxLatitude = Math.max(maxLatitude, value[1]);
-      return;
+      continue;
     }
 
-    value.forEach(visit);
-  }
-
-  visit(geometry.coordinates);
-  if (Array.isArray(geometry.geometries)) {
-    geometry.geometries.forEach((child) => {
-      if (isRecord(child)) {
-        const childExtent = geometryExtent(child);
-
-        if (childExtent) {
-          visit([
-            [childExtent[0], childExtent[1]],
-            [childExtent[2], childExtent[3]],
-          ]);
-        }
-      }
-    });
+    for (const child of value) pending.push(child);
   }
 
   return Number.isFinite(minLongitude)
@@ -383,30 +443,32 @@ function parseDatasetFeaturePage(
   }
 
   const startIndex = (page - 1) * pageSize;
-  const parsedFeatures = value.features.map((candidate, index) => {
-    if (!isRecord(candidate)) {
-      throw new GeoNodeDatasetIngestionError(
-        "unexpected-response",
-        "GeoServer returned an invalid WFS feature.",
-      );
-    }
+  const parsedFeatures = value.features
+    .slice(0, pageSize + 1)
+    .map((candidate, index) => {
+      if (!isRecord(candidate)) {
+        throw new GeoNodeDatasetIngestionError(
+          "unexpected-response",
+          "GeoServer returned an invalid WFS feature.",
+        );
+      }
 
-    const properties = isRecord(candidate.properties)
-      ? candidate.properties
-      : {};
-    const geometry = isRecord(candidate.geometry) ? candidate.geometry : null;
-    const rawId = candidate.id;
+      const properties = isRecord(candidate.properties)
+        ? candidate.properties
+        : {};
+      const geometry = isRecord(candidate.geometry) ? candidate.geometry : null;
+      const rawId = candidate.id;
 
-    return {
-      id:
-        typeof rawId === "string" || typeof rawId === "number"
-          ? String(rawId)
-          : String(startIndex + index + 1),
-      attributes: properties,
-      geometry,
-      ...(geometry ? { extent: geometryExtent(geometry) } : {}),
-    } satisfies GeoNodeDatasetFeature;
-  });
+      return {
+        id:
+          typeof rawId === "string" || typeof rawId === "number"
+            ? String(rawId)
+            : String(startIndex + index + 1),
+        attributes: properties,
+        geometry,
+        ...(geometry ? { extent: geometryExtent(geometry) } : {}),
+      } satisfies GeoNodeDatasetFeature;
+    });
   const features = parsedFeatures.slice(0, pageSize);
   const minimumTotal = startIndex + features.length;
   const announcedTotal = parseFeatureTotal(
@@ -461,7 +523,7 @@ async function responseErrorDetail(response: Response): Promise<string | null> {
     const payload: unknown = await response.clone().json();
 
     if (isRecord(payload) && typeof payload.detail === "string") {
-      return payload.detail;
+      return sanitizeDiagnosticDetail(payload.detail);
     }
   } catch {
     // The response is not JSON; try its text representation below.
@@ -477,7 +539,7 @@ async function responseErrorDetail(response: Response): Promise<string | null> {
       return null;
     }
 
-    return detail ? detail.slice(0, 500) : null;
+    return sanitizeDiagnosticDetail(detail);
   } catch {
     return null;
   }
@@ -577,7 +639,10 @@ export function createGeoNodeDatasetClient({
     datasetId: number,
     signal?: AbortSignal,
   ): Promise<GeoNodeDataset> {
-    const response = await request(`/api/v2/datasets/${datasetId}`, { signal });
+    const safeDatasetId = requirePositiveInteger(datasetId, "Dataset id");
+    const response = await request(`/api/v2/datasets/${safeDatasetId}`, {
+      signal,
+    });
 
     if (response.status === 401 || response.status === 403) {
       throw new GeoNodeDatasetIngestionError(
@@ -689,7 +754,7 @@ export function createGeoNodeDatasetClient({
       }
 
       const executionResponse = await request(
-        `/api/v2/resource-service/execution-status/${payload.execution_id}`,
+        executionStatusPath(payload.execution_id, "style-update-failed"),
         { signal },
       );
 
@@ -712,7 +777,8 @@ export function createGeoNodeDatasetClient({
       if (execution.status === "failed") {
         throw new GeoNodeDatasetIngestionError(
           "style-update-failed",
-          execution.log || "GeoNode failed to apply the dataset style.",
+          sanitizeDiagnosticDetail(execution.log) ||
+            "GeoNode failed to apply the dataset style.",
         );
       }
 
@@ -767,8 +833,8 @@ export function createGeoNodeDatasetClient({
       dataset,
       { filter, page = 1, pageSize = 25, signal } = {},
     ) {
-      const safePage = Math.max(1, Math.trunc(page));
-      const safePageSize = Math.max(1, Math.min(100, Math.trunc(pageSize)));
+      const safePage = clampPositiveInteger(page, 1, Number.MAX_SAFE_INTEGER);
+      const safePageSize = clampPositiveInteger(pageSize, 25, 100);
       const query = new URLSearchParams({
         service: "WFS",
         version: "2.0.0",
@@ -807,11 +873,13 @@ export function createGeoNodeDatasetClient({
       );
     },
     async listDatasets({ page = 1, pageSize = 20, search, signal } = {}) {
+      const safePage = clampPositiveInteger(page, 1, Number.MAX_SAFE_INTEGER);
+      const safePageSize = clampPositiveInteger(pageSize, 20, 100);
       const query = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
+        page: String(safePage),
+        page_size: String(safePageSize),
       });
-      const normalizedSearch = search?.trim();
+      const normalizedSearch = search?.trim().slice(0, maximumSearchLength);
 
       if (normalizedSearch) {
         query.set("search", normalizedSearch);
@@ -901,7 +969,10 @@ export function createGeoNodeDatasetClient({
         }
 
         const executionResponse = await request(
-          `/api/v2/resource-service/execution-status/${uploadPayload.execution_id}`,
+          executionStatusPath(
+            uploadPayload.execution_id,
+            "unexpected-response",
+          ),
           { signal },
         );
 
@@ -927,7 +998,8 @@ export function createGeoNodeDatasetClient({
         if (execution.status === "failed") {
           throw new GeoNodeDatasetIngestionError(
             "processing-failed",
-            execution.log || "GeoNode failed to process the dataset.",
+            sanitizeDiagnosticDetail(execution.log) ||
+              "GeoNode failed to process the dataset.",
           );
         }
 

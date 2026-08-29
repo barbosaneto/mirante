@@ -45,7 +45,11 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run security:audit
 ```
+
+See [Security](docs/security.md) for the trust model, audit result, deployment
+requirements, and residual risks.
 
 ## Customization
 

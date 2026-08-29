@@ -1,5 +1,7 @@
 import {
   isGeoNodeAttributeFilterGroup,
+  maximumGeoNodeFilterConditions,
+  maximumGeoNodeFilterValueLength,
   type GeoNodeAttributeFilter,
   type GeoNodeAttributeFilterCombinator,
   type GeoNodeAttributeFilterCondition,
@@ -383,6 +385,7 @@ export function AttributeTable({
                     : "text"
               }
               value={draftValue}
+              maxLength={maximumGeoNodeFilterValueLength}
               disabled={!selectedField}
               placeholder={t("filter.placeholder")}
               step={selectedField?.type === "number" ? "any" : undefined}
@@ -392,7 +395,11 @@ export function AttributeTable({
           <button
             type="submit"
             className="button button--primary"
-            disabled={!selectedField || !draftValue.trim()}
+            disabled={
+              !selectedField ||
+              !draftValue.trim() ||
+              activeConditions.length >= maximumGeoNodeFilterConditions
+            }
           >
             {activeConditions.length > 0
               ? t("filter.addCondition")

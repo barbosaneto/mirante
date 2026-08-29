@@ -81,4 +81,34 @@ describe("GeoNode attribute filters", () => {
       serializeGeoNodeAttributeFilter({ combinator: "and", conditions: [] }),
     ).toThrow("At least one filter condition");
   });
+
+  it("bounds untrusted filter fields, values, and condition groups", () => {
+    expect(() =>
+      serializeGeoNodeAttributeFilter({
+        field: "f".repeat(257),
+        operator: "equals",
+        type: "text",
+        value: "value",
+      }),
+    ).toThrow("field is too long");
+    expect(() =>
+      serializeGeoNodeAttributeFilter({
+        field: "name",
+        operator: "equals",
+        type: "text",
+        value: "v".repeat(2_049),
+      }),
+    ).toThrow("value is too long");
+    expect(() =>
+      serializeGeoNodeAttributeFilter({
+        combinator: "and",
+        conditions: Array.from({ length: 51 }, () => ({
+          field: "name",
+          operator: "equals" as const,
+          type: "text" as const,
+          value: "value",
+        })),
+      }),
+    ).toThrow("too many conditions");
+  });
 });

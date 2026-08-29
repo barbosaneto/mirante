@@ -7,7 +7,12 @@ export type DatasetFileValidationErrorCode =
   | "invalid-kml"
   | "invalid-zip"
   | "non-ascii-zip-filenames"
+  | "unsafe-zip"
   | "unsupported-format";
+
+const maximumZipEntries = 2_048;
+const maximumZipUncompressedSize = 1024 * 1024 * 1024;
+const maximumZipCompressionRatio = 200;
 
 function readFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -68,10 +73,10 @@ async function validateGeoJson(file: File): Promise<boolean> {
 
 async function validateKml(file: File): Promise<boolean> {
   try {
-    const document = new DOMParser().parseFromString(
-      await readFile(file),
-      "application/xml",
-    );
+    const source = await readFile(file);
+    if (/<!DOCTYPE|<!ENTITY/i.test(source)) return false;
+
+    const document = new DOMParser().parseFromString(source, "application/xml");
 
     return (
       document.querySelector("parsererror") === null &&
@@ -82,7 +87,24 @@ async function validateKml(file: File): Promise<boolean> {
   }
 }
 
-type ZipValidationResult = "invalid" | "non-ascii-filenames" | "valid";
+type ZipValidationResult =
+  | "invalid"
+  | "non-ascii-filenames"
+  | "unsafe"
+  | "valid";
+
+function isUnsafeZipPath(filename: string): boolean {
+  return (
+    filename.includes("\0") ||
+    filename.startsWith("/") ||
+    filename.startsWith("\\") ||
+    /^[a-zA-Z]:/.test(filename) ||
+    filename
+      .replaceAll("\\", "/")
+      .split("/")
+      .some((segment) => segment === "..")
+  );
+}
 
 function findEndOfCentralDirectory(bytes: Uint8Array): number {
   const minimumOffset = Math.max(0, bytes.length - 65_557);
@@ -120,14 +142,23 @@ async function validateZip(file: File): Promise<ZipValidationResult> {
     }
 
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const diskEntryCount = view.getUint16(endOffset + 8, true);
     const entryCount = view.getUint16(endOffset + 10, true);
     const directorySize = view.getUint32(endOffset + 12, true);
     let offset = view.getUint32(endOffset + 16, true);
     const directoryEnd = offset + directorySize;
 
-    if (directoryEnd > endOffset || directoryEnd > bytes.length) {
+    if (
+      entryCount === 0 ||
+      entryCount !== diskEntryCount ||
+      entryCount > maximumZipEntries ||
+      directoryEnd > endOffset ||
+      directoryEnd > bytes.length
+    ) {
       return "invalid";
     }
+
+    let totalUncompressedSize = 0;
 
     for (let entry = 0; entry < entryCount; entry += 1) {
       if (
@@ -140,6 +171,8 @@ async function validateZip(file: File): Promise<ZipValidationResult> {
       const filenameLength = view.getUint16(offset + 28, true);
       const extraLength = view.getUint16(offset + 30, true);
       const commentLength = view.getUint16(offset + 32, true);
+      const compressedSize = view.getUint32(offset + 20, true);
+      const uncompressedSize = view.getUint32(offset + 24, true);
       const filenameStart = offset + 46;
       const filenameEnd = filenameStart + filenameLength;
 
@@ -151,6 +184,25 @@ async function validateZip(file: File): Promise<ZipValidationResult> {
         bytes.subarray(filenameStart, filenameEnd).some((byte) => byte > 0x7f)
       ) {
         return "non-ascii-filenames";
+      }
+
+      const filename = new TextDecoder("ascii").decode(
+        bytes.subarray(filenameStart, filenameEnd),
+      );
+      totalUncompressedSize += uncompressedSize;
+      const compressionRatio =
+        compressedSize === 0
+          ? uncompressedSize === 0
+            ? 1
+            : Number.POSITIVE_INFINITY
+          : uncompressedSize / compressedSize;
+
+      if (
+        isUnsafeZipPath(filename) ||
+        totalUncompressedSize > maximumZipUncompressedSize ||
+        compressionRatio > maximumZipCompressionRatio
+      ) {
+        return "unsafe";
       }
 
       offset = filenameEnd + extraLength + commentLength;
@@ -196,6 +248,10 @@ export async function validateDatasetFile(
 
     if (zipValidation === "invalid") {
       return "invalid-zip";
+    }
+
+    if (zipValidation === "unsafe") {
+      return "unsafe-zip";
     }
   }
 

@@ -42,4 +42,16 @@ describe("WMS feature information", () => {
       parseWmsFeatureInfo(7, "Land parcels", "Service error"),
     ).toThrow("The WMS server returned an invalid feature response.");
   });
+
+  it("caps the number of feature-info results accepted from a server", () => {
+    const result = parseWmsFeatureInfo(7, "Land parcels", {
+      features: Array.from({ length: 20 }, (_, index) => ({
+        id: `parcels.${index}`,
+        properties: { index },
+      })),
+    });
+
+    expect(result).toHaveLength(10);
+    expect(result.at(-1)?.featureId).toBe("parcels.9");
+  });
 });

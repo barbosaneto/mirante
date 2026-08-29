@@ -90,6 +90,10 @@ interface CreateGeoNodeMapClientOptions {
   fetch?: typeof globalThis.fetch;
 }
 
+const maximumMapLayers = 200;
+const maximumMapSearchLength = 255;
+const maximumMapTitleLength = 255;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -97,6 +101,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function joinUrl(baseUrl: string, path: string): string {
   if (baseUrl === "/" || baseUrl === "") return path;
   return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+function clampPositiveInteger(
+  value: number,
+  fallback: number,
+  maximum: number,
+): number {
+  return Number.isFinite(value)
+    ? Math.max(1, Math.min(maximum, Math.trunc(value)))
+    : fallback;
+}
+
+function requireMapId(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new GeoNodeMapPersistenceError(
+      "unexpected-response",
+      "Map id must be a positive integer.",
+    );
+  }
+  return value;
 }
 
 function parseCsrfToken(html: string): string {
@@ -116,7 +140,9 @@ function parseCsrfToken(html: string): string {
 
 function parseId(value: unknown): number | null {
   const id = typeof value === "string" ? Number(value) : value;
-  return typeof id === "number" && Number.isInteger(id) ? id : null;
+  return typeof id === "number" && Number.isSafeInteger(id) && id > 0
+    ? id
+    : null;
 }
 
 function parseSummary(
@@ -168,8 +194,13 @@ function parseView(data: Record<string, unknown>): MapViewOptions | null {
   const { x, y } = map.center;
   if (
     typeof x !== "number" ||
+    !Number.isFinite(x) ||
     typeof y !== "number" ||
-    typeof map.zoom !== "number"
+    !Number.isFinite(y) ||
+    typeof map.zoom !== "number" ||
+    !Number.isFinite(map.zoom) ||
+    map.zoom < 0 ||
+    map.zoom > 30
   )
     return null;
   return { center: [x, y], zoom: map.zoom };
@@ -270,10 +301,13 @@ function parseLayer(
         ? dataset.title
         : layerName;
   const opacity =
-    typeof value.opacity === "number"
+    typeof value.opacity === "number" && Number.isFinite(value.opacity)
       ? Math.max(0, Math.min(1, value.opacity))
       : 1;
-  const order = typeof value.order === "number" ? value.order : fallbackOrder;
+  const order =
+    typeof value.order === "number" && Number.isFinite(value.order)
+      ? value.order
+      : fallbackOrder;
   const filter = parseFilter(value.filter);
 
   if (datasetId === null || !layerName || !title) return null;
@@ -310,6 +344,12 @@ function parseSavedMap(value: unknown): GeoNodeSavedMap {
     ? value.map.maplayers
     : [];
   const sourceLayers = customLayers ?? standardLayers;
+  if (sourceLayers.length > maximumMapLayers) {
+    throw new GeoNodeMapPersistenceError(
+      "unsupported-map",
+      `The GeoNode map exceeds the supported limit of ${maximumMapLayers} layers.`,
+    );
+  }
   const layers = sourceLayers
     .map((layer, index) => parseLayer(layer, index))
     .filter((layer): layer is GeoNodeMapLayerState => layer !== null)
@@ -371,6 +411,50 @@ function createMapData(input: SaveGeoNodeMapInput): Record<string, unknown> {
   };
 }
 
+function validateMapInput(input: SaveGeoNodeMapInput): void {
+  const title = input.title.trim();
+  if (!title || title.length > maximumMapTitleLength) {
+    throw new GeoNodeMapPersistenceError(
+      "save-rejected",
+      `Map title must contain between 1 and ${maximumMapTitleLength} characters.`,
+    );
+  }
+  if (input.layers.length > maximumMapLayers) {
+    throw new GeoNodeMapPersistenceError(
+      "save-rejected",
+      `A map can contain at most ${maximumMapLayers} layers.`,
+    );
+  }
+  if (
+    !input.view.center.every(Number.isFinite) ||
+    !Number.isFinite(input.view.zoom) ||
+    input.view.zoom < 0 ||
+    input.view.zoom > 30
+  ) {
+    throw new GeoNodeMapPersistenceError(
+      "save-rejected",
+      "Map view contains invalid coordinates or zoom.",
+    );
+  }
+  for (const layer of input.layers) {
+    if (
+      !Number.isSafeInteger(layer.datasetId) ||
+      layer.datasetId < 1 ||
+      !layer.layerName.trim() ||
+      layer.layerName.length > 512 ||
+      !layer.title.trim() ||
+      layer.title.length > 512 ||
+      !Number.isFinite(layer.opacity)
+    ) {
+      throw new GeoNodeMapPersistenceError(
+        "save-rejected",
+        "Map contains invalid layer data.",
+      );
+    }
+    if (layer.filter) serializeGeoNodeAttributeFilter(layer.filter);
+  }
+}
+
 export function createGeoNodeMapClient({
   baseUrl,
   fetch: fetchImplementation = globalThis.fetch,
@@ -427,6 +511,7 @@ export function createGeoNodeMapClient({
     input: SaveGeoNodeMapInput,
     signal?: AbortSignal,
   ): Promise<GeoNodeMapSummary> {
+    validateMapInput(input);
     const csrfToken = await getCsrfToken(signal);
     const response = await request(path, {
       method,
@@ -466,15 +551,17 @@ export function createGeoNodeMapClient({
       return saveMap("/api/v2/maps?include[]=data", "POST", input, signal);
     },
     async updateMap(id, input, signal) {
+      const safeId = requireMapId(id);
       return saveMap(
-        `/api/v2/maps/${id}?include[]=data`,
+        `/api/v2/maps/${safeId}?include[]=data`,
         "PATCH",
         input,
         signal,
       );
     },
     async getMap(id, signal) {
-      const response = await request(`/api/v2/maps/${id}?include[]=data`, {
+      const safeId = requireMapId(id);
+      const response = await request(`/api/v2/maps/${safeId}?include[]=data`, {
         signal,
       });
       if (response.status === 401 || response.status === 403)
@@ -490,12 +577,14 @@ export function createGeoNodeMapClient({
       return parseSavedMap(await response.json());
     },
     async listMaps({ page = 1, pageSize = 10, search, signal } = {}) {
+      const safePage = clampPositiveInteger(page, 1, Number.MAX_SAFE_INTEGER);
+      const safePageSize = clampPositiveInteger(pageSize, 10, 100);
       const query = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
+        page: String(safePage),
+        page_size: String(safePageSize),
       });
       if (search?.trim()) {
-        query.set("search", search.trim());
+        query.set("search", search.trim().slice(0, maximumMapSearchLength));
         query.set("search_fields", "title");
       }
       const response = await request(`/api/v2/maps?${query}`, { signal });

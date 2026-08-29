@@ -22,7 +22,7 @@ export function SignInPanel({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const authenticated = await signIn({ username, password });
+    const authenticated = await signIn({ username: username.trim(), password });
     if (!authenticated) setPassword("");
   }
 
@@ -41,6 +41,7 @@ export function SignInPanel({
             required
             autoComplete="username"
             name="username"
+            maxLength={150}
             value={username}
             onChange={(event) => setUsername(event.currentTarget.value)}
           />
@@ -52,6 +53,7 @@ export function SignInPanel({
             required
             autoComplete="current-password"
             name="password"
+            maxLength={4096}
             type="password"
             value={password}
             onChange={(event) => setPassword(event.currentTarget.value)}

@@ -72,6 +72,19 @@ type SelectedFeature = Pick<
   "datasetId" | "featureId" | "geometry"
 >;
 
+function publicIngestionErrorDetail(error: unknown): string | undefined {
+  if (!(error instanceof GeoNodeDatasetIngestionError)) return undefined;
+  const withoutControls = Array.from(error.message, (character) => {
+    const code = character.charCodeAt(0);
+    return (code < 32 && code !== 9 && code !== 10 && code !== 13) ||
+      code === 127
+      ? " "
+      : character;
+  }).join("");
+  const detail = withoutControls.replace(/\s+/g, " ").trim();
+  return detail ? detail.slice(0, 700) : undefined;
+}
+
 function createThemeStyle(
   theme: MiranteConfig["theme"],
 ): CSSProperties & Record<`--mirante-${string}`, string> {
@@ -347,7 +360,7 @@ function ApplicationShell({
           error instanceof GeoNodeDatasetIngestionError
             ? error.code
             : "unexpected-response",
-        errorDetail: error instanceof Error ? error.message : undefined,
+        errorDetail: publicIngestionErrorDetail(error),
       });
     }
   }

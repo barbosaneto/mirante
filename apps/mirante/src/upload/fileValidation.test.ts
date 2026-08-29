@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { validateDatasetFile } from "./fileValidation";
 
-function createStoredZip(filename: string): Uint8Array {
+function createStoredZip(
+  filename: string,
+  { compressedSize = 1, uncompressedSize = 1 } = {},
+): Uint8Array {
   const name = new TextEncoder().encode(filename);
   const localSize = 30 + name.length + 1;
   const centralSize = 46 + name.length;
@@ -12,8 +15,8 @@ function createStoredZip(filename: string): Uint8Array {
   view.setUint32(0, 0x04034b50, true);
   view.setUint16(4, 20, true);
   view.setUint16(6, 0x0800, true);
-  view.setUint32(18, 1, true);
-  view.setUint32(22, 1, true);
+  view.setUint32(18, compressedSize, true);
+  view.setUint32(22, uncompressedSize, true);
   view.setUint16(26, name.length, true);
   bytes.set(name, 30);
 
@@ -22,8 +25,8 @@ function createStoredZip(filename: string): Uint8Array {
   view.setUint16(centralOffset + 4, 20, true);
   view.setUint16(centralOffset + 6, 20, true);
   view.setUint16(centralOffset + 8, 0x0800, true);
-  view.setUint32(centralOffset + 20, 1, true);
-  view.setUint32(centralOffset + 24, 1, true);
+  view.setUint32(centralOffset + 20, compressedSize, true);
+  view.setUint32(centralOffset + 24, uncompressedSize, true);
   view.setUint16(centralOffset + 28, name.length, true);
   bytes.set(name, centralOffset + 46);
 
@@ -74,6 +77,36 @@ describe("dataset file validation", () => {
     await expect(validateDatasetFile(zip)).resolves.toBe(
       "non-ascii-zip-filenames",
     );
+  });
+
+  it("rejects unsafe ZIP paths and suspicious compression ratios", async () => {
+    const traversal = new File(
+      [createStoredZip("../dataset.shp")],
+      "traversal.zip",
+    );
+    const bomb = new File(
+      [
+        createStoredZip("dataset.dbf", {
+          compressedSize: 1,
+          uncompressedSize: 10_000,
+        }),
+      ],
+      "bomb.zip",
+    );
+
+    await expect(validateDatasetFile(traversal)).resolves.toBe("unsafe-zip");
+    await expect(validateDatasetFile(bomb)).resolves.toBe("unsafe-zip");
+  });
+
+  it("rejects KML documents that declare DTDs or entities", async () => {
+    const kml = new File(
+      [
+        '<?xml version="1.0"?><!DOCTYPE kml [<!ENTITY value "unsafe">]><kml><Placemark>&value;</Placemark></kml>',
+      ],
+      "dataset.kml",
+    );
+
+    await expect(validateDatasetFile(kml)).resolves.toBe("invalid-kml");
   });
 
   it("rejects unsupported extensions and invalid supported files", async () => {
