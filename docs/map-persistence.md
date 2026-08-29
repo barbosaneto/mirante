@@ -16,9 +16,11 @@ Active filters are also serialized into the standard WMS layer `CQL_FILTER` para
 
 The map is owned, permissioned, listed, and managed by GeoNode like any other map resource.
 
-Once a saved map is open, users with the save capability can replace its current
-configuration through `PATCH /api/v2/maps/{id}?include[]=data`. GeoNode remains
-the authority for ownership and change permission.
+Once a saved map is open, its API representation supplies the owner and the
+current session's object permissions. Mirante offers replacement through
+`PATCH /api/v2/maps/{id}?include[]=data` only to owners, administrators, or
+users with `change_resourcebase` / `change_resourcebase_metadata`. GeoNode
+remains the final authority.
 
 ## Opening
 
@@ -36,7 +38,12 @@ without a Mirante base-map identifier use the distribution's configured default.
 
 ## Authorization
 
-Map listing and retrieval remain subject to GeoNode's resource permissions. Saving uses the same compact `add_resource` capability already returned by the vanilla user API. Users without it can open accessible maps but do not see the save form.
+Map listing and retrieval remain subject to GeoNode's resource permissions.
+Creating a map uses the compact `add_resource` capability returned by the
+vanilla user API. Updating is evaluated independently for the opened map, so a
+user without global creation permission can edit a map explicitly assigned to
+them. See [Authorization](authorization.md) for the complete matrix and the
+vanilla GeoNode limitation shared by map creation and dataset upload.
 
 ## Current limits
 

@@ -59,8 +59,10 @@ describe("GeoNode authentication client", () => {
       avatarUrl: "http://localhost:8000/static/avatar.png",
       isAdministrator: true,
       permissions: ["add_resource"],
+      roles: ["authenticated-user", "contributor", "administrator"],
+      canCreateMaps: true,
       canUploadDatasets: true,
-      canSaveMaps: true,
+      canManageGeoNode: true,
     });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -78,29 +80,29 @@ describe("GeoNode authentication client", () => {
       "/api/v2/users/?filter%7Busername%7D=admin",
       expect.objectContaining({ credentials: "include" }),
     );
-    expect(storage.setItem).toHaveBeenCalledWith(
-      "mirante.geonode.user-id",
-      "1000",
-    );
+    expect(storage.setItem).not.toHaveBeenCalled();
   });
 
   it("maps upload capability from the user's compact GeoNode permissions", async () => {
-    storage.getItem.mockReturnValue("7");
-    fetchMock.mockResolvedValueOnce(
-      Response.json(
-        {
-          user: {
-            ...userPayload,
-            pk: 7,
-            username: "viewer",
-            perms: [],
-            is_superuser: false,
-            is_staff: false,
+    fetchMock
+      .mockResolvedValueOnce(
+        Response.json({ sub: "7", access_token: "ignored" }, { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        Response.json(
+          {
+            user: {
+              ...userPayload,
+              pk: 7,
+              username: "viewer",
+              perms: [],
+              is_superuser: false,
+              is_staff: false,
+            },
           },
-        },
-        { status: 200 },
-      ),
-    );
+          { status: 200 },
+        ),
+      );
     const client = createGeoNodeAuthenticationClient({
       baseUrl: "/",
       fetch: fetchMock,
@@ -109,9 +111,12 @@ describe("GeoNode authentication client", () => {
 
     await expect(client.restoreSession()).resolves.toMatchObject({
       permissions: [],
+      roles: ["authenticated-user"],
+      canCreateMaps: false,
       canUploadDatasets: false,
-      canSaveMaps: false,
+      canManageGeoNode: false,
     });
+    expect(storage.removeItem).toHaveBeenCalledWith("mirante.geonode.user-id");
   });
 
   it("reports invalid credentials without persisting a user", async () => {
@@ -132,11 +137,12 @@ describe("GeoNode authentication client", () => {
     expect(storage.setItem).not.toHaveBeenCalled();
   });
 
-  it("restores a stored user only through an authenticated API response", async () => {
-    storage.getItem.mockReturnValue("1000");
-    fetchMock.mockResolvedValueOnce(
-      Response.json({ user: userPayload }, { status: 200 }),
-    );
+  it("restores the current user only through an authenticated API response", async () => {
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ sub: "1000" }, { status: 200 }))
+      .mockResolvedValueOnce(
+        Response.json({ user: userPayload }, { status: 200 }),
+      );
     const client = createGeoNodeAuthenticationClient({
       baseUrl: "https://geonode.example.test/",
       fetch: fetchMock,
@@ -147,14 +153,19 @@ describe("GeoNode authentication client", () => {
       id: 1000,
       username: "admin",
     });
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://geonode.example.test/api/v2/userinfo/",
+      expect.objectContaining({ credentials: "include" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
       "https://geonode.example.test/api/v2/users/1000",
       expect.objectContaining({ credentials: "include" }),
     );
   });
 
   it("clears stale session state after GeoNode rejects it", async () => {
-    storage.getItem.mockReturnValue("1000");
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }));
     const client = createGeoNodeAuthenticationClient({
       baseUrl: "/",
@@ -163,7 +174,10 @@ describe("GeoNode authentication client", () => {
     });
 
     await expect(client.restoreSession()).resolves.toBeNull();
-    expect(storage.removeItem).toHaveBeenCalledWith("mirante.geonode.user-id");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v2/userinfo/",
+      expect.objectContaining({ credentials: "include" }),
+    );
   });
 
   it("logs out through the vanilla CSRF-protected account endpoint", async () => {

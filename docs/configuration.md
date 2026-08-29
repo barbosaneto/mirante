@@ -6,6 +6,7 @@ Mirante distributions define public settings with `defineMiranteConfig` from
 
 The contract covers:
 
+- Optional or required GeoNode authentication before application startup.
 - Application name and logo URL.
 - Semantic theme colors exposed as CSS custom properties.
 - GeoNode API base URL, public web URL, and dataset management path.
@@ -18,6 +19,9 @@ The contract covers:
 import { defineMiranteConfig } from "@mirante/core";
 
 export const config = defineMiranteConfig({
+  authentication: {
+    required: false,
+  },
   branding: {
     applicationName: "My Geoportal",
     logoUrl: "/branding/logo.svg",

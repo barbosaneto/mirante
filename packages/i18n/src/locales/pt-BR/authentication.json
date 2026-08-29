@@ -15,6 +15,9 @@
     "submit": "Entrar",
     "submitting": "Entrando"
   },
+  "providers": {
+    "separator": "ou continue com"
+  },
   "errors": {
     "csrf-unavailable": "O GeoNode não conseguiu iniciar uma solicitação segura de login.",
     "invalid-credentials": "O usuário ou a senha estão incorretos.",

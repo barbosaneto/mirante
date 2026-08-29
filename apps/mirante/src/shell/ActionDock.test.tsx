@@ -6,6 +6,13 @@ import { describe, expect, it, vi } from "vitest";
 import { ActionDock } from "./ActionDock";
 
 describe("ActionDock", () => {
+  const noCapabilities = {
+    createMaps: false,
+    uploadDatasets: false,
+    manageGeoNode: false,
+    editCurrentMap: false,
+    manageCurrentMap: false,
+  } as const;
   const baseMaps = [
     {
       id: "open-street-map",
@@ -47,6 +54,7 @@ describe("ActionDock", () => {
         baseMap="open-street-map"
         baseMaps={baseMaps}
         canUploadDatasets={false}
+        capabilities={noCapabilities}
         fallbackLocale="en"
         map={map}
         uploadEnabled={false}
@@ -68,6 +76,7 @@ describe("ActionDock", () => {
         baseMap="open-street-map"
         baseMaps={baseMaps}
         canUploadDatasets={false}
+        capabilities={noCapabilities}
         fallbackLocale="en"
         map={map}
         uploadEnabled={false}
@@ -111,6 +120,7 @@ describe("ActionDock", () => {
         baseMap="open-street-map"
         baseMaps={baseMaps}
         canUploadDatasets={false}
+        capabilities={noCapabilities}
         fallbackLocale="en"
         map={map}
         uploadEnabled
@@ -131,6 +141,7 @@ describe("ActionDock", () => {
         baseMap="open-street-map"
         baseMaps={baseMaps}
         canUploadDatasets
+        capabilities={{ ...noCapabilities, uploadDatasets: true }}
         fallbackLocale="en"
         map={map}
         uploadEnabled
@@ -145,5 +156,62 @@ describe("ActionDock", () => {
     fireEvent.click(button);
 
     expect(onUpload).toHaveBeenCalledOnce();
+  });
+
+  it("enforces extension capability requirements", () => {
+    const onClick = vi.fn<RegisteredToolbarItem["onClick"]>();
+    const action: RegisteredToolbarItem = {
+      id: "map-editor",
+      extensionId: "test-extension",
+      translationNamespace: "common",
+      labelKey: "application.name",
+      icon: "home",
+      access: { allOf: ["editCurrentMap"] },
+      onClick,
+    };
+    const map = {
+      addDatasetLayer: vi.fn(),
+      fitDatasetLayer: vi.fn(),
+      fitGeographicExtent: vi.fn(),
+      getView: vi.fn(),
+      destroy: vi.fn(),
+      removeDatasetLayer: vi.fn(),
+      setDatasetLayerOpacity: vi.fn(),
+      setDatasetLayerFilter: vi.fn(),
+      setDatasetLayerVisibility: vi.fn(),
+      setSelectedFeatureGeometry: vi.fn(),
+      setBaseMap: vi.fn(),
+      setView: vi.fn(),
+      subscribeFeatureInfo: vi.fn(),
+    } satisfies MapFacade;
+    const commonProps = {
+      actions: [action],
+      authenticated: true,
+      baseMap: "open-street-map",
+      baseMaps,
+      canUploadDatasets: false,
+      fallbackLocale: "en",
+      map,
+      uploadEnabled: false,
+      onUpload: vi.fn(),
+      onMaps: vi.fn(),
+      onBaseMapChange: vi.fn(),
+      onClosePanel: vi.fn(),
+      onOpenPanel: vi.fn(),
+    } as const;
+    const { rerender } = render(
+      <ActionDock {...commonProps} capabilities={noCapabilities} />,
+    );
+    const button = screen.getByRole("button", { name: "Mirante" });
+    expect(button).toBeDisabled();
+
+    rerender(
+      <ActionDock
+        {...commonProps}
+        capabilities={{ ...noCapabilities, editCurrentMap: true }}
+      />,
+    );
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });

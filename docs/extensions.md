@@ -38,11 +38,77 @@ export const mirante = createMirante({
 });
 ```
 
-The registry validates extension and panel identifiers, rejects duplicates,
+The registry validates extension, panel, and authentication-provider identifiers, rejects duplicates,
 isolates translation namespaces, and renders native and external toolbar actions
 through the same path.
 
-Set `requiresAuthentication: true` on a toolbar item when its command must only run for an authenticated GeoNode session. The shell keeps that action disabled until session restoration or sign-in succeeds.
+Extensions can also register login buttons backed by social or institutional
+providers configured in GeoNode. See [Authentication](authentication.md) for
+the provider contract and security constraints.
+
+## Access requirements
+
+Toolbar actions and panels can declare access requirements without importing
+application internals:
+
+```ts
+export default defineExtension({
+  id: "resource-tools",
+  mapToolbar: [
+    {
+      id: "publish-analysis",
+      labelKey: "publish.label",
+      icon: "globe",
+      access: {
+        authenticated: true,
+        allOf: ["uploadDatasets"],
+      },
+      onClick() {},
+    },
+    {
+      id: "edit-map-notes",
+      labelKey: "notes.label",
+      icon: "home",
+      access: {
+        anyOf: ["editCurrentMap", "manageCurrentMap"],
+      },
+      onClick({ ui }) {
+        ui.openPanel("map-notes");
+      },
+    },
+  ],
+  panels: [
+    {
+      id: "map-notes",
+      titleKey: "notes.title",
+      access: { allOf: ["editCurrentMap"] },
+      component: MapNotesPanel,
+    },
+  ],
+});
+```
+
+`allOf` requires every listed capability. `anyOf` requires at least one. When
+both are present, both rules must pass. Supported capabilities are:
+
+| Capability         | Meaning                                             |
+| ------------------ | --------------------------------------------------- |
+| `createMaps`       | The GeoNode user can create resource-backed maps    |
+| `uploadDatasets`   | The GeoNode user can publish datasets               |
+| `manageGeoNode`    | The session belongs to GeoNode staff or a superuser |
+| `editCurrentMap`   | The user owns or can edit the opened saved map      |
+| `manageCurrentMap` | The user owns or can manage the opened saved map    |
+
+The shell disables toolbar actions whose requirements are not met and refuses
+to open inaccessible panels. It reevaluates resource capabilities when the
+current saved map changes.
+
+`requiresAuthentication: true` remains supported for existing extensions and
+is normalized to `access.authenticated`. New extensions should use `access`.
+
+Access requirements describe presentation policy. They do not replace server
+authorization: an extension must call GeoNode endpoints that independently
+enforce the corresponding operation.
 
 ## Panels and custom icons
 

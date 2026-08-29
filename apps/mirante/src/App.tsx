@@ -12,6 +12,14 @@ import {
   type GeoNodeMapSummary,
   type UploadDatasetOptions,
 } from "@mirante/geonode";
+import type {
+  MiranteConfig,
+  RegisteredAuthenticationProvider,
+} from "@mirante/core";
+import {
+  isExtensionAccessAllowed,
+  type MiranteCapabilitySet,
+} from "@mirante/sdk";
 import {
   createMap,
   type BaseMapId,
@@ -24,6 +32,8 @@ import { useTranslation } from "react-i18next";
 
 import { useAuthentication } from "./auth/AuthenticationContext";
 import { AuthenticationProvider } from "./auth/AuthenticationProvider";
+import { createAuthenticationProviderUrl } from "./auth/providerUrl";
+import { SignInPanel } from "./auth/SignInPanel";
 import { AttributeTable } from "./features/AttributeTable";
 import { FeatureInfoDialog } from "./features/FeatureInfoDialog";
 import { mirante } from "./mirante";
@@ -62,6 +72,40 @@ type SelectedFeature = Pick<
   "datasetId" | "featureId" | "geometry"
 >;
 
+function createThemeStyle(
+  theme: MiranteConfig["theme"],
+): CSSProperties & Record<`--mirante-${string}`, string> {
+  return {
+    "--mirante-color-primary": theme.primaryColor,
+    "--mirante-color-primary-strong": theme.primaryColorStrong,
+    "--mirante-color-primary-contrast": theme.primaryContrastColor,
+    "--mirante-color-text": theme.textColor,
+    "--mirante-color-text-muted": theme.textMutedColor,
+    "--mirante-color-surface": theme.surfaceColor,
+    "--mirante-color-panel": theme.panelColor,
+    "--mirante-color-panel-strong": theme.panelStrongColor,
+    "--mirante-color-border": theme.borderColor,
+    "--mirante-color-focus": theme.focusColor,
+    "--mirante-color-success": theme.successColor,
+    "--mirante-color-error": theme.errorColor,
+  };
+}
+
+function startProviderSignIn(provider: RegisteredAuthenticationProvider) {
+  const { geonode } = mirante.config;
+  const baseUrl =
+    geonode.baseUrl === "/" || geonode.baseUrl === ""
+      ? window.location.origin
+      : new URL(geonode.webUrl, window.location.origin).toString();
+  window.location.assign(
+    createAuthenticationProviderUrl({
+      baseUrl,
+      loginPath: provider.loginPath,
+      returnUrl: window.location.href,
+    }),
+  );
+}
+
 function ApplicationShell({
   datasetClient,
   mapClient,
@@ -99,20 +143,7 @@ function ApplicationShell({
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
 
-  const themeStyle: CSSProperties & Record<`--mirante-${string}`, string> = {
-    "--mirante-color-primary": config.theme.primaryColor,
-    "--mirante-color-primary-strong": config.theme.primaryColorStrong,
-    "--mirante-color-primary-contrast": config.theme.primaryContrastColor,
-    "--mirante-color-text": config.theme.textColor,
-    "--mirante-color-text-muted": config.theme.textMutedColor,
-    "--mirante-color-surface": config.theme.surfaceColor,
-    "--mirante-color-panel": config.theme.panelColor,
-    "--mirante-color-panel-strong": config.theme.panelStrongColor,
-    "--mirante-color-border": config.theme.borderColor,
-    "--mirante-color-focus": config.theme.focusColor,
-    "--mirante-color-success": config.theme.successColor,
-    "--mirante-color-error": config.theme.errorColor,
-  };
+  const themeStyle = createThemeStyle(config.theme);
 
   useEffect(() => {
     const target = mapTargetRef.current;
@@ -272,7 +303,7 @@ function ApplicationShell({
     setBaseMap(restoredBaseMap);
     map.setBaseMap(restoredBaseMap);
     map.setView(savedMap.view);
-    setActiveSavedMap({ id: savedMap.id, title: savedMap.title });
+    setActiveSavedMap(savedMap);
   }
 
   function changeBaseMap(id: BaseMapId) {
@@ -394,6 +425,41 @@ function ApplicationShell({
   const activeExtensionPanel = mirante.panels.find(
     (panel) => panel.id === activeExtensionPanelId,
   );
+  const canEditCurrentMap =
+    activeSavedMap !== null &&
+    (activeSavedMap.canEdit || activeSavedMap.ownerId === user?.id);
+  const canManageCurrentMap =
+    activeSavedMap !== null &&
+    (activeSavedMap.canManage || activeSavedMap.ownerId === user?.id);
+  const capabilities: MiranteCapabilitySet = {
+    createMaps: user?.canCreateMaps === true,
+    uploadDatasets: user?.canUploadDatasets === true,
+    manageGeoNode: user?.canManageGeoNode === true,
+    editCurrentMap: canEditCurrentMap,
+    manageCurrentMap: canManageCurrentMap,
+  };
+  const accessContext = {
+    authenticated: status === "authenticated",
+    capabilities,
+  };
+  const accessibleExtensionPanel =
+    activeExtensionPanel &&
+    isExtensionAccessAllowed(activeExtensionPanel.access, accessContext)
+      ? activeExtensionPanel
+      : undefined;
+
+  useEffect(() => {
+    if (activeExtensionPanelId && !accessibleExtensionPanel) {
+      setActiveExtensionPanelId(null);
+    }
+  }, [activeExtensionPanelId, accessibleExtensionPanel]);
+
+  function openExtensionPanel(id: string) {
+    const panel = mirante.panels.find((candidate) => candidate.id === id);
+    if (panel && isExtensionAccessAllowed(panel.access, accessContext)) {
+      setActiveExtensionPanelId(id);
+    }
+  }
 
   return (
     <main className="app-shell" style={themeStyle}>
@@ -426,15 +492,20 @@ function ApplicationShell({
         onOpenChange={setCatalogueOpen}
       />
       <LanguageSelector locales={config.i18n.locales} />
-      <UserArea datasetManagementUrl={datasetManagementUrl} />
+      <UserArea
+        datasetManagementUrl={datasetManagementUrl}
+        providers={mirante.authenticationProviders}
+        onProviderSignIn={startProviderSignIn}
+      />
       <ActionDock
         actions={mirante.mapToolbar}
         authenticated={status === "authenticated"}
         canUploadDatasets={user?.canUploadDatasets === true}
+        capabilities={capabilities}
         fallbackLocale={config.i18n.fallbackLocale}
         map={map}
         onClosePanel={() => setActiveExtensionPanelId(null)}
-        onOpenPanel={setActiveExtensionPanelId}
+        onOpenPanel={openExtensionPanel}
         baseMap={baseMap}
         baseMaps={config.map.baseMaps}
         onBaseMapChange={changeBaseMap}
@@ -445,17 +516,18 @@ function ApplicationShell({
           setUploadOpen(true);
         }}
       />
-      {map && activeExtensionPanel ? (
+      {map && accessibleExtensionPanel ? (
         <ExtensionPanelHost
           map={map}
-          panel={activeExtensionPanel}
+          panel={accessibleExtensionPanel}
           onClose={() => setActiveExtensionPanelId(null)}
         />
       ) : null}
       {mapLibraryOpen ? (
         <MapPersistenceDialog
           activeMap={activeSavedMap}
-          canSave={user?.canSaveMaps === true}
+          canCreate={user?.canCreateMaps === true}
+          canEditActive={canEditCurrentMap}
           client={mapClient}
           layerCount={datasets.length}
           onClose={() => setMapLibraryOpen(false)}
@@ -509,18 +581,71 @@ function ApplicationShell({
   );
 }
 
+function AuthenticationBoundary({
+  authenticationRequired,
+  children,
+}: {
+  authenticationRequired: boolean;
+  children: React.ReactNode;
+}) {
+  const { status } = useAuthentication();
+  const { t } = useTranslation("authentication");
+  const { config } = mirante;
+
+  useEffect(() => {
+    document.title = config.branding.applicationName;
+  }, [config.branding.applicationName]);
+
+  if (!authenticationRequired || status === "authenticated") return children;
+
+  const waiting = status === "restoring" || status === "signing-out";
+  return (
+    <main
+      className="authentication-gate"
+      style={createThemeStyle(config.theme)}
+    >
+      <Brand
+        applicationName={config.branding.applicationName}
+        logoUrl={config.branding.logoUrl}
+      />
+      <LanguageSelector locales={config.i18n.locales} />
+      {waiting ? (
+        <p className="authentication-gate__status" role="status">
+          {status === "signing-out" ? t("signingOut") : t("checkSession")}
+        </p>
+      ) : (
+        <section
+          className="authentication-dialog authentication-gate__dialog"
+          aria-labelledby="authentication-dialog-title"
+          aria-describedby="authentication-gate-description"
+        >
+          <SignInPanel
+            descriptionId="authentication-gate-description"
+            providers={mirante.authenticationProviders}
+            onProviderSignIn={startProviderSignIn}
+          />
+        </section>
+      )}
+    </main>
+  );
+}
+
 export function App({
   authenticationClient = defaultAuthenticationClient,
+  authenticationRequired = mirante.config.authentication.required,
   datasetClient = defaultDatasetClient,
   mapClient = defaultMapClient,
 }: {
   authenticationClient?: GeoNodeAuthenticationClient;
+  authenticationRequired?: boolean;
   datasetClient?: GeoNodeDatasetClient;
   mapClient?: GeoNodeMapClient;
 }) {
   return (
     <AuthenticationProvider client={authenticationClient}>
-      <ApplicationShell datasetClient={datasetClient} mapClient={mapClient} />
+      <AuthenticationBoundary authenticationRequired={authenticationRequired}>
+        <ApplicationShell datasetClient={datasetClient} mapClient={mapClient} />
+      </AuthenticationBoundary>
     </AuthenticationProvider>
   );
 }

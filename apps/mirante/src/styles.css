@@ -41,6 +41,31 @@ button,
   height: 100%;
 }
 
+.authentication-gate {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  padding: var(--mirante-space-4);
+  place-items: center;
+  color: var(--mirante-color-text);
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--mirante-color-primary) 14%, transparent),
+      transparent 38%
+    ),
+    var(--mirante-color-surface);
+}
+
+.authentication-gate__dialog {
+  z-index: 1;
+}
+
+.authentication-gate__status {
+  color: var(--mirante-color-text-muted);
+  font-size: 0.875rem;
+}
+
 .app-shell {
   position: fixed;
   inset: 0;
@@ -1885,6 +1910,40 @@ button,
   display: flex;
   gap: var(--mirante-space-3);
   justify-content: flex-end;
+}
+
+.authentication-providers {
+  display: grid;
+  gap: var(--mirante-space-3);
+  padding: 0 var(--mirante-space-5) var(--mirante-space-5);
+}
+
+.authentication-providers > p {
+  display: flex;
+  gap: var(--mirante-space-3);
+  align-items: center;
+  color: var(--mirante-color-text-muted);
+  font-size: 0.6875rem;
+}
+
+.authentication-providers > p::before,
+.authentication-providers > p::after {
+  height: 1px;
+  flex: 1;
+  background: var(--mirante-color-border);
+  content: "";
+}
+
+.authentication-provider {
+  display: flex;
+  gap: var(--mirante-space-2);
+  align-items: center;
+  justify-content: center;
+}
+
+.authentication-provider__icon {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .button {

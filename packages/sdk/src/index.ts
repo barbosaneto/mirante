@@ -21,6 +21,49 @@ export interface MapCommandApi {
   setView: (options: MapViewOptions) => void;
 }
 
+export const miranteCapabilities = [
+  "createMaps",
+  "uploadDatasets",
+  "manageGeoNode",
+  "editCurrentMap",
+  "manageCurrentMap",
+] as const;
+
+export type MiranteCapability = (typeof miranteCapabilities)[number];
+export type MiranteCapabilitySet = Readonly<Record<MiranteCapability, boolean>>;
+
+export interface ExtensionAccessRequirement {
+  authenticated?: boolean;
+  allOf?: readonly MiranteCapability[];
+  anyOf?: readonly MiranteCapability[];
+}
+
+export interface ExtensionAccessContext {
+  authenticated: boolean;
+  capabilities: MiranteCapabilitySet;
+}
+
+export function isExtensionAccessAllowed(
+  requirement: ExtensionAccessRequirement | undefined,
+  context: ExtensionAccessContext,
+): boolean {
+  if (!requirement) return true;
+  if (requirement.authenticated && !context.authenticated) return false;
+  if (
+    requirement.allOf?.some((capability) => !context.capabilities[capability])
+  ) {
+    return false;
+  }
+  if (
+    requirement.anyOf &&
+    requirement.anyOf.length > 0 &&
+    !requirement.anyOf.some((capability) => context.capabilities[capability])
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export interface ToolbarActionContext {
   map: MapCommandApi;
   ui: {
@@ -30,6 +73,7 @@ export interface ToolbarActionContext {
 }
 
 export interface MapToolbarItemDefinition {
+  access?: ExtensionAccessRequirement;
   id: string;
   labelKey: string;
   icon: ExtensionToolbarIcon | ToolbarIcon;
@@ -47,13 +91,22 @@ export interface ExtensionPanelProps {
 }
 
 export interface ExtensionPanelDefinition {
+  access?: ExtensionAccessRequirement;
   id: string;
   titleKey: string;
   component: ComponentType<ExtensionPanelProps>;
 }
 
+export interface AuthenticationProviderDefinition {
+  id: string;
+  labelKey: string;
+  loginPath: string;
+  icon?: ComponentType<{ className?: string }>;
+}
+
 export interface MiranteExtension {
   id: string;
+  authenticationProviders?: readonly AuthenticationProviderDefinition[];
   mapToolbar?: readonly MapToolbarItemDefinition[];
   panels?: readonly ExtensionPanelDefinition[];
   translations?: Readonly<

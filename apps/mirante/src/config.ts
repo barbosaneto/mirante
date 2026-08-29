@@ -11,6 +11,10 @@ const geonodeWebUrl =
     : geonodeBaseUrl);
 
 export const miranteConfig = defineMiranteConfig({
+  authentication: {
+    required:
+      import.meta.env.VITE_REQUIRE_AUTHENTICATION?.toLowerCase() === "true",
+  },
   branding: {
     applicationName: "Mirante",
     logoUrl: miranteLogo,

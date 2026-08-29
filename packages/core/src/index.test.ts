@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createMirante, defineMiranteConfig } from "./index";
 
 const config = defineMiranteConfig({
+  authentication: { required: false },
   branding: { applicationName: "Test", logoUrl: "/logo.svg" },
   theme: {
     borderColor: "#334155",
@@ -77,6 +78,46 @@ describe("createMirante", () => {
     ).toBe("Example action");
   });
 
+  it("normalizes legacy authentication and validates capability requirements", () => {
+    const extension = defineExtension({
+      id: "protected-extension",
+      mapToolbar: [
+        {
+          id: "protected-action",
+          labelKey: "action.label",
+          icon: "home",
+          requiresAuthentication: true,
+          access: { allOf: ["editCurrentMap"] },
+          onClick() {},
+        },
+      ],
+    });
+
+    expect(
+      createMirante({ config, extensions: [extension] }).mapToolbar[1]?.access,
+    ).toEqual({ authenticated: true, allOf: ["editCurrentMap"] });
+
+    expect(() =>
+      createMirante({
+        config,
+        extensions: [
+          {
+            id: "invalid-capability",
+            mapToolbar: [
+              {
+                id: "invalid-action",
+                labelKey: "action.label",
+                icon: "home",
+                access: { allOf: ["unknown-capability"] },
+                onClick() {},
+              },
+            ],
+          } as never,
+        ],
+      }),
+    ).toThrow('requires unsupported capability "unknown-capability"');
+  });
+
   it("registers extension panels and arbitrary locale translations", () => {
     function Panel() {
       return null;
@@ -135,6 +176,71 @@ describe("createMirante", () => {
     expect(() =>
       createMirante({ config, extensions: [first, second] }),
     ).toThrow('Panel id "details" is already registered.');
+  });
+
+  it("registers authentication providers supplied by extensions", () => {
+    const extension = defineExtension({
+      id: "institution-login",
+      authenticationProviders: [
+        {
+          id: "oidc",
+          labelKey: "login.oidc",
+          loginPath: "/account/openid_connect/login/",
+        },
+      ],
+      translations: { en: { login: { oidc: "Institutional login" } } },
+    });
+
+    const definition = createMirante({ config, extensions: [extension] });
+
+    expect(definition.authenticationProviders).toEqual([
+      expect.objectContaining({
+        id: "oidc",
+        extensionId: "institution-login",
+        translationNamespace: "extension-institution-login",
+      }),
+    ]);
+  });
+
+  it("rejects unsafe and duplicate authentication provider paths", () => {
+    expect(() =>
+      createMirante({
+        config,
+        extensions: [
+          defineExtension({
+            id: "unsafe-login",
+            authenticationProviders: [
+              {
+                id: "oidc",
+                labelKey: "login.oidc",
+                loginPath: "https://untrusted.example.test/login",
+              },
+            ],
+          }),
+        ],
+      }),
+    ).toThrow("must use a same-origin absolute path");
+
+    const provider = {
+      id: "oidc",
+      labelKey: "login.oidc",
+      loginPath: "/account/openid_connect/login/",
+    };
+    expect(() =>
+      createMirante({
+        config,
+        extensions: [
+          defineExtension({
+            id: "first-login",
+            authenticationProviders: [provider],
+          }),
+          defineExtension({
+            id: "second-login",
+            authenticationProviders: [provider],
+          }),
+        ],
+      }),
+    ).toThrow('Authentication provider id "oidc" is already registered.');
   });
 
   it("rejects invalid distribution registries", () => {

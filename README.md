@@ -60,7 +60,7 @@ panels, and React components. The official distribution includes an executable
 view-presets extension outside the core. See [Extensions](docs/extensions.md) and
 [Internationalization](docs/internationalization.md).
 
-Authentication uses GeoNode's standard Django session, CSRF protection, and API V2 user resource without requiring a custom backend. See [Authentication](docs/authentication.md) for the request flow and deployment requirements.
+Authentication uses GeoNode's standard Django session, CSRF protection, and API V2 user resource without requiring a custom backend. A distribution can require authentication before loading the client and register GeoNode social-login providers through the extension API. See [Authentication](docs/authentication.md) and [Authorization](docs/authorization.md) for the request flow, capability model, and deployment requirements.
 
 Users with GeoNode's resource creation permission can upload GeoJSON, KML, and zipped Shapefiles through its standard asynchronous importer. Optional title, description, polygon styling, and point styling use vanilla GeoNode metadata and SLD workflows. Mirante follows the execution, retrieves the published dataset, adds its WMS layer to OpenLayers, and exposes visibility and opacity controls. See [Dataset ingestion](docs/dataset-ingestion.md) and [Upload permissions](docs/upload-permissions.md) for the supported flow and authorization contract.
 

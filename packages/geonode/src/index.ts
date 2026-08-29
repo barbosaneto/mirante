@@ -1,3 +1,8 @@
+export type GeoNodeUserRole =
+  | "authenticated-user"
+  | "contributor"
+  | "administrator";
+
 export interface GeoNodeUser {
   id: number;
   username: string;
@@ -6,8 +11,10 @@ export interface GeoNodeUser {
   avatarUrl: string;
   isAdministrator: boolean;
   permissions: readonly string[];
+  roles: readonly GeoNodeUserRole[];
+  canCreateMaps: boolean;
   canUploadDatasets: boolean;
-  canSaveMaps: boolean;
+  canManageGeoNode: boolean;
 }
 
 export * from "./datasets";
@@ -55,9 +62,7 @@ interface GeoNodeUserPayload {
 }
 
 interface StorageAdapter {
-  getItem(key: string): string | null;
   removeItem(key: string): void;
-  setItem(key: string, value: string): void;
 }
 
 interface CreateClientOptions {
@@ -108,16 +113,25 @@ function mapUser(payload: GeoNodeUserPayload): GeoNodeUser {
     .filter(Boolean)
     .join(" ");
 
+  const isAdministrator = payload.is_superuser || payload.is_staff;
+  const isContributor =
+    payload.is_superuser || payload.perms.includes("add_resource");
+  const roles: GeoNodeUserRole[] = ["authenticated-user"];
+  if (isContributor) roles.push("contributor");
+  if (isAdministrator) roles.push("administrator");
+
   return {
     id: payload.pk,
     username: payload.username,
     displayName: fullName || payload.username,
     email: payload.email,
     avatarUrl: payload.avatar,
-    isAdministrator: payload.is_superuser || payload.is_staff,
+    isAdministrator,
     permissions: payload.perms,
-    canUploadDatasets: payload.perms.includes("add_resource"),
-    canSaveMaps: payload.perms.includes("add_resource"),
+    roles,
+    canCreateMaps: isContributor,
+    canUploadDatasets: isContributor,
+    canManageGeoNode: isAdministrator,
   };
 }
 
@@ -243,24 +257,51 @@ export function createGeoNodeAuthenticationClient({
     return mapUser(parseUserPayload(userPayload));
   }
 
+  async function getSessionUser(): Promise<GeoNodeUser | null> {
+    const response = await request("/api/v2/userinfo/");
+
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) {
+      throw new GeoNodeAuthenticationError(
+        "unexpected-response",
+        `GeoNode session request failed with status ${response.status}.`,
+      );
+    }
+
+    const payload: unknown = await response.json();
+    if (!isRecord(payload)) {
+      throw new GeoNodeAuthenticationError(
+        "unexpected-response",
+        "GeoNode returned invalid session information.",
+      );
+    }
+    const id =
+      typeof payload.sub === "string" && /^\d+$/.test(payload.sub)
+        ? Number(payload.sub)
+        : typeof payload.sub === "number" && Number.isInteger(payload.sub)
+          ? payload.sub
+          : null;
+    if (id === null) {
+      throw new GeoNodeAuthenticationError(
+        "unexpected-response",
+        "GeoNode returned session information without a valid user id.",
+      );
+    }
+
+    return getUserById(id);
+  }
+
   return {
     async restoreSession() {
-      const rawUserId = storage?.getItem(storedUserIdKey);
-
-      if (!rawUserId || !/^\d+$/.test(rawUserId)) {
-        storage?.removeItem(storedUserIdKey);
-        return null;
-      }
-
       try {
-        return await getUserById(Number(rawUserId));
+        const user = await getSessionUser();
+        storage?.removeItem(storedUserIdKey);
+        return user;
       } catch (error) {
         if (
           error instanceof GeoNodeAuthenticationError &&
-          (error.code === "session-expired" ||
-            error.code === "unexpected-response")
+          error.code === "session-expired"
         ) {
-          storage?.removeItem(storedUserIdKey);
           return null;
         }
 
@@ -299,7 +340,6 @@ export function createGeoNodeAuthenticationClient({
       }
 
       const user = await getUserByUsername(username);
-      storage?.setItem(storedUserIdKey, String(user.id));
       return user;
     },
 

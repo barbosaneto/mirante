@@ -41,7 +41,13 @@ describe("GeoNode map client", () => {
           },
         ],
       }),
-    ).resolves.toEqual({ id: 12, title: "Field survey" });
+    ).resolves.toEqual({
+      id: 12,
+      title: "Field survey",
+      permissions: [],
+      canEdit: true,
+      canManage: false,
+    });
 
     const request = fetchMock.mock.calls[1];
     expect(request?.[0]).toBe("/api/v2/maps?include[]=data");
@@ -174,8 +180,13 @@ describe("GeoNode map client", () => {
         page: 1,
         page_size: 10,
         maps: [
-          { pk: "12", title: "Field survey" },
-          { pk: 13, title: "Watersheds" },
+          {
+            pk: "12",
+            title: "Field survey",
+            owner: { pk: 7 },
+            perms: ["view_resourcebase", "change_resourcebase"],
+          },
+          { pk: 13, title: "Watersheds", perms: ["view_resourcebase"] },
         ],
       }),
     );
@@ -183,8 +194,21 @@ describe("GeoNode map client", () => {
 
     await expect(client.listMaps()).resolves.toEqual({
       maps: [
-        { id: 12, title: "Field survey" },
-        { id: 13, title: "Watersheds" },
+        {
+          id: 12,
+          title: "Field survey",
+          ownerId: 7,
+          permissions: ["view_resourcebase", "change_resourcebase"],
+          canEdit: true,
+          canManage: false,
+        },
+        {
+          id: 13,
+          title: "Watersheds",
+          permissions: ["view_resourcebase"],
+          canEdit: false,
+          canManage: false,
+        },
       ],
       total: 2,
       page: 1,
@@ -231,7 +255,13 @@ describe("GeoNode map client", () => {
         view: { center: [-47.9, -15.8], zoom: 8 },
         layers: [],
       }),
-    ).resolves.toEqual({ id: 12, title: "Field survey" });
+    ).resolves.toEqual({
+      id: 12,
+      title: "Field survey",
+      permissions: [],
+      canEdit: true,
+      canManage: false,
+    });
 
     expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/v2/maps/12?include[]=data");
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: "PATCH" });
@@ -289,6 +319,40 @@ describe("GeoNode map client", () => {
           },
         },
       ],
+    });
+  });
+
+  it("derives edit and management capabilities from map permissions", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        map: {
+          pk: 18,
+          title: "Managed map",
+          owner: { pk: 44 },
+          perms: [
+            "view_resourcebase",
+            "change_resourcebase",
+            "change_resourcebase_permissions",
+          ],
+          data: {
+            map: { zoom: 5, center: { x: -52, y: -14 } },
+            mirante: { layers: [] },
+          },
+          maplayers: [],
+        },
+      }),
+    );
+    const client = createGeoNodeMapClient({ baseUrl: "/", fetch: fetchMock });
+
+    await expect(client.getMap(18)).resolves.toMatchObject({
+      ownerId: 44,
+      permissions: [
+        "view_resourcebase",
+        "change_resourcebase",
+        "change_resourcebase_permissions",
+      ],
+      canEdit: true,
+      canManage: true,
     });
   });
 

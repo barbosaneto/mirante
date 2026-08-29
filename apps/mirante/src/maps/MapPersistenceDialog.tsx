@@ -6,7 +6,8 @@ const pageSize = 8;
 
 interface MapPersistenceDialogProps {
   activeMap: GeoNodeMapSummary | null;
-  canSave: boolean;
+  canCreate: boolean;
+  canEditActive: boolean;
   client: GeoNodeMapClient;
   layerCount: number;
   onClose: () => void;
@@ -17,7 +18,8 @@ interface MapPersistenceDialogProps {
 
 export function MapPersistenceDialog({
   activeMap,
-  canSave,
+  canCreate,
+  canEditActive,
   client,
   layerCount,
   onClose,
@@ -154,9 +156,9 @@ export function MapPersistenceDialog({
           </button>
         </header>
 
-        {canSave ? (
+        {canCreate || canEditActive ? (
           <div className="map-library-write-actions">
-            {activeMap ? (
+            {activeMap && canEditActive ? (
               <section className="map-library-current">
                 <div>
                   <span>{t("update.current")}</span>
@@ -173,34 +175,36 @@ export function MapPersistenceDialog({
                 <p>{t("update.help", { count: layerCount })}</p>
               </section>
             ) : null}
-            <form
-              className="map-library-save"
-              onSubmit={(event) => void save(event)}
-            >
-              <div>
-                <label htmlFor="map-title">{t("save.title")}</label>
-                <p>{t("save.help", { count: layerCount })}</p>
-              </div>
-              <div className="map-library-save__controls">
-                <input
-                  id="map-title"
-                  type="text"
-                  maxLength={255}
-                  required
-                  value={title}
-                  placeholder={t("save.placeholder")}
-                  disabled={busy}
-                  onChange={(event) => setTitle(event.currentTarget.value)}
-                />
-                <button
-                  className="button button--primary"
-                  type="submit"
-                  disabled={busy || !title.trim()}
-                >
-                  {saving ? t("save.saving") : t("save.action")}
-                </button>
-              </div>
-            </form>
+            {canCreate ? (
+              <form
+                className="map-library-save"
+                onSubmit={(event) => void save(event)}
+              >
+                <div>
+                  <label htmlFor="map-title">{t("save.title")}</label>
+                  <p>{t("save.help", { count: layerCount })}</p>
+                </div>
+                <div className="map-library-save__controls">
+                  <input
+                    id="map-title"
+                    type="text"
+                    maxLength={255}
+                    required
+                    value={title}
+                    placeholder={t("save.placeholder")}
+                    disabled={busy}
+                    onChange={(event) => setTitle(event.currentTarget.value)}
+                  />
+                  <button
+                    className="button button--primary"
+                    type="submit"
+                    disabled={busy || !title.trim()}
+                  >
+                    {saving ? t("save.saving") : t("save.action")}
+                  </button>
+                </div>
+              </form>
+            ) : null}
             {success ? (
               <p
                 className="map-library-message map-library-message--success"

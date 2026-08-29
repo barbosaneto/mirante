@@ -5,14 +5,20 @@ import {
 } from "@mirante/i18n";
 import {
   defineExtension,
+  miranteCapabilities,
+  type AuthenticationProviderDefinition,
   type BaseMapDefinition,
   type ExtensionPanelDefinition,
   type ExtensionTranslationBundle,
   type MapToolbarItemDefinition,
   type MiranteExtension,
+  type ExtensionAccessRequirement,
 } from "@mirante/sdk";
 
 export interface MiranteConfig {
+  authentication: {
+    required: boolean;
+  };
   branding: {
     applicationName: string;
     logoUrl: string;
@@ -68,7 +74,14 @@ export interface RegisteredPanel extends ExtensionPanelDefinition {
   translationNamespace: string;
 }
 
+export interface RegisteredAuthenticationProvider
+  extends AuthenticationProviderDefinition {
+  extensionId: string;
+  translationNamespace: string;
+}
+
 export interface MiranteDefinition {
+  authenticationProviders: readonly RegisteredAuthenticationProvider[];
   config: MiranteConfig;
   mapToolbar: readonly RegisteredToolbarItem[];
   panels: readonly RegisteredPanel[];
@@ -85,6 +98,21 @@ function assertValidExtensionId(extensionId: string): void {
     throw new Error(
       `Extension id "${extensionId}" must use lowercase letters, numbers, and hyphens.`,
     );
+  }
+}
+
+function assertValidAccessRequirement(
+  owner: string,
+  access: ExtensionAccessRequirement | undefined,
+): void {
+  if (!access) return;
+  const supported = new Set<string>(miranteCapabilities);
+  for (const capability of [...(access.allOf ?? []), ...(access.anyOf ?? [])]) {
+    if (!supported.has(capability)) {
+      throw new Error(
+        `${owner} requires unsupported capability "${capability}".`,
+      );
+    }
   }
 }
 
@@ -195,6 +223,8 @@ export function createMirante({
 
   const registeredIds = new Set<string>();
   const registeredPanelIds = new Set<string>();
+  const registeredAuthenticationProviderIds = new Set<string>();
+  const authenticationProviders: RegisteredAuthenticationProvider[] = [];
   const mapToolbar: RegisteredToolbarItem[] = [];
   const panels: RegisteredPanel[] = [];
   const allExtensions = [createNativeMapExtension(config), ...extensions];
@@ -212,15 +242,52 @@ export function createMirante({
       localeIds,
     );
 
+    for (const provider of extension.authenticationProviders ?? []) {
+      assertValidExtensionId(provider.id);
+      if (registeredAuthenticationProviderIds.has(provider.id)) {
+        throw new Error(
+          `Authentication provider id "${provider.id}" is already registered.`,
+        );
+      }
+      if (
+        !provider.loginPath.startsWith("/") ||
+        provider.loginPath.startsWith("//") ||
+        provider.loginPath.includes("\\")
+      ) {
+        throw new Error(
+          `Authentication provider "${provider.id}" must use a same-origin absolute path.`,
+        );
+      }
+      registeredAuthenticationProviderIds.add(provider.id);
+      authenticationProviders.push({
+        ...provider,
+        extensionId: extension.id,
+        translationNamespace,
+      });
+    }
+
     for (const toolbarItem of extension.mapToolbar ?? []) {
+      assertValidAccessRequirement(
+        `Toolbar item "${toolbarItem.id}"`,
+        toolbarItem.access,
+      );
       mapToolbar.push({
         ...toolbarItem,
+        ...(toolbarItem.requiresAuthentication
+          ? {
+              access: {
+                ...toolbarItem.access,
+                authenticated: true,
+              },
+            }
+          : {}),
         extensionId: extension.id,
         translationNamespace,
       });
     }
     for (const panel of extension.panels ?? []) {
       assertValidExtensionId(panel.id);
+      assertValidAccessRequirement(`Panel "${panel.id}"`, panel.access);
       if (registeredPanelIds.has(panel.id)) {
         throw new Error(`Panel id "${panel.id}" is already registered.`);
       }
@@ -234,6 +301,7 @@ export function createMirante({
   }
 
   return {
+    authenticationProviders,
     config,
     mapToolbar,
     panels,

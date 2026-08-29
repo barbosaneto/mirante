@@ -15,6 +15,9 @@
     "submit": "Sign in",
     "submitting": "Signing in"
   },
+  "providers": {
+    "separator": "or continue with"
+  },
   "errors": {
     "csrf-unavailable": "GeoNode could not start a secure sign-in request.",
     "invalid-credentials": "The username or password is incorrect.",

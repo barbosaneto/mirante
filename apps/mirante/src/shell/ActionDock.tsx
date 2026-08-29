@@ -1,6 +1,10 @@
 import type { BaseMapId, MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
-import type { BaseMapDefinition } from "@mirante/sdk";
+import {
+  isExtensionAccessAllowed,
+  type BaseMapDefinition,
+  type MiranteCapabilitySet,
+} from "@mirante/sdk";
 import { createElement } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +22,7 @@ interface ActionDockProps {
   baseMap: BaseMapId;
   baseMaps: readonly BaseMapDefinition[];
   canUploadDatasets: boolean;
+  capabilities: MiranteCapabilitySet;
   fallbackLocale: string;
   map: MapFacade | null;
   uploadEnabled: boolean;
@@ -34,6 +39,7 @@ export function ActionDock({
   baseMap,
   baseMaps,
   canUploadDatasets,
+  capabilities,
   fallbackLocale,
   map,
   onMaps,
@@ -78,6 +84,12 @@ export function ActionDock({
         const label = t(action.labelKey, {
           ns: action.translationNamespace,
         });
+        const allowed =
+          (action.requiresAuthentication !== true || authenticated) &&
+          isExtensionAccessAllowed(action.access, {
+            authenticated,
+            capabilities,
+          });
 
         return (
           <button
@@ -85,14 +97,9 @@ export function ActionDock({
             type="button"
             aria-label={label}
             title={label}
-            disabled={
-              !map || (action.requiresAuthentication === true && !authenticated)
-            }
+            disabled={!map || !allowed}
             onClick={() => {
-              if (
-                map &&
-                (action.requiresAuthentication !== true || authenticated)
-              ) {
+              if (map && allowed) {
                 action.onClick({
                   map,
                   ui: {

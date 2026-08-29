@@ -21,6 +21,10 @@ export interface GeoNodeMapLayerState {
 export interface GeoNodeMapSummary {
   id: number;
   title: string;
+  ownerId?: number;
+  permissions: readonly string[];
+  canEdit: boolean;
+  canManage: boolean;
 }
 
 export interface GeoNodeSavedMap extends GeoNodeMapSummary {
@@ -115,7 +119,10 @@ function parseId(value: unknown): number | null {
   return typeof id === "number" && Number.isInteger(id) ? id : null;
 }
 
-function parseSummary(value: unknown): GeoNodeMapSummary {
+function parseSummary(
+  value: unknown,
+  authorizedWrite = false,
+): GeoNodeMapSummary {
   if (!isRecord(value)) {
     throw new GeoNodeMapPersistenceError(
       "unexpected-response",
@@ -131,7 +138,28 @@ function parseSummary(value: unknown): GeoNodeMapSummary {
     );
   }
 
-  return { id, title: value.title };
+  const ownerId = isRecord(value.owner)
+    ? (parseId(value.owner.pk ?? value.owner.id) ?? undefined)
+    : undefined;
+  const permissions = Array.isArray(value.perms)
+    ? value.perms.filter(
+        (permission): permission is string => typeof permission === "string",
+      )
+    : [];
+  return {
+    id,
+    title: value.title,
+    ...(ownerId === undefined ? {} : { ownerId }),
+    permissions,
+    canEdit:
+      authorizedWrite ||
+      permissions.includes("change_resourcebase") ||
+      permissions.includes("change_resourcebase_metadata"),
+    canManage:
+      permissions.includes("change_resourcebase_permissions") ||
+      permissions.includes("delete_resourcebase") ||
+      permissions.includes("publish_resourcebase"),
+  };
 }
 
 function parseView(data: Record<string, unknown>): MapViewOptions | null {
@@ -430,7 +458,7 @@ export function createGeoNodeMapClient({
         "unexpected-response",
         "GeoNode returned an invalid map save response.",
       );
-    return parseSummary(payload.map);
+    return parseSummary(payload.map, true);
   }
 
   return {
@@ -495,7 +523,7 @@ export function createGeoNodeMapClient({
         );
       }
       return {
-        maps: payload.maps.map(parseSummary),
+        maps: payload.maps.map((map) => parseSummary(map)),
         total: payload.total,
         page: payload.page,
         pageSize: payload.page_size,

@@ -45,8 +45,10 @@ const authenticatedUser: GeoNodeUser = {
   avatarUrl: "/avatar.png",
   isAdministrator: true,
   permissions: ["add_resource"],
+  roles: ["authenticated-user", "contributor", "administrator"],
+  canCreateMaps: true,
   canUploadDatasets: true,
-  canSaveMaps: true,
+  canManageGeoNode: true,
 };
 
 const viewerUser: GeoNodeUser = {
@@ -56,8 +58,10 @@ const viewerUser: GeoNodeUser = {
   displayName: "Viewer",
   isAdministrator: false,
   permissions: [],
+  roles: ["authenticated-user"],
+  canCreateMaps: false,
   canUploadDatasets: false,
-  canSaveMaps: false,
+  canManageGeoNode: false,
 };
 
 const authenticationMock: GeoNodeAuthenticationClient = {
@@ -202,17 +206,44 @@ describe("App", () => {
       extent: [-54, -16, -45, -8],
     });
     listMapsMock.mockResolvedValue({
-      maps: [{ id: 12, title: "Field survey" }],
+      maps: [
+        {
+          id: 12,
+          title: "Field survey",
+          ownerId: 1000,
+          permissions: ["change_resourcebase"],
+          canEdit: true,
+          canManage: false,
+        },
+      ],
       page: 1,
       pageSize: 50,
       total: 1,
     });
-    createSavedMapMock.mockResolvedValue({ id: 13, title: "New map" });
-    updateSavedMapMock.mockResolvedValue({ id: 12, title: "Field survey" });
+    createSavedMapMock.mockResolvedValue({
+      id: 13,
+      title: "New map",
+      ownerId: 1000,
+      permissions: ["change_resourcebase"],
+      canEdit: true,
+      canManage: false,
+    });
+    updateSavedMapMock.mockResolvedValue({
+      id: 12,
+      title: "Field survey",
+      ownerId: 1000,
+      permissions: ["change_resourcebase"],
+      canEdit: true,
+      canManage: false,
+    });
     getSavedMapMock.mockResolvedValue({
       baseMap: "dark-matter",
       id: 12,
       title: "Field survey",
+      ownerId: 1000,
+      permissions: ["change_resourcebase"],
+      canEdit: true,
+      canManage: false,
       view: { center: [-47.9, -15.8], zoom: 8 },
       layers: [
         {
@@ -380,6 +411,32 @@ describe("App", () => {
         screen.getByRole("button", { name: "User account" }),
       ).toHaveTextContent("Sign in");
     });
+  });
+
+  it("requires a GeoNode session before initializing the map when configured", async () => {
+    render(
+      <App authenticationClient={authenticationMock} authenticationRequired />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Sign in to GeoNode" }),
+    ).toBeInTheDocument();
+    expect(mapMock.create).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Username" }), {
+      target: { value: "admin" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(
+      await screen.findByRole("region", {
+        name: "Interactive map centered on Brazil",
+      }),
+    ).toBeInTheDocument();
+    expect(mapMock.create).toHaveBeenCalledOnce();
   });
 
   it("does not expose upload to an authenticated user without permission", async () => {
@@ -902,5 +959,49 @@ describe("App", () => {
         }),
       ],
     });
+  });
+
+  it("lets an editor update an assigned map without creating new maps", async () => {
+    vi.mocked(authenticationMock.restoreSession).mockResolvedValue(viewerUser);
+    getSavedMapMock.mockResolvedValueOnce({
+      baseMap: "open-street-map",
+      id: 12,
+      title: "Assigned map",
+      ownerId: viewerUser.id,
+      permissions: ["view_resourcebase", "change_resourcebase"],
+      canEdit: true,
+      canManage: false,
+      view: { center: [-52, -15], zoom: 4 },
+      layers: [],
+    });
+
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+        mapClient={savedMapMock}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Save or open a map" }),
+    );
+    let dialog = await screen.findByRole("dialog", { name: "Saved maps" });
+    expect(
+      within(dialog).queryByRole("textbox", { name: "Save current map" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Open" }),
+    );
+
+    await waitFor(() => expect(getSavedMapMock).toHaveBeenCalledWith(12));
+    fireEvent.click(screen.getByRole("button", { name: "Save or open a map" }));
+    dialog = await screen.findByRole("dialog", { name: "Saved maps" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Update map" }));
+
+    await waitFor(() => expect(updateSavedMapMock).toHaveBeenCalled());
+    expect(
+      within(dialog).queryByRole("textbox", { name: "Save current map" }),
+    ).not.toBeInTheDocument();
   });
 });
