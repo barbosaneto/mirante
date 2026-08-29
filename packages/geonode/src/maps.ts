@@ -148,7 +148,6 @@ function parseView(data: Record<string, unknown>): MapViewOptions | null {
 }
 
 const filterTypes = new Set<GeoNodeAttributeType>(["date", "number", "text"]);
-const baseMapIds = new Set<BaseMapId>(["dark-matter", "open-street-map"]);
 const filterOperators = new Set<GeoNodeAttributeFilterOperator>([
   "contains",
   "equals",
@@ -274,10 +273,8 @@ function parseSavedMap(value: unknown): GeoNodeSavedMap {
   const view = data ? parseView(data) : null;
   const mirante = data && isRecord(data.mirante) ? data.mirante : null;
   const baseMap =
-    mirante &&
-    typeof mirante.baseMap === "string" &&
-    baseMapIds.has(mirante.baseMap as BaseMapId)
-      ? (mirante.baseMap as BaseMapId)
+    mirante && typeof mirante.baseMap === "string" && mirante.baseMap.trim()
+      ? mirante.baseMap
       : "open-street-map";
   const customLayers =
     mirante && Array.isArray(mirante.layers) ? mirante.layers : null;

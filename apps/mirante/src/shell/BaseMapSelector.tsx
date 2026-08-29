@@ -1,4 +1,6 @@
-import type { BaseMapId, MapFacade } from "@mirante/map";
+import { getActiveLocale } from "@mirante/i18n";
+import type { MapFacade } from "@mirante/map";
+import type { BaseMapDefinition, BaseMapId } from "@mirante/sdk";
 import { type FocusEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,18 +8,23 @@ import { GlobeIcon } from "./Icons";
 
 interface BaseMapSelectorProps {
   baseMap: BaseMapId;
+  baseMaps: readonly BaseMapDefinition[];
+  fallbackLocale: string;
   map: MapFacade | null;
   onChange: (id: BaseMapId) => void;
 }
 
 export function BaseMapSelector({
   baseMap,
+  baseMaps,
+  fallbackLocale,
   map,
   onChange,
 }: BaseMapSelectorProps) {
   const { t } = useTranslation("map");
   const selectId = useId();
   const [open, setOpen] = useState(false);
+  const activeLocale = getActiveLocale();
 
   function closeWhenFocusLeaves(event: FocusEvent<HTMLDivElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -47,15 +54,19 @@ export function BaseMapSelector({
             value={baseMap}
             aria-label={t("baseMap.label")}
             onChange={(event) => {
-              const selectedBaseMap = event.currentTarget.value as BaseMapId;
+              const selectedBaseMap = event.currentTarget.value;
               onChange(selectedBaseMap);
               setOpen(false);
             }}
           >
-            <option value="dark-matter">{t("baseMap.darkMatter")}</option>
-            <option value="open-street-map">
-              {t("baseMap.openStreetMap")}
-            </option>
+            {baseMaps.map((definition) => (
+              <option key={definition.id} value={definition.id}>
+                {definition.labels[activeLocale] ??
+                  definition.labels[fallbackLocale] ??
+                  Object.values(definition.labels)[0] ??
+                  definition.id}
+              </option>
+            ))}
           </select>
         </div>
       ) : null}

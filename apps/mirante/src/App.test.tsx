@@ -1,5 +1,9 @@
 import { changeLocale } from "@mirante/i18n";
-import type { FeatureInfoEvent } from "@mirante/map";
+import type {
+  CreateMapOptions,
+  FeatureInfoEvent,
+  MapFacade,
+} from "@mirante/map";
 import type {
   GeoNodeAuthenticationClient,
   GeoNodeDatasetClient,
@@ -17,7 +21,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mapMock = vi.hoisted(() => ({
-  create: vi.fn(),
+  create: vi.fn<(options: CreateMapOptions) => MapFacade>(),
   addDatasetLayer: vi.fn(),
   fitDatasetLayer: vi.fn(),
   fitGeographicExtent: vi.fn(),
@@ -110,7 +114,6 @@ let featureInfoListener: ((event: FeatureInfoEvent) => void) | undefined;
 
 vi.mock("@mirante/map", () => ({
   createMap: mapMock.create,
-  defaultBaseMapId: "open-street-map",
 }));
 
 import { App } from "./App";
@@ -263,6 +266,14 @@ describe("App", () => {
 
     expect(mapMock.create).toHaveBeenCalledWith({
       target: mapRegion,
+      baseMaps: [
+        expect.objectContaining({ id: "open-street-map" }),
+        expect.objectContaining({ id: "dark-matter" }),
+      ],
+      defaultBaseMapId: "open-street-map",
+      selectionColor: "#14b8a6",
+      selectionContrastColor: "#f8fafc",
+      selectionFillColor: "rgb(20 184 166 / 18%)",
       initialCenter: [-52, -15],
       initialZoom: 4,
     });
@@ -293,9 +304,17 @@ describe("App", () => {
       zoom: 4,
     });
 
-    expect(
-      screen.queryByRole("button", { name: "Zoom to Brazil" }),
-    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open view presets" }));
+    const extensionPanel = screen.getByRole("dialog", {
+      name: "View presets",
+    });
+    fireEvent.click(
+      within(extensionPanel).getByRole("button", { name: "Show Brazil" }),
+    );
+    expect(mapMock.setView).toHaveBeenCalledWith({
+      center: [-52, -15],
+      zoom: 4,
+    });
     fireEvent.click(screen.getByRole("button", { name: "Choose base map" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Base map" }), {
       target: { value: "dark-matter" },

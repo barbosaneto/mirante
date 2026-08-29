@@ -1,6 +1,11 @@
 import "ol/ol.css";
 
-import type { BaseMapId, MapCommandApi, MapViewOptions } from "@mirante/sdk";
+import type {
+  BaseMapDefinition,
+  BaseMapId,
+  MapCommandApi,
+  MapViewOptions,
+} from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
 import Feature from "ol/Feature.js";
 import TileLayer from "ol/layer/Tile.js";
@@ -25,14 +30,17 @@ export type GeographicCoordinate = readonly [
 
 export interface CreateMapOptions {
   target: HTMLElement;
+  baseMaps: readonly BaseMapDefinition[];
+  defaultBaseMapId: BaseMapId;
+  selectionColor: string;
+  selectionContrastColor: string;
+  selectionFillColor: string;
   initialCenter?: GeographicCoordinate;
   initialZoom?: number;
   fetch?: typeof globalThis.fetch;
 }
 
 export type DatasetLayerLoadStatus = "error" | "loading" | "ready";
-export const defaultBaseMapId: BaseMapId = "open-street-map";
-
 export interface DatasetMapLayerOptions {
   id: number;
   layerName: string;
@@ -75,47 +83,44 @@ export type FeatureInfoEvent =
 const defaultCenter: GeographicCoordinate = [-52, -15];
 const defaultZoom = 4;
 
-const darkBasemapAttribution = [
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  '&copy; <a href="https://carto.com/attributions">CARTO</a>',
-];
-
-const openStreetMapAttribution = [
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-];
-
 export function createMap({
   target,
+  baseMaps,
+  defaultBaseMapId,
+  selectionColor,
+  selectionContrastColor,
+  selectionFillColor,
   initialCenter = defaultCenter,
   initialZoom = defaultZoom,
   fetch: fetchImplementation = globalThis.fetch,
 }: CreateMapOptions): MapFacade {
-  const baseMapSources: Record<BaseMapId, XYZ> = {
-    "dark-matter": new XYZ({
-      attributions: darkBasemapAttribution,
-      crossOrigin: "anonymous",
-      url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-    }),
-    "open-street-map": new XYZ({
-      attributions: openStreetMapAttribution,
-      crossOrigin: "anonymous",
-      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    }),
-  };
+  const baseMapSources = new Map(
+    baseMaps.map((baseMap) => [
+      baseMap.id,
+      new XYZ({
+        attributions: [...baseMap.attributions],
+        crossOrigin: "anonymous",
+        url: baseMap.tileUrl,
+      }),
+    ]),
+  );
+  const defaultBaseMapSource = baseMapSources.get(defaultBaseMapId);
+  if (!defaultBaseMapSource) {
+    throw new Error("The default base map source is not registered.");
+  }
   const baseMapLayer = new TileLayer({
-    source: baseMapSources[defaultBaseMapId],
+    source: defaultBaseMapSource,
   });
   const selectionSource = new VectorSource();
-  const selectionColor = "#14b8a6";
   const selectionLayer = new VectorLayer({
     source: selectionSource,
     style: new Style({
-      fill: new Fill({ color: "rgb(20 184 166 / 18%)" }),
+      fill: new Fill({ color: selectionFillColor }),
       stroke: new Stroke({ color: selectionColor, width: 4 }),
       image: new CircleStyle({
         radius: 8,
         fill: new Fill({ color: selectionColor }),
-        stroke: new Stroke({ color: "#f8fafc", width: 2 }),
+        stroke: new Stroke({ color: selectionContrastColor, width: 2 }),
       }),
     }),
   });
@@ -349,7 +354,8 @@ export function createMap({
         });
     },
     setBaseMap(id) {
-      baseMapLayer.setSource(baseMapSources[id]);
+      const source = baseMapSources.get(id);
+      if (source) baseMapLayer.setSource(source);
     },
     subscribeFeatureInfo(listener) {
       featureInfoListeners.add(listener);

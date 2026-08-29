@@ -1,5 +1,7 @@
 import type { BaseMapId, MapFacade } from "@mirante/map";
 import type { RegisteredToolbarItem } from "@mirante/core";
+import type { BaseMapDefinition } from "@mirante/sdk";
+import { createElement } from "react";
 import { useTranslation } from "react-i18next";
 
 import { BaseMapSelector } from "./BaseMapSelector";
@@ -14,11 +16,15 @@ interface ActionDockProps {
   actions: readonly RegisteredToolbarItem[];
   authenticated: boolean;
   baseMap: BaseMapId;
+  baseMaps: readonly BaseMapDefinition[];
   canUploadDatasets: boolean;
+  fallbackLocale: string;
   map: MapFacade | null;
   uploadEnabled: boolean;
   onMaps: () => void;
   onBaseMapChange: (id: BaseMapId) => void;
+  onClosePanel: () => void;
+  onOpenPanel: (id: string) => void;
   onUpload: () => void;
 }
 
@@ -26,10 +32,14 @@ export function ActionDock({
   actions,
   authenticated,
   baseMap,
+  baseMaps,
   canUploadDatasets,
+  fallbackLocale,
   map,
   onMaps,
   onBaseMapChange,
+  onClosePanel,
+  onOpenPanel,
   onUpload,
   uploadEnabled,
 }: ActionDockProps) {
@@ -83,15 +93,29 @@ export function ActionDock({
                 map &&
                 (action.requiresAuthentication !== true || authenticated)
               ) {
-                action.onClick({ map });
+                action.onClick({
+                  map,
+                  ui: {
+                    closePanel: onClosePanel,
+                    openPanel: onOpenPanel,
+                  },
+                });
               }
             }}
           >
-            {icons[action.icon]}
+            {typeof action.icon === "string"
+              ? icons[action.icon]
+              : createElement(action.icon)}
           </button>
         );
       })}
-      <BaseMapSelector baseMap={baseMap} map={map} onChange={onBaseMapChange} />
+      <BaseMapSelector
+        baseMap={baseMap}
+        baseMaps={baseMaps}
+        fallbackLocale={fallbackLocale}
+        map={map}
+        onChange={onBaseMapChange}
+      />
     </div>
   );
 }

@@ -7,20 +7,21 @@ import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 interface LanguageSelectorProps {
-  locales: readonly SupportedLocale[];
+  locales: readonly { id: SupportedLocale; label: string }[];
 }
 
 export function LanguageSelector({ locales }: LanguageSelectorProps) {
   const { t } = useTranslation("common");
   const activeLocale = getActiveLocale();
-  const selectedLocale = locales.includes(activeLocale)
+  const localeIds = locales.map((locale) => locale.id);
+  const selectedLocale = localeIds.includes(activeLocale)
     ? activeLocale
-    : locales[0];
+    : locales[0]?.id;
 
   function handleLocaleChange(event: ChangeEvent<HTMLSelectElement>): void {
-    const locale = event.currentTarget.value as SupportedLocale;
+    const locale = event.currentTarget.value;
 
-    if (locales.includes(locale)) {
+    if (localeIds.includes(locale)) {
       void changeLocale(locale);
     }
   }
@@ -34,8 +35,8 @@ export function LanguageSelector({ locales }: LanguageSelectorProps) {
         onChange={handleLocaleChange}
       >
         {locales.map((locale) => (
-          <option key={locale} value={locale}>
-            {t(`shell.language.${locale}`)}
+          <option key={locale.id} value={locale.id}>
+            {locale.label}
           </option>
         ))}
       </select>

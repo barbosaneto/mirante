@@ -1,6 +1,7 @@
 :root {
   --mirante-color-primary: #14b8a6;
   --mirante-color-primary-strong: #0d9488;
+  --mirante-color-primary-contrast: #042f2e;
   --mirante-color-text: #e5e7eb;
   --mirante-color-text-muted: #94a3b8;
   --mirante-color-surface: #090d16;
@@ -8,6 +9,13 @@
   --mirante-color-panel-strong: #0b1527;
   --mirante-color-border: rgb(51 65 85 / 62%);
   --mirante-color-focus: #5eead4;
+  --mirante-color-success: #5eead4;
+  --mirante-color-error: #fca5a5;
+  --mirante-color-primary-soft: color-mix(
+    in srgb,
+    var(--mirante-color-primary) 45%,
+    white
+  );
   --mirante-shadow-panel: 0 18px 48px rgb(0 0 0 / 34%);
   --mirante-radius-small: 0.5rem;
   --mirante-radius-medium: 0.75rem;

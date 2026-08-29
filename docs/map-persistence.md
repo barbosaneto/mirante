@@ -32,7 +32,7 @@ Mirante restores the active datasets, visibility, opacity, filters, order,
 base map, center, and zoom. It also supports GeoNode maps without the `mirante`
 section when their standard `maplayers` include dataset relations and their
 `data` document contains a geographic center and zoom. Older and external maps
-without a Mirante base-map identifier use OpenStreetMap.
+without a Mirante base-map identifier use the distribution's configured default.
 
 ## Authorization
 

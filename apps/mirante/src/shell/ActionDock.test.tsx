@@ -6,8 +6,16 @@ import { describe, expect, it, vi } from "vitest";
 import { ActionDock } from "./ActionDock";
 
 describe("ActionDock", () => {
+  const baseMaps = [
+    {
+      id: "open-street-map",
+      labels: { en: "OpenStreetMap" },
+      tileUrl: "https://example.test/{z}/{x}/{y}.png",
+      attributions: [],
+    },
+  ];
   it("keeps protected extension actions disabled for anonymous users", () => {
-    const onClick = vi.fn();
+    const onClick = vi.fn<RegisteredToolbarItem["onClick"]>();
     const action: RegisteredToolbarItem = {
       id: "protected-action",
       extensionId: "test-extension",
@@ -37,12 +45,16 @@ describe("ActionDock", () => {
         actions={[action]}
         authenticated={false}
         baseMap="open-street-map"
+        baseMaps={baseMaps}
         canUploadDatasets={false}
+        fallbackLocale="en"
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
         onMaps={vi.fn()}
         onBaseMapChange={vi.fn()}
+        onClosePanel={vi.fn()}
+        onOpenPanel={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Mirante" });
@@ -54,18 +66,25 @@ describe("ActionDock", () => {
         actions={[action]}
         authenticated={true}
         baseMap="open-street-map"
+        baseMaps={baseMaps}
         canUploadDatasets={false}
+        fallbackLocale="en"
         map={map}
         uploadEnabled={false}
         onUpload={vi.fn()}
         onMaps={vi.fn()}
         onBaseMapChange={vi.fn()}
+        onClosePanel={vi.fn()}
+        onOpenPanel={vi.fn()}
       />,
     );
     fireEvent.click(button);
 
     expect(button).toBeEnabled();
-    expect(onClick).toHaveBeenCalledWith({ map });
+    const context = onClick.mock.calls[0]?.[0];
+    expect(context?.map).toBe(map);
+    expect(typeof context?.ui.closePanel).toBe("function");
+    expect(typeof context?.ui.openPanel).toBe("function");
   });
 
   it("exposes dataset upload only to users with the GeoNode capability", () => {
@@ -90,12 +109,16 @@ describe("ActionDock", () => {
         actions={[]}
         authenticated={false}
         baseMap="open-street-map"
+        baseMaps={baseMaps}
         canUploadDatasets={false}
+        fallbackLocale="en"
         map={map}
         uploadEnabled
         onUpload={onUpload}
         onMaps={vi.fn()}
         onBaseMapChange={vi.fn()}
+        onClosePanel={vi.fn()}
+        onOpenPanel={vi.fn()}
       />,
     );
     expect(
@@ -106,12 +129,16 @@ describe("ActionDock", () => {
         actions={[]}
         authenticated
         baseMap="open-street-map"
+        baseMaps={baseMaps}
         canUploadDatasets
+        fallbackLocale="en"
         map={map}
         uploadEnabled
         onUpload={onUpload}
         onMaps={vi.fn()}
         onBaseMapChange={vi.fn()}
+        onClosePanel={vi.fn()}
+        onOpenPanel={vi.fn()}
       />,
     );
     const button = screen.getByRole("button", { name: "Upload dataset" });

@@ -19,7 +19,7 @@ import ptBrMaps from "./locales/pt-BR/maps.json";
 import ptBrUpload from "./locales/pt-BR/upload.json";
 
 export const supportedLocales = ["en", "pt-BR"] as const;
-export type SupportedLocale = (typeof supportedLocales)[number];
+export type SupportedLocale = string;
 
 export const fallbackLocale: SupportedLocale = "en";
 export const localeStorageKey = "mirante.locale";
@@ -47,26 +47,37 @@ export const translationResources = {
   },
 } as const;
 
-function normalizeLocale(locale: string): SupportedLocale | undefined {
+let configuredLocales: readonly string[] = supportedLocales;
+let activeFallbackLocale: SupportedLocale = fallbackLocale;
+
+function normalizeLocale(
+  locale: string,
+  locales: readonly string[] = configuredLocales,
+): SupportedLocale | undefined {
   const normalizedLocale = locale.toLowerCase();
-
-  if (normalizedLocale === "pt" || normalizedLocale.startsWith("pt-")) {
-    return "pt-BR";
-  }
-
-  if (normalizedLocale === "en" || normalizedLocale.startsWith("en-")) {
-    return "en";
-  }
-
-  return undefined;
+  const exactMatch = locales.find(
+    (candidate) => candidate.toLowerCase() === normalizedLocale,
+  );
+  if (exactMatch) return exactMatch;
+  return locales.find((candidate) => {
+    const normalizedCandidate = candidate.toLowerCase();
+    const language = normalizedCandidate.split("-")[0];
+    return (
+      language &&
+      (normalizedLocale === language ||
+        normalizedLocale.startsWith(`${language}-`))
+    );
+  });
 }
 
 export function detectInitialLocale(
   storedLocale: string | null,
   browserLocales: readonly string[],
+  locales: readonly string[] = supportedLocales,
+  defaultLocale: string = fallbackLocale,
 ): SupportedLocale {
   if (storedLocale) {
-    const supportedStoredLocale = normalizeLocale(storedLocale);
+    const supportedStoredLocale = normalizeLocale(storedLocale, locales);
 
     if (supportedStoredLocale) {
       return supportedStoredLocale;
@@ -74,14 +85,14 @@ export function detectInitialLocale(
   }
 
   for (const browserLocale of browserLocales) {
-    const supportedBrowserLocale = normalizeLocale(browserLocale);
+    const supportedBrowserLocale = normalizeLocale(browserLocale, locales);
 
     if (supportedBrowserLocale) {
       return supportedBrowserLocale;
     }
   }
 
-  return fallbackLocale;
+  return defaultLocale;
 }
 
 function getStoredLocale(): string | null {
@@ -144,7 +155,8 @@ export async function changeLocale(locale: SupportedLocale): Promise<void> {
 
 export function getActiveLocale(): SupportedLocale {
   return (
-    normalizeLocale(i18n.resolvedLanguage ?? i18n.language) ?? fallbackLocale
+    normalizeLocale(i18n.resolvedLanguage ?? i18n.language) ??
+    activeFallbackLocale
   );
 }
 
@@ -155,11 +167,19 @@ export function configureI18n({
   fallbackLocale: SupportedLocale;
   supportedLocales: readonly SupportedLocale[];
 }): void {
+  configuredLocales = configuredSupportedLocales;
+  activeFallbackLocale = configuredFallbackLocale;
   i18n.options.fallbackLng = [configuredFallbackLocale];
 
-  if (!configuredSupportedLocales.includes(getActiveLocale())) {
-    void i18n.changeLanguage(configuredFallbackLocale);
-    setDocumentLocale(configuredFallbackLocale);
+  const selectedLocale = detectInitialLocale(
+    getStoredLocale(),
+    getBrowserLocales(),
+    configuredSupportedLocales,
+    configuredFallbackLocale,
+  );
+  if (selectedLocale !== getActiveLocale()) {
+    void i18n.changeLanguage(selectedLocale);
+    setDocumentLocale(selectedLocale);
   }
 }
 
@@ -227,6 +247,15 @@ export function registerTranslationBundle(
   resources: ResourceLanguage,
 ): void {
   i18n.addResourceBundle(locale, namespace, resources, true, false);
+}
+
+export function registerLocaleResources(
+  locale: SupportedLocale,
+  resources: Readonly<Record<string, ResourceLanguage>>,
+): void {
+  for (const [namespace, bundle] of Object.entries(resources)) {
+    i18n.addResourceBundle(locale, namespace, bundle, true, false);
+  }
 }
 
 export { i18n };

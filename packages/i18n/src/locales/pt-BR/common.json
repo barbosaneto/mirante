@@ -15,6 +15,9 @@
     },
     "tools": {
       "toolbarLabel": "Ferramentas do mapa"
+    },
+    "panel": {
+      "close": "Fechar painel"
     }
   }
 }

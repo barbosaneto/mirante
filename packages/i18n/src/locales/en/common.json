@@ -15,6 +15,9 @@
     },
     "tools": {
       "toolbarLabel": "Map tools"
+    },
+    "panel": {
+      "close": "Close panel"
     }
   }
 }

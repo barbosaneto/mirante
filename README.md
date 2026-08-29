@@ -49,9 +49,16 @@ npm run build
 
 ## Customization
 
-The official distribution keeps branding, theme, GeoNode URL, map defaults, locales, and feature flags in a single public configuration. See [Configuration](docs/configuration.md) for the supported contract.
+The official distribution keeps branding, the complete semantic color theme,
+GeoNode URLs, map defaults, base-map sources, locales, and feature availability
+in a single public configuration. See
+[Configuration](docs/configuration.md) for the supported contract.
 
-Mirante extensions are installed at build time and use only the root exports from `@mirante/sdk`. See [Extensions](docs/extensions.md) for a minimal toolbar example and [Internationalization](docs/internationalization.md) for locale behavior and translation validation.
+Mirante extensions are installed at build time and use only the root exports
+from `@mirante/sdk`. They can register toolbar actions, custom icons, translated
+panels, and React components. The official distribution includes an executable
+view-presets extension outside the core. See [Extensions](docs/extensions.md) and
+[Internationalization](docs/internationalization.md).
 
 Authentication uses GeoNode's standard Django session, CSRF protection, and API V2 user resource without requiring a custom backend. See [Authentication](docs/authentication.md) for the request flow and deployment requirements.
 
@@ -63,9 +70,15 @@ Active layers can be fitted back into view from the layer panel. Clicking the ma
 
 Each active vector dataset also provides a paginated attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, select and persistently highlight an individual feature, apply typed attribute filters synchronized with the WMS visualization, and export every matching feature as CSV or GeoJSON. Filters are preserved in Mirante map resources. See [Attribute table](docs/attribute-table.md), [Attribute filtering](docs/attribute-filtering.md), and [Map persistence](docs/map-persistence.md).
 
-The bottom toolbar includes a base map selector for the dark CARTO basemap and the standard light OpenStreetMap layer. The active dataset panel remains dedicated to WMS overlays. See [Base maps](docs/base-maps.md).
+The bottom toolbar lists the base maps registered by the distribution; the
+official configuration provides dark CARTO and light OpenStreetMap layers. The
+active dataset panel remains dedicated to WMS overlays. See
+[Base maps](docs/base-maps.md).
 
-Authenticated users can list accessible GeoNode maps, restore their geographic view and dataset layer state, and save new maps when their account has the standard resource creation permission. See [Map persistence](docs/map-persistence.md).
+Authenticated users can search and paginate accessible GeoNode maps, restore
+their geographic view, base map, filters and dataset layer state, save new maps,
+and update an opened map subject to GeoNode permissions. See
+[Map persistence](docs/map-persistence.md).
 
 ## Workspace structure
 

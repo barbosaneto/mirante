@@ -14,7 +14,6 @@ import {
 } from "@mirante/geonode";
 import {
   createMap,
-  defaultBaseMapId,
   type BaseMapId,
   type DatasetFeatureInfo,
   type FeatureInfoEvent,
@@ -32,6 +31,7 @@ import { MapPersistenceDialog } from "./maps/MapPersistenceDialog";
 import { ActionDock } from "./shell/ActionDock";
 import { Brand } from "./shell/Brand";
 import { DatasetCatalogDrawer } from "./shell/DatasetCatalogDrawer";
+import { ExtensionPanelHost } from "./shell/ExtensionPanelHost";
 import { LanguageSelector } from "./shell/LanguageSelector";
 import { type DisplayedDataset, LayersPanel } from "./shell/LayersPanel";
 import { UserArea } from "./shell/UserArea";
@@ -71,6 +71,7 @@ function ApplicationShell({
 }) {
   const { t } = useTranslation("map");
   const { status, user } = useAuthentication();
+  const { config } = mirante;
   const mapTargetRef = useRef<HTMLDivElement>(null);
   const activeDatasetIdsRef = useRef(new Set<number>());
   const [map, setMap] = useState<MapFacade | null>(null);
@@ -82,9 +83,14 @@ function ApplicationShell({
   const [catalogueRefreshKey, setCatalogueRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [mapLibraryOpen, setMapLibraryOpen] = useState(false);
+  const [activeExtensionPanelId, setActiveExtensionPanelId] = useState<
+    string | null
+  >(null);
   const [activeSavedMap, setActiveSavedMap] =
     useState<GeoNodeMapSummary | null>(null);
-  const [baseMap, setBaseMap] = useState<BaseMapId>(defaultBaseMapId);
+  const [baseMap, setBaseMap] = useState<BaseMapId>(
+    config.map.defaultBaseMapId,
+  );
   const [attributeDataset, setAttributeDataset] =
     useState<GeoNodeDataset | null>(null);
   const [featureInfo, setFeatureInfo] = useState<FeatureInfoEvent | null>(null);
@@ -92,11 +98,20 @@ function ApplicationShell({
     useState<SelectedFeature | null>(null);
   const [uploadState, setUploadState] =
     useState<UploadWorkflowState>(initialUploadState);
-  const { config } = mirante;
 
   const themeStyle: CSSProperties & Record<`--mirante-${string}`, string> = {
     "--mirante-color-primary": config.theme.primaryColor,
     "--mirante-color-primary-strong": config.theme.primaryColorStrong,
+    "--mirante-color-primary-contrast": config.theme.primaryContrastColor,
+    "--mirante-color-text": config.theme.textColor,
+    "--mirante-color-text-muted": config.theme.textMutedColor,
+    "--mirante-color-surface": config.theme.surfaceColor,
+    "--mirante-color-panel": config.theme.panelColor,
+    "--mirante-color-panel-strong": config.theme.panelStrongColor,
+    "--mirante-color-border": config.theme.borderColor,
+    "--mirante-color-focus": config.theme.focusColor,
+    "--mirante-color-success": config.theme.successColor,
+    "--mirante-color-error": config.theme.errorColor,
   };
 
   useEffect(() => {
@@ -108,6 +123,11 @@ function ApplicationShell({
 
     const mapFacade = createMap({
       target,
+      baseMaps: config.map.baseMaps,
+      defaultBaseMapId: config.map.defaultBaseMapId,
+      selectionColor: config.theme.selectionColor,
+      selectionContrastColor: config.theme.selectionContrastColor,
+      selectionFillColor: config.theme.selectionFillColor,
       initialCenter: config.map.initialCenter,
       initialZoom: config.map.initialZoom,
     });
@@ -131,7 +151,15 @@ function ApplicationShell({
       unsubscribeFeatureInfo();
       mapFacade.destroy();
     };
-  }, [config.map.initialCenter, config.map.initialZoom]);
+  }, [
+    config.map.baseMaps,
+    config.map.defaultBaseMapId,
+    config.map.initialCenter,
+    config.map.initialZoom,
+    config.theme.selectionColor,
+    config.theme.selectionContrastColor,
+    config.theme.selectionFillColor,
+  ]);
 
   useEffect(() => {
     document.title = config.branding.applicationName;
@@ -236,8 +264,13 @@ function ApplicationShell({
       }
     }
     setDatasetFilters(restoredFilters);
-    setBaseMap(savedMap.baseMap);
-    map.setBaseMap(savedMap.baseMap);
+    const restoredBaseMap = config.map.baseMaps.some(
+      (candidate) => candidate.id === savedMap.baseMap,
+    )
+      ? savedMap.baseMap
+      : config.map.defaultBaseMapId;
+    setBaseMap(restoredBaseMap);
+    map.setBaseMap(restoredBaseMap);
     map.setView(savedMap.view);
     setActiveSavedMap({ id: savedMap.id, title: savedMap.title });
   }
@@ -358,6 +391,9 @@ function ApplicationShell({
     config.geonode.webUrl === "/" || config.geonode.webUrl === ""
       ? managementPath
       : `${config.geonode.webUrl.replace(/\/$/, "")}${managementPath}`;
+  const activeExtensionPanel = mirante.panels.find(
+    (panel) => panel.id === activeExtensionPanelId,
+  );
 
   return (
     <main className="app-shell" style={themeStyle}>
@@ -389,14 +425,18 @@ function ApplicationShell({
         onAdd={addDatasetToMap}
         onOpenChange={setCatalogueOpen}
       />
-      <LanguageSelector locales={config.i18n.supportedLocales} />
+      <LanguageSelector locales={config.i18n.locales} />
       <UserArea datasetManagementUrl={datasetManagementUrl} />
       <ActionDock
         actions={mirante.mapToolbar}
         authenticated={status === "authenticated"}
         canUploadDatasets={user?.canUploadDatasets === true}
+        fallbackLocale={config.i18n.fallbackLocale}
         map={map}
+        onClosePanel={() => setActiveExtensionPanelId(null)}
+        onOpenPanel={setActiveExtensionPanelId}
         baseMap={baseMap}
+        baseMaps={config.map.baseMaps}
         onBaseMapChange={changeBaseMap}
         onMaps={() => setMapLibraryOpen(true)}
         uploadEnabled={config.features.datasetUpload}
@@ -405,6 +445,13 @@ function ApplicationShell({
           setUploadOpen(true);
         }}
       />
+      {map && activeExtensionPanel ? (
+        <ExtensionPanelHost
+          map={map}
+          panel={activeExtensionPanel}
+          onClose={() => setActiveExtensionPanelId(null)}
+        />
+      ) : null}
       {mapLibraryOpen ? (
         <MapPersistenceDialog
           activeMap={activeSavedMap}

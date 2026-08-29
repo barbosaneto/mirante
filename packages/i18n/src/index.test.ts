@@ -2,18 +2,25 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   changeLocale,
+  configureI18n,
   detectInitialLocale,
   findMissingTranslationKeys,
   formatDate,
   formatFileSize,
   formatNumber,
+  i18n,
   localeStorageKey,
+  registerLocaleResources,
   translationResources,
 } from "./index";
 
 describe("internationalization", () => {
   afterEach(async () => {
     localStorage.clear();
+    configureI18n({
+      fallbackLocale: "en",
+      supportedLocales: ["en", "pt-BR"],
+    });
     await changeLocale("en");
   });
 
@@ -52,6 +59,21 @@ describe("internationalization", () => {
 
     expect(localStorage.getItem(localeStorageKey)).toBe("pt-BR");
     expect(document.documentElement.lang).toBe("pt-BR");
+  });
+
+  it("registers a distribution locale without changing internal types", async () => {
+    registerLocaleResources("es", {
+      distribution: { greeting: "Hola" },
+    });
+    configureI18n({
+      fallbackLocale: "en",
+      supportedLocales: ["en", "pt-BR", "es"],
+    });
+
+    await changeLocale("es");
+
+    expect(i18n.t("greeting", { ns: "distribution" })).toBe("Hola");
+    expect(document.documentElement.lang).toBe("es");
   });
 
   it("formats dates, numbers, and file sizes for a locale", () => {
