@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { validateDatasetFile } from "./fileValidation";
+import {
+  defaultMaximumDatasetFileSize,
+  validateDatasetFile,
+} from "./fileValidation";
 
 function createStoredZip(
   filename: string,
@@ -41,6 +44,19 @@ function createStoredZip(
 }
 
 describe("dataset file validation", () => {
+  it("defaults to 100 MB and accepts a custom maximum size", async () => {
+    expect(defaultMaximumDatasetFileSize).toBe(100 * 1024 * 1024);
+    const file = new File(
+      [JSON.stringify({ type: "FeatureCollection", features: [] })],
+      "dataset.geojson",
+    );
+    Object.defineProperty(file, "size", { value: 101 });
+
+    await expect(validateDatasetFile(file, 100)).resolves.toBe(
+      "file-too-large",
+    );
+  });
+
   it("accepts a GeoJSON FeatureCollection", async () => {
     const file = new File(
       [JSON.stringify({ type: "FeatureCollection", features: [] })],

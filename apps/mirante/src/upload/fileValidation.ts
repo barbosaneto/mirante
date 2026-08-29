@@ -1,4 +1,4 @@
-export const maximumDatasetFileSize = 50 * 1024 * 1024;
+export const defaultMaximumDatasetFileSize = 100 * 1024 * 1024;
 
 export type DatasetFileValidationErrorCode =
   | "empty-file"
@@ -216,6 +216,7 @@ async function validateZip(file: File): Promise<ZipValidationResult> {
 
 export async function validateDatasetFile(
   file: File,
+  maximumFileSize = defaultMaximumDatasetFileSize,
 ): Promise<DatasetFileValidationErrorCode | null> {
   const extension = fileExtension(file);
 
@@ -227,7 +228,7 @@ export async function validateDatasetFile(
     return "empty-file";
   }
 
-  if (file.size > maximumDatasetFileSize) {
+  if (file.size > maximumFileSize) {
     return "file-too-large";
   }
 

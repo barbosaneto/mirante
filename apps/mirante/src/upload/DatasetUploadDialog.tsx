@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   type DatasetFileValidationErrorCode,
-  maximumDatasetFileSize,
+  defaultMaximumDatasetFileSize,
   validateDatasetFile,
 } from "./fileValidation";
 
@@ -36,6 +36,7 @@ export interface UploadWorkflowState {
 }
 
 interface DatasetUploadDialogProps {
+  maximumFileSize?: number;
   state: UploadWorkflowState;
   onClose: () => void;
   onUpload: (
@@ -48,6 +49,7 @@ interface DatasetUploadDialogProps {
 }
 
 export function DatasetUploadDialog({
+  maximumFileSize = defaultMaximumDatasetFileSize,
   onClose,
   onUpload,
   state,
@@ -72,7 +74,9 @@ export function DatasetUploadDialog({
   async function selectFile(selectedFile: File | null) {
     setFile(selectedFile);
     setValidationError(
-      selectedFile ? await validateDatasetFile(selectedFile) : null,
+      selectedFile
+        ? await validateDatasetFile(selectedFile, maximumFileSize)
+        : null,
     );
   }
 
@@ -177,7 +181,7 @@ export function DatasetUploadDialog({
                   {file
                     ? formatFileSize(file.size)
                     : t("dropzone.help", {
-                        size: formatFileSize(maximumDatasetFileSize),
+                        size: formatFileSize(maximumFileSize),
                       })}
                 </p>
                 <input

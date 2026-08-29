@@ -61,6 +61,7 @@ export interface MiranteConfig {
   };
   features: {
     datasetUpload: boolean;
+    datasetUploadMaximumFileSizeBytes?: number;
   };
 }
 
@@ -173,6 +174,16 @@ export function createMirante({
 }): MiranteDefinition {
   if (config.i18n.locales.length === 0) {
     throw new Error("At least one supported locale must be configured.");
+  }
+
+  const maximumUploadSize = config.features.datasetUploadMaximumFileSizeBytes;
+  if (
+    maximumUploadSize !== undefined &&
+    (!Number.isSafeInteger(maximumUploadSize) || maximumUploadSize < 1)
+  ) {
+    throw new Error(
+      "The dataset upload maximum file size must be a positive integer number of bytes.",
+    );
   }
 
   const localeIds = config.i18n.locales.map((locale) => locale.id);

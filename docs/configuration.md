@@ -14,6 +14,7 @@ The contract covers:
 - XYZ base-map definitions, localized labels, and attribution.
 - Initial center and zoom.
 - Feature availability.
+- Maximum dataset upload file size.
 
 ```ts
 import { defineMiranteConfig } from "@mirante/core";
@@ -70,9 +71,16 @@ export const config = defineMiranteConfig({
   },
   features: {
     datasetUpload: true,
+    datasetUploadMaximumFileSizeBytes: 100 * 1024 * 1024,
   },
 });
 ```
+
+`datasetUploadMaximumFileSizeBytes` is optional and defaults to 100 MB. It must
+be a positive integer expressed in bytes. The configured value controls both
+the upload dialog message and its client-side file-size validation. GeoNode's
+server-side upload limit remains authoritative and must be configured
+separately.
 
 Theme values are installed on the application root as semantic
 `--mirante-color-*` properties. Derived translucent states use `color-mix`, so

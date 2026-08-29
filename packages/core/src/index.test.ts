@@ -256,4 +256,18 @@ describe("createMirante", () => {
       }),
     ).toThrow("Base map identifiers must be non-empty and unique.");
   });
+
+  it("rejects an invalid dataset upload size", () => {
+    expect(() =>
+      createMirante({
+        config: {
+          ...config,
+          features: {
+            ...config.features,
+            datasetUploadMaximumFileSizeBytes: 0,
+          },
+        },
+      }),
+    ).toThrow("must be a positive integer number of bytes");
+  });
 });

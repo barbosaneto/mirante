@@ -30,7 +30,8 @@ No custom GeoNode endpoint, model, setting, or plugin is required.
 
 ## Validation and limits
 
-- The client accepts one `.geojson`, `.kml`, or `.zip` file up to 50 MiB.
+- The client accepts one `.geojson`, `.kml`, or `.zip` file up to the configured
+  limit. The official distribution defaults to 100 MB.
 - GeoJSON must contain an object with `type: "FeatureCollection"` and a `features` array.
 - KML must be a well-formed XML document with a `kml` root element.
 - ZIP files receive a basic archive signature check in the browser. GeoNode validates that the archive contains a usable Shapefile, including its required companion files.

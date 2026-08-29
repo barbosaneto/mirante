@@ -551,6 +551,7 @@ function ApplicationShell({
       ) : null}
       {uploadOpen ? (
         <DatasetUploadDialog
+          maximumFileSize={config.features.datasetUploadMaximumFileSizeBytes}
           state={uploadState}
           onClose={() => setUploadOpen(false)}
           onUpload={(file, customizations) =>

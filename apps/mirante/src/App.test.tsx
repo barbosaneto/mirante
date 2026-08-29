@@ -800,6 +800,10 @@ describe("App", () => {
     await waitFor(() => expect(uploadButton).toBeEnabled());
     fireEvent.click(uploadButton);
 
+    expect(
+      screen.getByText(/zipped Shapefile up to 100 MB/),
+    ).toBeInTheDocument();
+
     const fileInput =
       container.querySelector<HTMLInputElement>('input[type="file"]');
     const file = new File(
