@@ -11,6 +11,7 @@ import Feature from "ol/Feature.js";
 import TileLayer from "ol/layer/Tile.js";
 import VectorLayer from "ol/layer/Vector.js";
 import OlMap from "ol/Map.js";
+import { defaults as defaultInteractions } from "ol/interaction/defaults.js";
 import { fromLonLat, toLonLat, transformExtent } from "ol/proj.js";
 import TileWMS from "ol/source/TileWMS.js";
 import XYZ from "ol/source/XYZ.js";
@@ -133,6 +134,11 @@ export function createMap({
       },
     }),
     layers: [baseMapLayer, selectionLayer],
+    interactions: defaultInteractions({
+      // Mirante is a full-screen map application, so pointer interactions must
+      // resume on hover after a toolbar, menu, or form control receives focus.
+      onFocusOnly: false,
+    }),
     view: new View({
       center: fromLonLat([initialCenter[0], initialCenter[1]]),
       zoom: initialZoom,
