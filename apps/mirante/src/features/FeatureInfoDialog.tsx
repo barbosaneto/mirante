@@ -3,6 +3,8 @@ import { formatNumber } from "@mirante/i18n";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
+import { CloseIcon } from "../shell/Icons";
+
 interface FeatureInfoDialogProps {
   result: FeatureInfoEvent;
   onClose: () => void;
@@ -94,7 +96,7 @@ export function FeatureInfoDialog({ result, onClose }: FeatureInfoDialogProps) {
             aria-label={t("close")}
             onClick={onClose}
           >
-            ×
+            <CloseIcon />
           </button>
         </header>
 

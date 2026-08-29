@@ -532,13 +532,37 @@ button,
   font-size: 1rem;
 }
 
-.dataset-catalog__close {
+.dataset-catalog__close,
+.feature-info-dialog__close,
+.map-library-dialog__close,
+.extension-panel header button,
+.attribute-table__close,
+.upload-dialog__close {
   display: grid;
+  padding: 0.4rem;
+  place-items: center;
+  line-height: 1;
+}
+
+.dataset-catalog__close svg,
+.feature-info-dialog__close svg,
+.map-library-dialog__close svg,
+.extension-panel header button svg,
+.attribute-table__close svg,
+.upload-dialog__close svg {
+  width: 100%;
+  height: 100%;
+  transform: translateX(0.5px);
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dataset-catalog__close {
   width: 2rem;
   height: 2rem;
   margin-left: auto;
-  padding: 0.4rem;
-  place-items: center;
   border: 1px solid var(--mirante-color-border);
   border-radius: 50%;
   color: var(--mirante-color-text-muted);
@@ -1421,6 +1445,26 @@ button,
   flex: 1 1 auto;
 }
 
+.attribute-table__load-more {
+  position: sticky;
+  left: 0;
+  display: flex;
+  width: 100%;
+  min-height: 3.25rem;
+  gap: var(--mirante-space-3);
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--mirante-space-2) var(--mirante-space-4);
+  color: var(--mirante-color-text-muted);
+  background: var(--mirante-color-panel);
+  font-size: 0.6875rem;
+}
+
+.attribute-table__load-more--error {
+  color: var(--mirante-color-error);
+}
+
 .attribute-table table {
   width: max-content;
   min-width: 100%;
@@ -1524,18 +1568,6 @@ button,
 
 .attribute-table__state--error {
   color: var(--mirante-color-error);
-}
-
-.attribute-table__pagination {
-  display: flex;
-  min-height: 3.25rem;
-  gap: var(--mirante-space-4);
-  align-items: center;
-  justify-content: flex-end;
-  padding: var(--mirante-space-2) var(--mirante-space-4);
-  border-top: 1px solid var(--mirante-color-border);
-  color: var(--mirante-color-text-muted);
-  font-size: 0.6875rem;
 }
 
 .upload-dialog {
@@ -2212,10 +2244,6 @@ button,
 
   .attribute-table__exports .button {
     flex: 1 1 0;
-  }
-
-  .attribute-table__pagination {
-    justify-content: space-between;
   }
 
   .attribute-table__filter {

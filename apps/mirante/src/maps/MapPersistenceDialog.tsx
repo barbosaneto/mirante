@@ -2,6 +2,8 @@ import type { GeoNodeMapClient, GeoNodeMapSummary } from "@mirante/geonode";
 import { type FormEvent, useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { CloseIcon } from "../shell/Icons";
+
 const pageSize = 8;
 
 interface MapPersistenceDialogProps {
@@ -152,7 +154,7 @@ export function MapPersistenceDialog({
             disabled={busy}
             onClick={onClose}
           >
-            ×
+            <CloseIcon />
           </button>
         </header>
 

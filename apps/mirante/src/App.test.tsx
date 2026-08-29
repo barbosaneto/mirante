@@ -582,7 +582,7 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens a paginated attribute table and locates a feature", async () => {
+  it("opens an attribute table and locates a feature", async () => {
     render(
       <App
         authenticationClient={authenticationMock}
@@ -779,6 +779,100 @@ describe("App", () => {
     );
     expect(
       screen.queryByRole("dialog", { name: "Municipal boundaries" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("appends the next attribute page when the table reaches the end", async () => {
+    listDatasetFeaturesMock.mockImplementation((_dataset, options) =>
+      Promise.resolve(
+        options?.page === 2
+          ? {
+              features: [
+                {
+                  id: "municipal_boundaries.15",
+                  attributes: {
+                    name: "Another municipality",
+                    population: 2400,
+                  },
+                  geometry: { type: "Point", coordinates: [-48, -16] },
+                  extent: [-48, -16, -48, -16],
+                },
+              ],
+              hasNext: false,
+              page: 2,
+              pageSize: 25,
+              total: 2,
+            }
+          : {
+              features: [
+                {
+                  id: "municipal_boundaries.14",
+                  attributes: {
+                    name: "Test municipality",
+                    population: 1200,
+                  },
+                  geometry: { type: "Point", coordinates: [-47.9, -15.8] },
+                  extent: [-47.9, -15.8, -47.9, -15.8],
+                },
+              ],
+              hasNext: true,
+              page: 1,
+              pageSize: 25,
+              total: 2,
+            },
+      ),
+    );
+
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Browse datasets" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Add Municipal boundaries to the map",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Open Municipal boundaries attribute table",
+      }),
+    );
+
+    const tablePanel = await screen.findByRole("dialog", {
+      name: "Municipal boundaries",
+    });
+    await within(tablePanel).findByText("Test municipality");
+    const scrollContainer = tablePanel.querySelector(
+      ".attribute-table__scroll",
+    );
+    expect(scrollContainer).not.toBeNull();
+    if (!(scrollContainer instanceof HTMLDivElement)) return;
+
+    Object.defineProperties(scrollContainer, {
+      clientHeight: { configurable: true, value: 400 },
+      scrollHeight: { configurable: true, value: 800 },
+      scrollTop: { configurable: true, value: 400, writable: true },
+    });
+    fireEvent.scroll(scrollContainer);
+
+    await waitFor(() =>
+      expect(listDatasetFeaturesMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 7 }),
+        expect.objectContaining({ page: 2, pageSize: 25 }),
+      ),
+    );
+    expect(
+      await within(tablePanel).findByText("Another municipality"),
+    ).toBeInTheDocument();
+    expect(
+      within(tablePanel).getByText("Test municipality"),
+    ).toBeInTheDocument();
+    expect(
+      within(tablePanel).queryByRole("button", { name: "Next" }),
     ).not.toBeInTheDocument();
   });
 

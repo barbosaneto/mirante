@@ -15,6 +15,8 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
+import { CloseIcon } from "../shell/Icons";
+
 import {
   type DatasetFileValidationErrorCode,
   defaultMaximumDatasetFileSize,
@@ -196,7 +198,7 @@ export function DatasetUploadDialog({
             disabled={busy}
             onClick={onClose}
           >
-            ×
+            <CloseIcon />
           </button>
         </header>
 

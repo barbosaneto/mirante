@@ -14,10 +14,18 @@ import {
   type GeoNodeDatasetFeaturePage,
 } from "@mirante/geonode";
 import { formatNumber } from "@mirante/i18n";
-import { useEffect, useId, useMemo, useState } from "react";
+import {
+  type UIEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 
-import { FocusIcon } from "../shell/Icons";
+import { CloseIcon, FocusIcon } from "../shell/Icons";
 
 interface AttributeTableProps {
   client: GeoNodeDatasetClient;
@@ -56,7 +64,10 @@ function createFilter(
 type AttributeTableState =
   | { status: "error" }
   | { status: "loading" }
-  | { status: "ready"; result: GeoNodeDatasetFeaturePage };
+  | {
+      status: "load-more-error" | "loading-more" | "ready";
+      result: GeoNodeDatasetFeaturePage;
+    };
 
 type ExportState =
   | { status: "error" }
@@ -139,8 +150,10 @@ export function AttributeTable({
 }: AttributeTableProps) {
   const { t } = useTranslation("attributes");
   const titleId = useId();
-  const [page, setPage] = useState(1);
   const [requestKey, setRequestKey] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const loadMoreControllerRef = useRef<AbortController | null>(null);
+  const loadingMoreRef = useRef(false);
   const [fields, setFields] = useState<AttributeField[]>(
     filterConditions(filter).map(({ field: name, type }) => ({ name, type })),
   );
@@ -171,42 +184,121 @@ export function AttributeTable({
 
   useEffect(() => {
     const controller = new AbortController();
+    loadMoreControllerRef.current?.abort();
+    loadMoreControllerRef.current = null;
+    loadingMoreRef.current = false;
     setState({ status: "loading" });
 
     void client
       .listDatasetFeatures(dataset, {
         filter,
-        page,
+        page: 1,
         pageSize,
         signal: controller.signal,
       })
-      .then((result) => setState({ status: "ready", result }))
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
+        setState({ status: "ready", result });
+      })
       .catch(() => {
         if (!controller.signal.aborted) setState({ status: "error" });
       });
 
-    return () => controller.abort();
-  }, [client, dataset, filter, page, requestKey]);
+    return () => {
+      controller.abort();
+      loadMoreControllerRef.current?.abort();
+      loadMoreControllerRef.current = null;
+      loadingMoreRef.current = false;
+    };
+  }, [client, dataset, filter, requestKey]);
+
+  const result = "result" in state ? state.result : null;
+
+  const loadNextPage = useCallback(async () => {
+    if (!result?.hasNext || loadingMoreRef.current) return;
+
+    loadingMoreRef.current = true;
+    const controller = new AbortController();
+    loadMoreControllerRef.current?.abort();
+    loadMoreControllerRef.current = controller;
+    setState({ status: "loading-more", result });
+
+    try {
+      const nextPage = await client.listDatasetFeatures(dataset, {
+        filter,
+        page: result.page + 1,
+        pageSize,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+
+      const features = [...result.features];
+      const featureIds = new Set(features.map((feature) => feature.id));
+      nextPage.features.forEach((feature) => {
+        if (!featureIds.has(feature.id)) {
+          featureIds.add(feature.id);
+          features.push(feature);
+        }
+      });
+
+      setState({
+        status: "ready",
+        result: {
+          ...nextPage,
+          features,
+          total: nextPage.total ?? result.total,
+        },
+      });
+    } catch {
+      if (!controller.signal.aborted) {
+        setState({ status: "load-more-error", result });
+      }
+    } finally {
+      if (loadMoreControllerRef.current === controller) {
+        loadMoreControllerRef.current = null;
+        loadingMoreRef.current = false;
+      }
+    }
+  }, [client, dataset, filter, result]);
+
+  function handleTableScroll(event: UIEvent<HTMLDivElement>) {
+    const element = event.currentTarget;
+    const distanceFromBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight;
+    if (distanceFromBottom <= 48) void loadNextPage();
+  }
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (
+      state.status === "ready" &&
+      result?.hasNext &&
+      element &&
+      element.clientHeight > 0 &&
+      element.scrollHeight <= element.clientHeight + 1
+    ) {
+      void loadNextPage();
+    }
+  }, [loadNextPage, result?.hasNext, state.status]);
 
   const columns = useMemo(() => {
-    if (state.status !== "ready") return [];
+    if (!result) return [];
 
     return Array.from(
       new Set(
-        state.result.features.flatMap((feature) =>
-          Object.keys(feature.attributes),
-        ),
+        result.features.flatMap((feature) => Object.keys(feature.attributes)),
       ),
     );
-  }, [state]);
+  }, [result]);
 
   useEffect(() => {
-    if (state.status !== "ready") return;
+    if (!result) return;
 
     const inferredFields = columns.map((name) => ({
       name,
       type: inferAttributeType(
-        state.result.features.map((feature) => feature.attributes[name]),
+        result.features.map((feature) => feature.attributes[name]),
       ),
     }));
 
@@ -217,7 +309,7 @@ export function AttributeTable({
       inferredFields.forEach((field) => byName.set(field.name, field));
       return [...byName.values()];
     });
-  }, [columns, state]);
+  }, [columns, result]);
 
   useEffect(() => {
     if (draftField || !fields[0]) return;
@@ -234,17 +326,8 @@ export function AttributeTable({
   const activeConditions = filterConditions(filter);
   const activeCombinator = filterCombinator(filter);
 
-  const result = state.status === "ready" ? state.result : null;
-  const totalPages =
-    result?.total === undefined
-      ? null
-      : Math.max(1, Math.ceil(result.total / result.pageSize));
-  const rangeStart = result?.features.length
-    ? (result.page - 1) * result.pageSize + 1
-    : 0;
-  const rangeEnd = result
-    ? (result.page - 1) * result.pageSize + result.features.length
-    : 0;
+  const rangeStart = result?.features.length ? 1 : 0;
+  const rangeEnd = result?.features.length ?? 0;
 
   return (
     <section
@@ -303,7 +386,7 @@ export function AttributeTable({
           aria-label={t("close")}
           onClick={onClose}
         >
-          ×
+          <CloseIcon />
         </button>
       </header>
 
@@ -320,7 +403,6 @@ export function AttributeTable({
               type: selectedField.type,
               value: draftValue.trim(),
             };
-            setPage(1);
             setDraftValue("");
             onFilterChange(
               createFilter(
@@ -410,7 +492,6 @@ export function AttributeTable({
               type="button"
               className="button button--secondary"
               onClick={() => {
-                setPage(1);
                 setDraftValue("");
                 onFilterChange(undefined);
               }}
@@ -429,7 +510,6 @@ export function AttributeTable({
                   <select
                     value={activeCombinator}
                     onChange={(event) => {
-                      setPage(1);
                       onFilterChange({
                         combinator: event.currentTarget
                           .value as GeoNodeAttributeFilterCombinator,
@@ -462,7 +542,6 @@ export function AttributeTable({
                       field: condition.field,
                     })}
                     onClick={() => {
-                      setPage(1);
                       onFilterChange(
                         createFilter(
                           activeConditions.filter(
@@ -503,7 +582,11 @@ export function AttributeTable({
           </p>
         ) : null}
         {result && result.features.length > 0 ? (
-          <div className="attribute-table__scroll">
+          <div
+            ref={scrollRef}
+            className="attribute-table__scroll"
+            onScroll={handleTableScroll}
+          >
             <table>
               <thead>
                 <tr>
@@ -560,35 +643,26 @@ export function AttributeTable({
                 ))}
               </tbody>
             </table>
+            {state.status === "loading-more" ? (
+              <p className="attribute-table__load-more" role="status">
+                {t("loadingMore")}
+              </p>
+            ) : null}
+            {state.status === "load-more-error" ? (
+              <div className="attribute-table__load-more attribute-table__load-more--error">
+                <span role="alert">{t("loadMoreError")}</span>
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  onClick={() => void loadNextPage()}
+                >
+                  {t("retryLoadMore")}
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
-
-      {result && result.features.length > 0 ? (
-        <footer className="attribute-table__pagination">
-          <button
-            type="button"
-            className="button button--secondary"
-            disabled={page <= 1 || state.status === "loading"}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            {t("previous")}
-          </button>
-          <span>
-            {totalPages === null
-              ? t("pageWithoutTotal", { page: result.page })
-              : t("page", { page: result.page, totalPages })}
-          </span>
-          <button
-            type="button"
-            className="button button--secondary"
-            disabled={!result.hasNext || state.status === "loading"}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            {t("next")}
-          </button>
-        </footer>
-      ) : null}
     </section>
   );
 }

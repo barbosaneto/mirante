@@ -2,6 +2,8 @@ import type { RegisteredPanel } from "@mirante/core";
 import type { MapFacade } from "@mirante/map";
 import { useTranslation } from "react-i18next";
 
+import { CloseIcon } from "./Icons";
+
 interface ExtensionPanelHostProps {
   map: MapFacade;
   panel: RegisteredPanel;
@@ -31,7 +33,7 @@ export function ExtensionPanelHost({
           aria-label={commonTranslation("shell.panel.close")}
           onClick={onClose}
         >
-          ×
+          <CloseIcon />
         </button>
       </header>
       <div className="extension-panel__content">
