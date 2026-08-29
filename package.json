@@ -5,6 +5,14 @@
   "type": "module",
   "description": "An extensible open-source Web GIS client for GeoNode.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/barbosaneto/mirante.git"
+  },
+  "bugs": {
+    "url": "https://github.com/barbosaneto/mirante/issues"
+  },
+  "homepage": "https://github.com/barbosaneto/mirante#readme",
   "packageManager": "npm@10.8.2",
   "engines": {
     "node": ">=18.18.0"

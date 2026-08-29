@@ -4,6 +4,22 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 > Mirante is an independent community project. It is not an official GeoNode product and is not affiliated with or endorsed by GeoNode, OSGeo, or GeoSolutions.
 
+> [!WARNING]
+> Mirante is pre-release software. Public contracts, deployment guidance, and
+> compatibility may change before version 1.0. Do not treat the development
+> Compose stack as a production security baseline.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Compatibility](docs/compatibility.md)
+- [Configuration](docs/configuration.md)
+- [Extensions](docs/extensions.md)
+- [Internationalization](docs/internationalization.md)
+- [Security architecture](docs/security.md)
+- [Architecture decisions](docs/adr/README.md)
+- [Contributing](CONTRIBUTING.md)
+
 ## Current status
 
 This repository contains the initial Mirante proof of concept: a containerized local GeoNode stack, session authentication, a browsable GeoNode dataset catalogue, GeoJSON, KML, and zipped Shapefile ingestion with asynchronous progress, published WMS visualization in OpenLayers, and persistent GeoNode maps. The responsive shell also includes runtime internationalization, public distribution configuration, and a build-time extension API.
@@ -27,7 +43,10 @@ When running outside Docker, the development proxy forwards GeoNode routes to `h
 
 ## Local GeoNode
 
-Mirante targets GeoNode 5.1.0. The local Docker environment includes GeoNode, GeoServer, PostgreSQL/PostGIS, Celery, Redis, and an Nginx reverse proxy.
+Mirante currently targets GeoNode 5.1.0. Other versions are not certified; see
+[Compatibility](docs/compatibility.md). The local Docker environment includes
+GeoNode, GeoServer, PostgreSQL/PostGIS, Celery, Redis, and an Nginx reverse
+proxy.
 
 ```bash
 cp .env.example .env
@@ -94,6 +113,23 @@ and update an opened map subject to GeoNode permissions. See
 - `packages/ui`: shared UI primitives and theme tokens.
 - `packages/i18n`: internationalization initialization and locale contracts.
 
+The package boundaries and dependency rules are described in
+[Architecture](docs/architecture.md).
+
+## Contributing and support
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Public
+bug reports and focused feature proposals use the repository issue templates.
+Use [SECURITY.md](SECURITY.md) for private vulnerability reporting and
+[SUPPORT.md](SUPPORT.md) for support boundaries. Community participation is
+governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md). Versioning and
+release preparation follow [the release policy](docs/releasing.md).
+
 ## License
 
-Mirante is intended to be released under the Apache License 2.0. The complete license file and related decision record will be added in a dedicated open-source foundation increment.
+Mirante's original source and documentation are licensed under the
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE),
+[third-party notices](THIRD_PARTY_NOTICES.md), and
+[ADR 0008](docs/adr/0008-apache-2-license.md) for attribution and scope.
