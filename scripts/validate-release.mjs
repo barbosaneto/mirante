@@ -94,6 +94,76 @@ try {
   errors.push(`docs/releases/${releaseVersion}.md does not exist`);
 }
 
+const productionCompose = readText("compose.stack.production.yml");
+if (/^\s*build:/m.test(productionCompose)) {
+  errors.push("compose.stack.production.yml must not contain build directives");
+}
+
+if (
+  !productionCompose.includes("ghcr.io/barbosaneto/mirante") ||
+  !productionCompose.includes(`MIRANTE_VERSION:-${releaseVersion}`)
+) {
+  errors.push(
+    `compose.stack.production.yml does not default Mirante to ${releaseVersion}`,
+  );
+}
+
+for (const image of [
+  "geonode/geonode",
+  "geonode/nginx",
+  "geonode/geoserver",
+  "geonode/postgis",
+  "memcached",
+  "redis",
+]) {
+  if (!productionCompose.includes(image)) {
+    errors.push(`compose.stack.production.yml does not pin ${image}`);
+  }
+}
+
+const arm64Compose = readText("compose.stack.production.arm64.yml");
+for (const image of [
+  "compat-arm64-geonode-5.1.0-r1",
+  "compat-arm64-nginx-1.31.2-r1",
+  "compat-arm64-geoserver-2.28.4-r1",
+  "compat-arm64-postgis-15-3.5-r1",
+]) {
+  if (!arm64Compose.includes(image)) {
+    errors.push(`compose.stack.production.arm64.yml does not pin ${image}`);
+  }
+}
+
+if (!arm64Compose.includes("platform: linux/arm64")) {
+  errors.push("compose.stack.production.arm64.yml does not require ARM64");
+}
+
+const developmentCompose = readText("compose.yml");
+for (const image of [
+  "geonode/geonode",
+  "geonode/nginx",
+  "geonode/geoserver",
+  "geonode/postgis",
+  "memcached",
+  "redis",
+]) {
+  if (!developmentCompose.includes(image)) {
+    errors.push(`compose.yml does not use official image ${image}`);
+  }
+}
+
+for (const dockerfile of [
+  "docker/geonode/Dockerfile",
+  "docker/postgis/Dockerfile",
+  "docker/memcached/Dockerfile",
+  "docker/redis/Dockerfile",
+]) {
+  if (developmentCompose.includes(dockerfile)) {
+    errors.push(
+      `compose.yml must not build runtime service from ${dockerfile}`,
+    );
+  }
+}
+
 if (errors.length > 0) {
   console.error("Release validation failed:\n");
   for (const error of errors) console.error(`- ${error}`);

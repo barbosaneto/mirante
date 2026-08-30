@@ -27,22 +27,20 @@ The Docker Compose development environment obtains and runs independent
 upstream software. These components are not relicensed under Mirante's Apache
 2.0 license.
 
-| Component                                                                                                 | Version or source                        | License                                            |
-| --------------------------------------------------------------------------------------------------------- | ---------------------------------------- | -------------------------------------------------- |
-| [GeoNode](https://github.com/GeoNode/geonode/tree/5.1.0)                                                  | 5.1.0 source distribution                | GPL-2.0-or-later                                   |
-| [GeoServer](https://github.com/geoserver/geoserver)                                                       | 2.28.4 through the GeoNode Docker source | GPL-2.0-or-later with upstream exceptions          |
-| [GeoNode Docker](https://github.com/GeoNode/geonode-docker/tree/cd47f0e18342631b76bd2056867133a3d6798930) | Pinned build sources                     | GPL-2.0-or-later                                   |
-| [PostgreSQL](https://www.postgresql.org/)                                                                 | 15 base image and client                 | PostgreSQL License                                 |
-| [PostGIS](https://postgis.net/)                                                                           | PostgreSQL spatial extension             | GPL-2.0-or-later                                   |
-| [Redis](https://redis.io/)                                                                                | Ubuntu 24.04 distribution package        | See the package metadata for the installed version |
-| [Memcached](https://memcached.org/)                                                                       | Ubuntu 24.04 distribution package        | BSD-3-Clause                                       |
-| [Ubuntu](https://ubuntu.com/)                                                                             | 24.04 base image and packages            | Multiple licenses                                  |
-| [Node.js](https://nodejs.org/)                                                                            | 22.18.0 Bookworm development image       | MIT and bundled third-party licenses               |
+| Component                                                                                                 | Version or source                                                           | License                                   |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------- |
+| [GeoNode](https://github.com/GeoNode/geonode/tree/5.1.0)                                                  | Official 5.1.0 AMD64 image; source-built ARM64 compatibility image          | GPL-2.0-or-later                          |
+| [GeoServer](https://github.com/geoserver/geoserver)                                                       | Official GeoNode 2.28.4 AMD64 image; source-built ARM64 compatibility image | GPL-2.0-or-later with upstream exceptions |
+| [GeoNode Docker](https://github.com/GeoNode/geonode-docker/tree/cd47f0e18342631b76bd2056867133a3d6798930) | Official images and pinned ARM64 build sources                              | GPL-2.0-or-later                          |
+| [PostgreSQL](https://www.postgresql.org/)                                                                 | GeoNode PostGIS image with PostgreSQL 15                                    | PostgreSQL License                        |
+| [PostGIS](https://postgis.net/)                                                                           | GeoNode PostGIS 15-3.5 image                                                | GPL-2.0-or-later                          |
+| [Redis](https://redis.io/)                                                                                | Official `redis:7-alpine` image                                             | See bundled license metadata              |
+| [Memcached](https://memcached.org/)                                                                       | Official `memcached:1.6-alpine` image                                       | BSD-3-Clause                              |
+| [Ubuntu](https://ubuntu.com/)                                                                             | 24.04 base for ARM64 compatibility images                                   | Multiple licenses                         |
+| [Node.js](https://nodejs.org/)                                                                            | 22.18.0 Bookworm development image                                          | MIT and bundled third-party licenses      |
 
-Redis and Memcached are installed from the Ubuntu repositories rather than
-copied from an upstream source tree. Redis licensing varies by upstream
-version, so distributors must inspect the exact Ubuntu package metadata for
-the image they build.
+Redis licensing varies by upstream version, so distributors must inspect the
+exact official image and bundled package metadata selected by the Compose tag.
 
 ## Map services and data
 

@@ -1,0 +1,20 @@
+services:
+  django:
+    image: ghcr.io/barbosaneto/mirante:compat-arm64-geonode-5.1.0-r1
+    platform: linux/arm64
+
+  celery:
+    image: ghcr.io/barbosaneto/mirante:compat-arm64-geonode-5.1.0-r1
+    platform: linux/arm64
+
+  nginx:
+    image: ghcr.io/barbosaneto/mirante:compat-arm64-nginx-1.31.2-r1
+    platform: linux/arm64
+
+  geoserver:
+    image: ghcr.io/barbosaneto/mirante:compat-arm64-geoserver-2.28.4-r1
+    platform: linux/arm64
+
+  db:
+    image: ghcr.io/barbosaneto/mirante:compat-arm64-postgis-15-3.5-r1
+    platform: linux/arm64

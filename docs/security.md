@@ -86,9 +86,12 @@ control presentation but do not grant server permissions.
 ## Dependency and container security
 
 `npm run security:audit` checks the resolved JavaScript dependency tree.
-Production workflows should additionally generate an SBOM, scan final images,
-pin reviewed artifacts, monitor GeoNode and GeoServer advisories, and rebuild
-regularly. Those automated supply-chain checks are planned separately.
+Production release workflows generate an SBOM and provenance attestation for
+the frontend and ARM64 compatibility images, verify the architectures of the
+referenced upstream images, and pin explicit component tags in the distributed
+Compose. Upstream images retain their publishers' supply-chain metadata.
+Automated final-image vulnerability scanning, GeoNode and GeoServer advisory
+monitoring, and scheduled rebuild policy remain operational follow-up work.
 
 The root Compose file contains development defaults and is not a production
 security baseline. `compose.production.yml` hardens only the stateless Mirante

@@ -1,6 +1,6 @@
 {
   "name": "mirante",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "An extensible open-source Web GIS client for GeoNode.",

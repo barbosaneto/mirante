@@ -63,9 +63,13 @@ jobs:
       - name: Validate production Compose files
         env:
           MIRANTE_STACK_ENV_FILE: deploy/stack.production.example.env
+          COMPOSE_ENV_FILE: .env.example
         run: |
+          docker compose --env-file .env.example -f compose.yml config --quiet
+          docker compose --env-file .env.example -f compose.yml -f compose.arm64.yml config --quiet
           docker compose --env-file deploy/production.example.env -f compose.production.yml config --quiet
           docker compose --env-file deploy/stack.production.example.env -f compose.stack.production.yml config --quiet
+          docker compose --env-file deploy/stack.production.example.env -f compose.stack.production.yml -f compose.stack.production.arm64.yml config --quiet
 
   production-image:
     name: Production image

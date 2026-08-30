@@ -33,8 +33,10 @@ At release time, maintainers will:
 4. Replace `Unreleased` entries with the version and release date.
 5. Update package and artifact versions consistently.
 6. Create a signed or otherwise verifiable Git tag named `vX.Y.Z`.
-7. Push the tag and require the container publication workflow to succeed.
-8. Verify the published multi-platform image, SBOM, and provenance attestation.
+7. Push the tag and require the frontend, upstream-image validation, and ARM64
+   compatibility publication jobs to succeed.
+8. Verify the frontend and ARM64 compatibility images, SBOMs, provenance
+   attestations, upstream image references, and downloadable deployment assets.
 9. Publish release notes derived from the changelog and link the immutable image
    version.
 10. Publish only artifacts produced from that tag.
@@ -51,18 +53,17 @@ After every local and CI check passes, publish the prepared commit and its tag:
 
 ```bash
 git push origin main
-git tag -s v0.1.0 -m "Mirante 0.1.0"
-git push origin v0.1.0
+git tag -s v0.1.1 -m "Mirante 0.1.1"
+git push origin v0.1.1
 ```
 
 Replace the version for later releases. If signed tags are not configured, use
 an annotated tag only after the maintainer has deliberately accepted that lower
 verification level. Never move or recreate a published release tag.
 
-The first GHCR publication creates a private package. For the public Mirante
-distribution, a package administrator must then change its visibility to
-`Public` once in GitHub's package settings. Public container images can be
-pulled by deployment servers without a registry login.
+The official GHCR package is public, and deployment servers pull it without a
+registry login. A new fork or namespace must make its first package public once
+in GitHub's package settings before advertising anonymous installation.
 
 Pre-releases use SemVer identifiers such as `0.1.0-alpha.1` and must not be
 presented as stable or production-ready.

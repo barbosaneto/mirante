@@ -1,14 +1,9 @@
 name: ${COMPOSE_PROJECT_NAME:-mirante-production}
 
 x-geonode-service: &geonode-service
-  image: mirante/geonode:5.1.0
-  build:
-    context: .
-    dockerfile: docker/geonode/Dockerfile
-    args:
-      GEONODE_VERSION: 5.1.0
+  image: "${GEONODE_IMAGE:-geonode/geonode}:${GEONODE_VERSION:-5.1.0}"
   env_file:
-    - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
+    - ${MIRANTE_STACK_ENV_FILE:-.env}
   restart: unless-stopped
   volumes:
     - static-data:/mnt/volumes/statics/static
@@ -23,13 +18,7 @@ x-geonode-service: &geonode-service
 
 services:
   mirante:
-    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.0}"
-    build:
-      context: .
-      dockerfile: docker/mirante/Dockerfile
-      target: production
-      args:
-        MIRANTE_VERSION: "${MIRANTE_VERSION:-0.1.0}"
+    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.1}"
     environment:
       GEONODE_INTERNAL_URL: https://nginx:443
       MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES: "${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"
@@ -102,13 +91,9 @@ services:
       start_period: 600s
 
   nginx:
-    image: mirante/geonode-nginx:1.31.2
-    build:
-      context: https://github.com/GeoNode/geonode-docker.git#cd47f0e18342631b76bd2056867133a3d6798930:docker/nginx
-      args:
-        NGINX_VERSION: 1.31.2
+    image: "${GEONODE_NGINX_IMAGE:-geonode/nginx}:${GEONODE_NGINX_VERSION:-1.31.2-latest}"
     env_file:
-      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
+      - ${MIRANTE_STACK_ENV_FILE:-.env}
     environment:
       RESOLVER: 127.0.0.11
     volumes:
@@ -132,13 +117,9 @@ services:
       - geonode
 
   geoserver:
-    image: mirante/geoserver:2.28.4
-    build:
-      context: https://github.com/GeoNode/geonode-docker.git#cd47f0e18342631b76bd2056867133a3d6798930:docker/geoserver
-      args:
-        GEOSERVER_VERSION: 2.28.4
+    image: "${GEOSERVER_IMAGE:-geonode/geoserver}:${GEOSERVER_VERSION:-2.28.4-latest}"
     env_file:
-      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
+      - ${MIRANTE_STACK_ENV_FILE:-.env}
     volumes:
       - static-data:/mnt/volumes/statics/static
       - media-data:/mnt/volumes/statics/uploaded
@@ -169,14 +150,11 @@ services:
       - geonode
 
   db:
-    image: mirante/geonode-postgis:15-3.5
-    build:
-      context: .
-      dockerfile: docker/postgis/Dockerfile
+    image: "${POSTGIS_IMAGE:-geonode/postgis}:${POSTGIS_VERSION:-15-3.5-latest}"
     command:
       ["postgres", "-c", "max_connections=${POSTGRESQL_MAX_CONNECTIONS:-200}"]
     env_file:
-      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
+      - ${MIRANTE_STACK_ENV_FILE:-.env}
     volumes:
       - database-data:/var/lib/postgresql/data
       - database-backups:/pg_backups
@@ -191,10 +169,7 @@ services:
       - geonode
 
   memcached:
-    image: mirante/memcached:1.6
-    build:
-      context: .
-      dockerfile: docker/memcached/Dockerfile
+    image: "${MEMCACHED_IMAGE:-memcached}:${MEMCACHED_VERSION:-1.6-alpine}"
     command: ["--memory-limit=64", "--listen=0.0.0.0"]
     restart: unless-stopped
     healthcheck:
@@ -207,10 +182,7 @@ services:
       - geonode
 
   redis:
-    image: mirante/redis:7.0
-    build:
-      context: .
-      dockerfile: docker/redis/Dockerfile
+    image: "${REDIS_IMAGE:-redis}:${REDIS_VERSION:-7-alpine}"
     command:
       [
         "redis-server",

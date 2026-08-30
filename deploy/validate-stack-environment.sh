@@ -2,7 +2,9 @@
 
 set -eu
 
-environment_file="${1:-deploy/stack.production.env}"
+environment_file="${1:-.env}"
+compose_file="${2:-compose.stack.production.yml}"
+override_file="${3:-}"
 
 fail() {
   printf 'Production environment error: %s\n' "$1" >&2
@@ -14,6 +16,9 @@ read_value() {
 }
 
 [ -f "$environment_file" ] || fail "$environment_file does not exist"
+[ -f "$compose_file" ] || fail "$compose_file does not exist"
+[ -z "$override_file" ] || [ -f "$override_file" ] ||
+  fail "$override_file does not exist"
 
 if grep -n 'replace-with-' "$environment_file"; then
   fail "replace every placeholder before deployment"
@@ -72,9 +77,17 @@ public_host="${public_host%%/*}"
 [ "$(read_value CSRF_COOKIE_SECURE)" = "True" ] ||
   fail "CSRF_COOKIE_SECURE must be True"
 
-MIRANTE_STACK_ENV_FILE="$environment_file" docker compose \
-  --env-file "$environment_file" \
-  -f compose.stack.production.yml \
-  config --quiet
+if [ -n "$override_file" ]; then
+  MIRANTE_STACK_ENV_FILE="$environment_file" docker compose \
+    --env-file "$environment_file" \
+    -f "$compose_file" \
+    -f "$override_file" \
+    config --quiet
+else
+  MIRANTE_STACK_ENV_FILE="$environment_file" docker compose \
+    --env-file "$environment_file" \
+    -f "$compose_file" \
+    config --quiet
+fi
 
 printf 'Production environment validation passed.\n'

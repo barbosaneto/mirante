@@ -16,10 +16,10 @@ or `0`.
 | Variable                                     | Type                     | Required | Supplied default              | Purpose                                                                   |
 | -------------------------------------------- | ------------------------ | -------- | ----------------------------- | ------------------------------------------------------------------------- |
 | `COMPOSE_PROJECT_NAME`                       | Identifier               | No       | `mirante-production`          | Prefixes containers, network, and named volumes                           |
-| `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `deploy/stack.production.env` | Private environment file injected into GeoNode services                   |
+| `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `.env`                        | Private environment file injected into GeoNode services                   |
 | `DOCKER_ENV`                                 | Enum                     | No       | `production`                  | Declares the upstream GeoNode container environment                       |
 | `MIRANTE_IMAGE`                              | OCI image name           | No       | `ghcr.io/barbosaneto/mirante` | Public official frontend image                                            |
-| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.0`                       | Immutable frontend release tag and OCI version label                      |
+| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.1`                       | Immutable frontend release tag and OCI version label                      |
 | `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                             |
 | `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes          |
 | `MIRANTE_REQUIRE_AUTHENTICATION`             | Boolean                  | No       | `false`                       | Requires a restored GeoNode session before showing the client             |
@@ -32,6 +32,31 @@ or `0`.
 
 ¹ Used directly by `compose.production.yml`. The complete stack derives the
 equivalent values from its internal network and `MIRANTE_PUBLIC_URL`.
+
+## Runtime images
+
+| Variable                | Type                 | Required | Supplied default    | Purpose                                                |
+| ----------------------- | -------------------- | -------- | ------------------- | ------------------------------------------------------ |
+| `GEONODE_IMAGE`         | OCI image repository | No       | `geonode/geonode`   | Official GeoNode application image                     |
+| `GEONODE_VERSION`       | Image tag            | No       | `5.1.0`             | Supported GeoNode release                              |
+| `GEONODE_NGINX_IMAGE`   | OCI image repository | No       | `geonode/nginx`     | Official GeoNode proxy image                           |
+| `GEONODE_NGINX_VERSION` | Image tag            | No       | `1.31.2-latest`     | Supported GeoNode proxy release                        |
+| `GEOSERVER_IMAGE`       | OCI image repository | No       | `geonode/geoserver` | Official GeoServer image published by GeoNode          |
+| `GEOSERVER_VERSION`     | Image tag            | No       | `2.28.4-latest`     | Supported GeoServer release                            |
+| `POSTGIS_IMAGE`         | OCI image repository | No       | `geonode/postgis`   | Official GeoNode PostGIS image with database bootstrap |
+| `POSTGIS_VERSION`       | Image tag            | No       | `15-3.5-latest`     | Supported PostgreSQL/PostGIS release                   |
+| `MEMCACHED_IMAGE`       | OCI image repository | No       | `memcached`         | Official Memcached image                               |
+| `MEMCACHED_VERSION`     | Image tag            | No       | `1.6-alpine`        | Supported Memcached release                            |
+| `REDIS_IMAGE`           | OCI image repository | No       | `redis`             | Official Redis image                                   |
+| `REDIS_VERSION`         | Image tag            | No       | `7-alpine`          | Supported Redis release                                |
+
+The base Compose uses these official images directly on AMD64. GeoNode does not
+currently publish ARM64 variants of its GeoNode, Nginx, GeoServer, and PostGIS
+images. ARM64 deployments add `compose.arm64.yml`, which replaces exactly those
+services with fixed native compatibility tags. Redis and Memcached use their
+official multi-platform images on both architectures. Changing upstream
+versions requires compatibility validation and, on ARM64, matching published
+compatibility tags.
 
 ## GeoNode application and initial identity
 

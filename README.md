@@ -2,7 +2,7 @@
 
 Mirante is an experimental, extensible, open-source Web GIS client designed to work with GeoNode.
 
-Current release: `0.1.0`.
+Current release: `0.1.1`.
 
 > Mirante is an independent community project. It is not an official GeoNode product and is not affiliated with or endorsed by GeoNode, OSGeo, or GeoSolutions.
 
@@ -58,6 +58,15 @@ cp .env.example .env
 docker compose up --build -d --wait
 ```
 
+That command uses the official GeoNode, GeoServer, PostGIS, Redis, Memcached,
+and GeoNode Nginx images directly on AMD64. Because the GeoNode project does
+not publish ARM64 variants for four of those services, ARM64 development uses
+the supplied compatibility override:
+
+```bash
+docker compose -f compose.yml -f compose.arm64.yml up --build -d --wait
+```
+
 Mirante is then available at `http://localhost:5173`, and GeoNode remains directly available at `http://localhost:8000`. Requests from Mirante to `/api`, `/geoserver`, and the other reserved GeoNode paths are proxied through the internal Docker network.
 
 Source files are mounted into the Mirante container and update through Vite hot reload. The development entrypoint synchronizes the dependency volume when `package-lock.json` changes.
@@ -70,12 +79,20 @@ authentication behavior, upload visibility, and upload limits without rebuilding
 the image. The separate `compose.production.yml` is a hardened frontend example;
 it does not claim to make the development GeoNode stack production-ready.
 
-After the first release package is made public, both AMD64 and ARM64 hosts can
-pull the immutable image without registry authentication:
+Both AMD64 and ARM64 hosts can pull the public immutable image without registry
+authentication:
 
 ```bash
-docker pull ghcr.io/barbosaneto/mirante:0.1.0
+docker pull ghcr.io/barbosaneto/mirante:0.1.1
 ```
+
+The complete production release requires no repository clone or server-side
+build. Download `compose.yml`, `compose.arm64.yml`, `mirante.env.example`,
+`validate-environment.sh`, and `SHA256SUMS` from the
+[latest release](https://github.com/barbosaneto/mirante/releases/latest), then
+follow the [production deployment guide](docs/deployment.md). AMD64 consumes
+the upstream official images directly. ARM64 applies the additional Compose
+file only for GeoNode components that have no official ARM64 image.
 
 See [Production deployment](docs/deployment.md) for build, reverse-proxy,
 full-stack startup, configuration, healthcheck, backup, update, and rollback

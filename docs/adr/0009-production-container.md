@@ -31,10 +31,16 @@ official distribution.
 - Browser requests can retain a same-origin integration boundary.
 - The image remains useful with vanilla GeoNode and external orchestration.
 - Operators can start the complete supported stack from a documented private
-  environment without adapting the development Compose.
+  environment without a source checkout or server-side image build.
+- AMD64 uses the official upstream stack images directly. ARM64 adds native
+  compatibility images only for GeoNode components that lack an official
+  ARM64 publication; Redis and Memcached remain upstream on both platforms.
+- Runtime image repositories and versions are explicit environment settings;
+  routine Mirante updates change only the frontend version.
 - Build-time extensions, branding, locales, base maps, and theme contracts
   still require a distribution build.
 - Operators remain responsible for public TLS, secret management, backups,
   resource sizing, monitoring, and policy choices.
-- Multi-architecture publication and certification remain release-pipeline
-  work.
+- The release pipeline verifies upstream image architectures and must finish
+  the frontend plus the required ARM64 compatibility images, SBOMs, and
+  provenance attestations before it creates a GitHub Release.

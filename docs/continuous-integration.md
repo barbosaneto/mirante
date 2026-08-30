@@ -13,6 +13,8 @@ dispatches. It uses locked npm dependencies and executes:
 - The high-severity npm dependency audit.
 - Shell syntax and both production Compose configuration checks.
 - A production container build and hardened runtime smoke test.
+- Release metadata and the guarantee that the distributed full-stack Compose
+  contains no local build directive.
 
 The workflow has read-only repository permission. Third-party Actions are pinned
 to full commit SHAs, with the reviewed release beside each pin. Maintainers
@@ -34,7 +36,7 @@ workspace manifests, lockfile, changelog, and release notes are inconsistent.
 Publication therefore remains dormant until maintainers intentionally prepare
 and push a release tag.
 
-After repeating all release checks, the workflow publishes the production image
+After repeating all release checks, the workflow publishes the frontend image
 for `linux/amd64` and `linux/arm64` to:
 
 ```text
@@ -48,10 +50,22 @@ immutable release version rather than `latest` or a minor tag.
 
 The image includes an SPDX SBOM and a GitHub build-provenance attestation tied
 to the published digest. The image supports both the common x86-64 server
-architecture and ARM64 hosts without an architecture override in Compose. Only
-after image publication and attestation succeed does the workflow create the
-GitHub Release from `docs/releases/<version>.md`, including the immutable image
-digest.
+architecture and ARM64 hosts without an architecture override in Compose.
+
+The same workflow verifies every referenced official image before publication.
+GeoNode 5.1.0's official GeoNode, Nginx, GeoServer, and PostGIS images are
+AMD64-only; the workflow publishes immutable native ARM64 compatibility images
+only for those four components. Official Redis and Memcached images are used
+directly on both architectures. Compatibility tags share the public
+`ghcr.io/<owner>/<repository>` package, are skipped when already present, and
+change only when their source or upstream version receives a new revision tag.
+
+Only after frontend publication, upstream verification, every required ARM64
+compatibility image, SBOM, and attestation succeed does the workflow create the GitHub Release from
+`docs/releases/<version>.md`. The release includes the immutable frontend digest
+and attaches `compose.yml`, `compose.arm64.yml`, `mirante.env.example`,
+`validate-environment.sh`, and `SHA256SUMS`. Operators therefore need no source
+checkout or build tool.
 
 ## Permissions and secrets
 
@@ -67,19 +81,18 @@ certificate, or deployment secret is required. Repository settings must allow
 workflows to publish packages. The OCI source label links the package to its
 source repository so package access can inherit repository permissions.
 
-GitHub creates the first GHCR package as private even when its source repository
-is public. After the first successful release, a package administrator must open
-`Package settings`, choose `Change visibility`, and make it public. This is a
-one-time, irreversible publishing decision that cannot happen before the package
-exists. Once public, the release image can be pulled anonymously and no registry
-credential belongs on the deployment host.
+The official `ghcr.io/barbosaneto/mirante` package is public. Its frontend and
+ARM64 compatibility tags can be pulled anonymously, so no registry credential
+belongs on the deployment host. Official upstream images are also public. A
+fork publishing under another namespace must make its own first package public
+explicitly in GitHub's package settings.
 
 ## Pulling an image on a deployment host
 
-After the package visibility is public, pull the immutable release directly:
+Pull the immutable public release directly:
 
 ```bash
-docker pull ghcr.io/barbosaneto/mirante:0.1.0
+docker pull ghcr.io/barbosaneto/mirante:0.1.1
 ```
 
 Set `MIRANTE_IMAGE=ghcr.io/barbosaneto/mirante` and the complete release version

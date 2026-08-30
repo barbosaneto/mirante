@@ -53,17 +53,42 @@ mirantegeo.org {
 Replace the hostname when using another domain. Keep Caddy's data directory
 persistent so certificates and account state survive restarts.
 
-### 2. Create the private environment
+### 2. Download the release bundle
 
 ```bash
-cp deploy/stack.production.example.env deploy/stack.production.env
-chmod 600 deploy/stack.production.env
+mkdir mirante-deployment
+cd mirante-deployment
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/compose.yml
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/compose.arm64.yml
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/mirante.env.example
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/validate-environment.sh
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/SHA256SUMS
+sha256sum --check SHA256SUMS
 ```
 
-The destination is ignored by Git. Replace the domain, administrator email,
-and every `replace-with-*` value. Generate independent URL-safe secrets, for
-example with `openssl rand -hex 32`. Database passwords occur both as individual
-variables and inside connection URLs; keep each repeated value synchronized.
+AMD64 requires only `compose.yml` and the resulting `.env` to keep the
+deployment running. ARM64 additionally requires `compose.arm64.yml`. The
+validator and checksums are recommended preflight tools. Neither Compose file
+contains a build context or source path.
+
+The base Compose consumes official upstream images directly. The GeoNode
+project currently publishes its GeoNode, Nginx, GeoServer, and PostGIS images
+only for AMD64. The ARM64 override replaces exactly those four components with
+native compatibility images; official Redis and Memcached images are used on
+both architectures. Confirm the host architecture with `uname -m`: `x86_64`
+uses only the base file, while `aarch64` or `arm64` also uses the override.
+
+### 3. Create the private environment
+
+```bash
+cp mirante.env.example .env
+chmod 600 .env
+```
+
+Replace the domain, administrator email, and every `replace-with-*` value.
+Generate independent URL-safe secrets, for example with
+`openssl rand -hex 32`. Database passwords occur both as individual variables
+and inside connection URLs; keep each repeated value synchronized.
 
 Review anonymous permissions and account registration deliberately. The example
 allows public dataset downloads and disables open signup. It does not impose a
@@ -72,7 +97,7 @@ private-data policy on every deployment.
 Before startup, this command must produce no output:
 
 ```bash
-grep -n 'replace-with-' deploy/stack.production.env
+grep -n 'replace-with-' .env
 ```
 
 Validate the resolved Compose without printing it into logs shared with other
@@ -80,44 +105,57 @@ people. The supplied preflight performs both checks, validates critical
 same-origin relationships and security values, and validates the Compose:
 
 ```bash
-sh deploy/validate-stack-environment.sh deploy/stack.production.env
+sh ./validate-environment.sh .env compose.yml
+```
+
+On ARM64, validate both files:
+
+```bash
+sh ./validate-environment.sh .env compose.yml compose.arm64.yml
 ```
 
 All supported settings, types, requirements, defaults, and first-start behavior
 are listed in the [environment reference](environment.md).
 
-### 3. Start the complete stack
+### 4. Start the complete stack
 
 The first initialization includes database migrations, GeoServer preparation,
 static assets, and the initial administrator, so it can take several minutes.
 
 ```bash
-docker compose \
-  --env-file deploy/stack.production.env \
-  -f compose.stack.production.yml \
-  up --build -d --wait --wait-timeout 900
+docker compose --env-file .env -f compose.yml pull
+docker compose --env-file .env -f compose.yml up -d --wait --wait-timeout 900
+```
+
+On ARM64:
+
+```bash
+docker compose --env-file .env -f compose.yml -f compose.arm64.yml pull
+docker compose --env-file .env -f compose.yml -f compose.arm64.yml up -d --wait --wait-timeout 900
 ```
 
 Inspect status and bounded logs with:
 
 ```bash
-docker compose --env-file deploy/stack.production.env -f compose.stack.production.yml ps
-docker compose --env-file deploy/stack.production.env -f compose.stack.production.yml logs --tail 100 django geoserver celery
+docker compose --env-file .env -f compose.yml ps
+docker compose --env-file .env -f compose.yml logs --tail 100 django geoserver celery
 curl --fail http://127.0.0.1:8080/healthz
 ```
+
+ARM64 operators must include `-f compose.arm64.yml` in the status and log
+commands as well.
 
 The public domain should then load Mirante. Account, admin, catalogue, profile,
 dataset, map, WMS, and WFS routes remain on that same domain and are served by
 the vanilla GeoNode stack behind Mirante.
 
-### 4. Stop without deleting data
+### 5. Stop without deleting data
 
 ```bash
-docker compose \
-  --env-file deploy/stack.production.env \
-  -f compose.stack.production.yml \
-  stop
+docker compose --env-file .env -f compose.yml stop
 ```
+
+On ARM64, include `-f compose.arm64.yml` before `stop`.
 
 Do not add `--volumes` to `docker compose down` unless permanent removal of all
 databases, datasets, uploaded media, GeoServer state, and backups is intended.
@@ -126,14 +164,18 @@ databases, datasets, uploaded media, GeoServer state, and backups is intended.
 
 When GeoNode is already operated separately, copy
 `deploy/production.example.env` to a private path outside the repository, then
-set the real GeoNode origins and deployment values. Build and start only the
+set the real GeoNode origins and deployment values. Pull and start only the
 Mirante container with:
 
 ```bash
 docker compose \
   --env-file /private/path/mirante.env \
   -f compose.production.yml \
-  up --build -d --wait
+  pull
+docker compose \
+  --env-file /private/path/mirante.env \
+  -f compose.production.yml \
+  up -d --wait
 ```
 
 The example binds Mirante to `127.0.0.1:8080`. Terminate HTTPS with a maintained
@@ -225,10 +267,26 @@ notes for both Mirante and GeoNode. Updating only Mirante does not require
 recreating the other services:
 
 ```bash
-docker compose --env-file deploy/stack.production.env -f compose.stack.production.yml pull mirante
-docker compose --env-file deploy/stack.production.env -f compose.stack.production.yml up -d mirante
+docker compose --env-file .env -f compose.yml pull mirante
+docker compose --env-file .env -f compose.yml up -d --no-deps mirante
 ```
 
-When building from a source checkout before official images exist, replace
-`pull mirante` with `build mirante`. Do not change the pinned GeoNode, GeoServer,
-PostgreSQL, Redis, or Nginx versions as part of an unrelated Mirante update.
+On ARM64, keep `-f compose.arm64.yml` in both commands. It does not replace the
+Mirante service, but it preserves the deployment's complete resolved topology.
+
+Do not change the pinned GeoNode, GeoServer, PostgreSQL, Redis, Memcached, or
+internal Nginx tags as part of a Mirante-only update. A release that changes a
+stack component will include explicit migration and full-stack update guidance.
+
+## Updating the upstream stack
+
+The image repositories and versions are centralized in `.env`. On AMD64, a
+compatible GeoNode upgrade can therefore select new official tags without
+editing Compose. It still requires a backup, release-note review, migration
+assessment, and integration test; changing a tag alone is not a compatibility
+guarantee.
+
+An ARM64 deployment may select a new version only after the corresponding
+compatibility tags have been published by a Mirante release. This limitation is
+removed automatically for any component once its upstream project publishes a
+native ARM64 image; its ARM override can then be retired.

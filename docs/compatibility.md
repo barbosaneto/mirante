@@ -24,10 +24,14 @@ critical flows.
 Mirante uses standard evergreen-browser APIs and produces a static Vite build.
 A formal browser matrix and Playwright coverage have not been established yet.
 
-The development stack builds without forcing a Compose platform. Release images
-must build successfully for both `linux/amd64` and `linux/arm64` before the
-GitHub Release is created. This validates the container build for both targets;
-it does not replace real browser and GeoNode integration testing on every host.
+The AMD64 development and production stacks consume official upstream images
+directly. GeoNode 5.1.0 does not publish ARM64 variants for GeoNode, its Nginx
+proxy, GeoServer, or PostGIS, so ARM64 uses the supplied compatibility Compose
+override for those four services. Redis and Memcached remain official
+multi-platform images. The release cannot be created until the frontend and
+compatibility images are built for their declared targets and every upstream
+image architecture is verified. This does not replace real browser and GeoNode
+integration testing on every host.
 
 ## Compatibility changes
 

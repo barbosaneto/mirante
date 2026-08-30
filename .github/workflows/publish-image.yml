@@ -57,11 +57,15 @@ jobs:
       - name: Validate production configuration
         env:
           MIRANTE_STACK_ENV_FILE: deploy/stack.production.example.env
+          COMPOSE_ENV_FILE: .env.example
         run: |
           sh -n deploy/validate-stack-environment.sh
           sh -n docker/mirante/production-entrypoint.sh
+          docker compose --env-file .env.example -f compose.yml config --quiet
+          docker compose --env-file .env.example -f compose.yml -f compose.arm64.yml config --quiet
           docker compose --env-file deploy/production.example.env -f compose.production.yml config --quiet
           docker compose --env-file deploy/stack.production.example.env -f compose.stack.production.yml config --quiet
+          docker compose --env-file deploy/stack.production.example.env -f compose.stack.production.yml -f compose.stack.production.arm64.yml config --quiet
 
   publish:
     name: Publish multi-platform image
@@ -137,11 +141,184 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
+  upstream-images:
+    name: Verify official image (${{ matrix.component }})
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: geonode
+            image: geonode/geonode:5.1.0
+            architectures: '["amd64"]'
+          - component: nginx
+            image: geonode/nginx:1.31.2-latest
+            architectures: '["amd64"]'
+          - component: geoserver
+            image: geonode/geoserver:2.28.4-latest
+            architectures: '["amd64"]'
+          - component: postgis
+            image: geonode/postgis:15-3.5-latest
+            architectures: '["amd64"]'
+          - component: memcached
+            image: memcached:1.6-alpine
+            architectures: '["amd64", "arm64"]'
+          - component: redis
+            image: redis:7-alpine
+            architectures: '["amd64", "arm64"]'
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Verify published architectures
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}
+          REQUIRED_ARCHITECTURES: ${{ matrix.architectures }}
+        run: |
+          manifest="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest}}')"
+          image_config="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Image}}')"
+          jq --null-input --exit-status \
+            --argjson manifest "$manifest" \
+            --argjson image "$image_config" \
+            --argjson required "$REQUIRED_ARCHITECTURES" '
+              def available:
+                if ($manifest.manifests? | type) == "array"
+                then [$manifest.manifests[].platform | select(.os == "linux") | .architecture]
+                else [select($image.os == "linux") | $image.architecture]
+                end;
+              (available) as $available |
+              all($required[]; . as $architecture | $available | index($architecture) != null)
+            ' >/dev/null
+
+  arm-compatibility-images:
+    name: Publish ARM64 compatibility image (${{ matrix.component }})
+    needs:
+      - validate
+      - upstream-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - component: geonode
+            title: Mirante GeoNode ARM64 compatibility runtime
+            tag: compat-arm64-geonode-5.1.0-r1
+            context: .
+            file: docker/geonode/Dockerfile
+            build_args: GEONODE_VERSION=5.1.0
+          - component: nginx
+            title: Mirante GeoNode proxy ARM64 compatibility runtime
+            tag: compat-arm64-nginx-1.31.2-r1
+            context: "https://github.com/GeoNode/geonode-docker.git#cd47f0e18342631b76bd2056867133a3d6798930:docker/nginx"
+            file: Dockerfile
+            build_args: NGINX_VERSION=1.31.2
+          - component: geoserver
+            title: Mirante GeoServer ARM64 compatibility runtime
+            tag: compat-arm64-geoserver-2.28.4-r1
+            context: "https://github.com/GeoNode/geonode-docker.git#cd47f0e18342631b76bd2056867133a3d6798930:docker/geoserver"
+            file: Dockerfile
+            build_args: GEOSERVER_VERSION=2.28.4
+          - component: postgis
+            title: Mirante PostGIS ARM64 compatibility runtime
+            tag: compat-arm64-postgis-15-3.5-r1
+            context: .
+            file: docker/postgis/Dockerfile
+            build_args: ""
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Normalize image name
+        id: image
+        shell: bash
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check immutable ARM64 image
+        id: existing
+        shell: bash
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
+        run: |
+          if manifest="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest}}' 2>/dev/null)"; then
+            image_config="$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Image}}')"
+            jq --null-input --exit-status \
+              --argjson manifest "$manifest" \
+              --argjson image "$image_config" '
+                if ($manifest.manifests? | type) == "array"
+                then any($manifest.manifests[].platform; .os == "linux" and .architecture == "arm64")
+                else $image.os == "linux" and $image.architecture == "arm64"
+                end
+              ' >/dev/null || {
+              echo "$IMAGE exists without the required ARM64 platform." >&2
+              exit 1
+            }
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "$IMAGE already exists and will not be overwritten."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and publish ARM64 compatibility image
+        if: steps.existing.outputs.exists != 'true'
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/arm64
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ matrix.tag }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=ARM64 compatibility runtime for an upstream GeoNode component without an official ARM64 image
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ matrix.tag }}
+          build-args: ${{ matrix.build_args }}
+          sbom: true
+          provenance: false
+          cache-from: type=gha,scope=compat-arm64-${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=compat-arm64-${{ matrix.component }}
+
+      - name: Attest ARM64 compatibility image provenance
+        if: steps.existing.outputs.exists != 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
   release:
     name: Create GitHub release
     needs:
       - validate
       - publish
+      - upstream-images
+      - arm-compatibility-images
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -160,7 +337,18 @@ jobs:
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
           notes_file="$RUNNER_TEMP/mirante-release-notes.md"
+          assets_directory="$RUNNER_TEMP/mirante-release-assets"
+          mkdir -p "$assets_directory"
           cp "docs/releases/$VERSION.md" "$notes_file"
+          cp compose.stack.production.yml "$assets_directory/compose.yml"
+          cp compose.stack.production.arm64.yml "$assets_directory/compose.arm64.yml"
+          cp deploy/stack.production.example.env "$assets_directory/mirante.env.example"
+          cp deploy/validate-stack-environment.sh "$assets_directory/validate-environment.sh"
+          chmod 0755 "$assets_directory/validate-environment.sh"
+          (
+            cd "$assets_directory"
+            sha256sum compose.yml compose.arm64.yml mirante.env.example validate-environment.sh > SHA256SUMS
+          )
           printf '\n## Verification\n\nContainer digest: `%s@%s`\n' \
             "$IMAGE_NAME" "$IMAGE_DIGEST" >> "$notes_file"
 
@@ -173,4 +361,9 @@ jobs:
             --verify-tag \
             --title "Mirante $VERSION" \
             --notes-file "$notes_file" \
+            "$assets_directory/compose.yml#Production Compose" \
+            "$assets_directory/compose.arm64.yml#ARM64 production override" \
+            "$assets_directory/mirante.env.example#Environment template" \
+            "$assets_directory/validate-environment.sh#Environment validator" \
+            "$assets_directory/SHA256SUMS#Release asset checksums" \
             "${release_options[@]}"
