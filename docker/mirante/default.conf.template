@@ -1,0 +1,52 @@
+server {
+  listen 8080;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+  resolver 127.0.0.11 valid=30s ipv6=off;
+
+  client_max_body_size ${MIRANTE_PROXY_MAX_BODY_SIZE};
+
+  add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  location = /runtime-config.js {
+    alias /tmp/runtime-config.js;
+    expires -1;
+  }
+
+  location ~ "^/([a-z]{2}(-[a-z]{2})?/admin|about|account|accounts|activity|admin|announcements|api|apps|avatar|base|capabilities|catalogue|datasets|developer|djmp|documents|geoserver|groups|gs|harvesters|help|h_keywords_api|i18n|ident\.json|invitations|jsi18n|maps|media|metadata_update_redirect|notifications|o|oauth2|people|privacy_cookies|proxy|resources|robots\.txt|security|select2|services|showmetadata|sitemap\.xml|social|static|upload|uploaded|uploads|version\.txt)(/|$)" {
+    set $geonode_upstream ${GEONODE_INTERNAL_URL};
+    proxy_pass $geonode_upstream$request_uri;
+    proxy_http_version 1.1;
+    proxy_request_buffering off;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header X-Forwarded-Port $mirante_forwarded_port;
+    proxy_set_header X-Forwarded-Proto $mirante_forwarded_proto;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_ssl_name $host;
+    proxy_ssl_server_name on;
+  }
+
+  location /assets/ {
+    try_files $uri =404;
+    expires 1y;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+    expires -1;
+  }
+}

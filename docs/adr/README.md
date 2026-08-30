@@ -14,6 +14,7 @@ was made; implementation guides describe how to use it.
 | [0006](0006-runtime-internationalization.md)   | Use runtime namespaced internationalization       | Accepted |
 | [0007](0007-docker-development-stack.md)       | Maintain a reproducible Docker development stack  | Accepted |
 | [0008](0008-apache-2-license.md)               | License independent Mirante code under Apache 2.0 | Accepted |
+| [0009](0009-production-container.md)           | Distribute a runtime-configurable container       | Accepted |
 
 New records use the next four-digit number and contain context, decision, and
 consequences. Accepted records are not rewritten to hide an old decision;

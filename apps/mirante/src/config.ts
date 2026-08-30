@@ -2,20 +2,28 @@ import { defineMiranteConfig } from "@mirante/core";
 import { fallbackLocale, supportedLocales } from "@mirante/i18n";
 
 import miranteLogo from "./assets/mirante.png";
+import { readMiranteRuntimeConfig } from "./runtimeConfig";
 
-const geonodeBaseUrl = import.meta.env.VITE_GEONODE_BASE_URL ?? "/";
+const runtimeConfig = readMiranteRuntimeConfig();
+const geonodeBaseUrl =
+  runtimeConfig.geonodeBaseUrl ?? import.meta.env.VITE_GEONODE_BASE_URL ?? "/";
 const geonodeWebUrl =
+  runtimeConfig.geonodeWebUrl ??
   import.meta.env.VITE_GEONODE_WEB_URL ??
   (geonodeBaseUrl === "/" || geonodeBaseUrl === ""
     ? "http://localhost:8000"
     : geonodeBaseUrl);
 const datasetUploadVisibilityControl =
+  runtimeConfig.datasetUploadVisibilityControl ??
   import.meta.env.VITE_DATASET_UPLOAD_VISIBILITY_CONTROL?.toLowerCase() !==
-  "false";
+    "false";
+const datasetUploadMaximumFileSizeBytes =
+  runtimeConfig.datasetUploadMaximumFileSizeBytes ?? 100 * 1024 * 1024;
 
 export const miranteConfig = defineMiranteConfig({
   authentication: {
     required:
+      runtimeConfig.requireAuthentication ??
       import.meta.env.VITE_REQUIRE_AUTHENTICATION?.toLowerCase() === "true",
   },
   branding: {
@@ -83,7 +91,7 @@ export const miranteConfig = defineMiranteConfig({
   },
   features: {
     datasetUpload: true,
-    datasetUploadMaximumFileSizeBytes: 100 * 1024 * 1024,
+    datasetUploadMaximumFileSizeBytes,
     datasetUploadVisibilityControl,
   },
 });

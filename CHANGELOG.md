@@ -11,6 +11,10 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Open-source project policies, templates, architecture records, licensing,
   compatibility guidance, and third-party notices.
+- A multi-stage, non-root production image with validated runtime configuration,
+  an explicit GeoNode reverse proxy, healthcheck, frontend-only and complete
+  vanilla GeoNode production Compose examples, a typed environment reference,
+  and operational deployment guidance.
 
 ### Changed
 

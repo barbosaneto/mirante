@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-mirante}
+name: ${COMPOSE_PROJECT_NAME:-mirante-production}
 
 x-geonode-service: &geonode-service
   image: mirante/geonode:5.1.0
@@ -8,7 +8,7 @@ x-geonode-service: &geonode-service
     args:
       GEONODE_VERSION: 5.1.0
   env_file:
-    - ${COMPOSE_ENV_FILE:-.env}
+    - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
   restart: unless-stopped
   volumes:
     - static-data:/mnt/volumes/statics/static
@@ -23,39 +23,34 @@ x-geonode-service: &geonode-service
 
 services:
   mirante:
-    image: mirante/frontend:development
+    image: "${MIRANTE_IMAGE:-mirante/frontend}:${MIRANTE_VERSION:-production}"
     build:
       context: .
       dockerfile: docker/mirante/Dockerfile
-      target: development
+      target: production
+      args:
+        MIRANTE_VERSION: "${MIRANTE_VERSION:-0.0.0-dev}"
     environment:
-      GEONODE_INTERNAL_URL: http://nginx
-      MIRANTE_USE_POLLING: "true"
-      VITE_GEONODE_BASE_URL: /
-      VITE_GEONODE_WEB_URL: "http://localhost:${HTTP_PORT:-8000}"
-      VITE_REQUIRE_AUTHENTICATION: "${VITE_REQUIRE_AUTHENTICATION:-false}"
-      VITE_DATASET_UPLOAD_VISIBILITY_CONTROL: "${VITE_DATASET_UPLOAD_VISIBILITY_CONTROL:-true}"
+      GEONODE_INTERNAL_URL: https://nginx:443
+      MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES: "${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"
+      MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL: "${MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL:-true}"
+      MIRANTE_GEONODE_BASE_URL: /
+      MIRANTE_GEONODE_WEB_URL: "${MIRANTE_PUBLIC_URL:?Set the public Mirante URL}"
+      MIRANTE_PROXY_MAX_BODY_SIZE: "${MIRANTE_PROXY_MAX_BODY_SIZE:-110m}"
+      MIRANTE_REQUIRE_AUTHENTICATION: "${MIRANTE_REQUIRE_AUTHENTICATION:-false}"
     ports:
-      - "${MIRANTE_PORT:-5173}:5173"
-    volumes:
-      - .:/workspace
-      - mirante-dependencies:/workspace/node_modules
+      - "127.0.0.1:${MIRANTE_HTTP_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     depends_on:
       nginx:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:5173/').then(response=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
     networks:
       - geonode
 
@@ -113,13 +108,10 @@ services:
       args:
         NGINX_VERSION: 1.31.2
     env_file:
-      - ${COMPOSE_ENV_FILE:-.env}
+      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
     environment:
       RESOLVER: 127.0.0.11
-    ports:
-      - "${HTTP_PORT:-8000}:80"
     volumes:
-      - nginx-configuration:/etc/nginx
       - nginx-certificates:/geonode-certificates
       - static-data:/mnt/volumes/statics/static:ro
       - media-data:/mnt/volumes/statics/uploaded:ro
@@ -146,7 +138,7 @@ services:
       args:
         GEOSERVER_VERSION: 2.28.4
     env_file:
-      - ${COMPOSE_ENV_FILE:-.env}
+      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
     volumes:
       - static-data:/mnt/volumes/statics/static
       - media-data:/mnt/volumes/statics/uploaded
@@ -184,7 +176,7 @@ services:
     command:
       ["postgres", "-c", "max_connections=${POSTGRESQL_MAX_CONNECTIONS:-200}"]
     env_file:
-      - ${COMPOSE_ENV_FILE:-.env}
+      - ${MIRANTE_STACK_ENV_FILE:-deploy/stack.production.env}
     volumes:
       - database-data:/var/lib/postgresql/data
       - database-backups:/pg_backups
@@ -243,32 +235,28 @@ services:
 
 networks:
   geonode:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-geonode
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-geonode
 
 volumes:
   assets-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-assets
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-assets
   backup-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-backup
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-backup
   database-backups:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-database-backups
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-database-backups
   database-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-database
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-database
   geoserver-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-geoserver
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-geoserver
   media-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-media
-  mirante-dependencies:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-dependencies
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-media
   nginx-certificates:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-nginx-certificates
-  nginx-configuration:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-nginx-configuration
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-nginx-certificates
   redis-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-redis
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-redis
   shared-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-shared
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-shared
   static-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-static
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-static
   temporary-data:
-    name: ${COMPOSE_PROJECT_NAME:-mirante}-temporary
+    name: ${COMPOSE_PROJECT_NAME:-mirante-production}-temporary

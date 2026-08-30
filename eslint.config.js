@@ -11,6 +11,7 @@ export default tseslint.config(
       "**/coverage/**",
       "node_modules/**",
       "eslint.config.js",
+      "apps/*/public/runtime-config.js",
     ],
   },
   js.configs.recommended,

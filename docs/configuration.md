@@ -4,6 +4,12 @@ Mirante distributions define public settings with `defineMiranteConfig` from
 `@mirante/core`. The official distribution owns its configuration in
 `apps/mirante/src/config.ts`; packages do not import that file.
 
+Build-time configuration owns distribution identity and extension composition.
+The production container additionally accepts a bounded set of operational
+runtime values so the same image can be promoted without recompilation. See
+[Production deployment](deployment.md) and the complete
+[environment reference](environment.md).
+
 The contract covers:
 
 - Optional or required GeoNode authentication before application startup.
@@ -86,10 +92,11 @@ separately.
 
 `datasetUploadVisibilityControl` controls whether the upload dialog offers
 public, private, and group access. The official distribution reads it from
-`VITE_DATASET_UPLOAD_VISIBILITY_CONTROL` and enables it by default. Set the
-environment variable to `false` to hide the whole visibility section and skip
-all group and permission requests. In that mode Mirante leaves the new
-resource's permissions untouched, so GeoNode's
+`VITE_DATASET_UPLOAD_VISIBILITY_CONTROL` during development and from
+`MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL` when the production container
+starts. It is enabled by default. Set the applicable variable to `false` to hide
+the whole visibility section and skip all group and permission requests. In
+that mode Mirante leaves the new resource's permissions untouched, so GeoNode's
 `DEFAULT_ANONYMOUS_PERMISSIONS` and
 `DEFAULT_REGISTERED_MEMBERS_PERMISSIONS` settings determine access exactly as
 they did before this feature. The supplied local stack keeps both defaults at
@@ -103,3 +110,7 @@ palette rather than retaining distribution-specific literals.
 Institutional distributions should own this configuration, branding assets,
 locale resources, and extension list. Updating Mirante packages then does not
 require maintaining a fork of internal files.
+
+Runtime settings intentionally do not load arbitrary scripts, extensions,
+branding, themes, locales, or base-map definitions. Those remain audited
+build-time distribution choices.

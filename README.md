@@ -14,9 +14,11 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 - [Architecture](docs/architecture.md)
 - [Compatibility](docs/compatibility.md)
 - [Configuration](docs/configuration.md)
+- [Environment reference](docs/environment.md)
 - [Extensions](docs/extensions.md)
 - [Internationalization](docs/internationalization.md)
 - [Security architecture](docs/security.md)
+- [Production deployment](docs/deployment.md)
 - [Architecture decisions](docs/adr/README.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -57,6 +59,19 @@ Mirante is then available at `http://localhost:5173`, and GeoNode remains direct
 
 Source files are mounted into the Mirante container and update through Vite hot reload. The development entrypoint synchronizes the dependency volume when `package-lock.json` changes.
 
+## Production image
+
+The multi-stage frontend image builds static assets and serves them through an
+unprivileged Nginx process. Runtime environment settings select GeoNode origins,
+authentication behavior, upload visibility, and upload limits without rebuilding
+the image. The separate `compose.production.yml` is a hardened frontend example;
+it does not claim to make the development GeoNode stack production-ready.
+
+See [Production deployment](docs/deployment.md) for build, reverse-proxy,
+full-stack startup, configuration, healthcheck, backup, update, and rollback
+guidance. Every supported production variable, type, requirement, and supplied
+default is listed in the [environment reference](docs/environment.md).
+
 ## Quality checks
 
 ```bash
@@ -91,7 +106,7 @@ The collapsed dataset catalogue lists published resources visible through GeoNod
 
 Active layers can be fitted back into view from the layer panel. Clicking the map queries visible dataset layers through standard WMS GetFeatureInfo and presents returned attributes without requiring a custom backend. See [Feature inspection](docs/feature-inspection.md).
 
-Each active vector dataset also provides a paginated attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, select and persistently highlight an individual feature, apply typed attribute filters synchronized with the WMS visualization, and export every matching feature as CSV or GeoJSON. Filters are preserved in Mirante map resources. See [Attribute table](docs/attribute-table.md), [Attribute filtering](docs/attribute-filtering.md), and [Map persistence](docs/map-persistence.md).
+Each active vector dataset also provides an infinitely scrolling attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, select and persistently highlight an individual feature, apply typed attribute filters synchronized with the WMS visualization, and export every matching feature as CSV or GeoJSON. Filters are preserved in Mirante map resources. See [Attribute table](docs/attribute-table.md), [Attribute filtering](docs/attribute-filtering.md), and [Map persistence](docs/map-persistence.md).
 
 The bottom toolbar lists the base maps registered by the distribution; the
 official configuration provides dark CARTO and light OpenStreetMap layers. The

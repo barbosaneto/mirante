@@ -4,6 +4,8 @@ coverage/
 .env
 .env.*
 !.env.example
+deploy/*.env
+!deploy/*.example.env
 *.local
 .DS_Store
 .idea/

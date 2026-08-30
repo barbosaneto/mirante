@@ -50,14 +50,21 @@ Client validation improves feedback and limits accidental resource use. It does
 not replace GeoNode importer validation, malware controls, archive inspection,
 or server-side upload limits.
 
-## Development proxy and headers
+## Development and production proxies
 
 The Vite development server proxies an explicit list of GeoNode route prefixes
 and sets `X-Content-Type-Options`, `Referrer-Policy`, and a restrictive
 `Permissions-Policy`. The HTML entry point also sets the referrer policy.
 
-Vite is a development server, not the production edge. A production deployment
-must serve the static build through a maintained web server or CDN and define:
+Vite is a development server, not the production edge. The supplied production
+image serves the static build with an unprivileged Nginx process, validates
+runtime values, proxies only explicit GeoNode integration and management route
+prefixes, applies baseline response headers, limits request size, and exposes a
+static-server healthcheck.
+The example Compose drops capabilities, prevents privilege escalation, and uses
+a read-only root filesystem.
+
+The deployment edge must still define:
 
 - HTTPS and secure cookie behavior.
 - A Content Security Policy matching configured map and GeoNode origins.
@@ -83,15 +90,21 @@ Production workflows should additionally generate an SBOM, scan final images,
 pin reviewed artifacts, monitor GeoNode and GeoServer advisories, and rebuild
 regularly. Those automated supply-chain checks are planned separately.
 
-The Compose file contains development defaults and is not a production
-security baseline. Replace every secret, disable debug behavior, review signup
-and anonymous permissions, configure trusted public origins, and use managed
-persistent storage before exposing it publicly.
+The root Compose file contains development defaults and is not a production
+security baseline. `compose.production.yml` hardens only the stateless Mirante
+frontend. `compose.stack.production.yml` supplies conservative complete-stack
+defaults, but operators must still replace every secret, review signup and
+anonymous permissions, configure the public edge, arrange off-host backups, and
+monitor resource use before exposing the system publicly.
 
 ## Residual risks
 
 - No automated browser end-to-end security regression suite exists yet.
-- No production image or production reverse-proxy configuration exists yet.
+- The production stack does not terminate public TLS, rate-limit clients,
+  schedule backups, or replace external monitoring; container healthchecks are
+  local orchestration signals only.
+- Full-stack availability remains a single-host failure domain in the supplied
+  Compose topology.
 - Dependency audit results describe known advisories at scan time, not an
   absence of vulnerabilities.
 - Dataset visibility is applied after importer completion. Public GeoNode
