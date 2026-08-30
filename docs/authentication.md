@@ -26,10 +26,11 @@ resources and configure GeoNode's defaults accordingly.
 
 ## Social and institutional login
 
-GeoNode uses `django-allauth` for social authentication. Google, Facebook, and
-OpenID Connect credentials, callback URLs, and secrets are configured only in
-GeoNode. Mirante extensions register presentation metadata and the relative
-GeoNode login path:
+GeoNode uses `django-allauth` for social authentication. Provider credentials,
+callback URLs, and secrets are configured only in GeoNode. Mirante extensions
+register presentation metadata and the relative GeoNode login path. For
+example, GeoNode 5.1.0 can expose Google through its built-in generic OIDC
+provider:
 
 ```ts
 import { defineExtension } from "@mirante/sdk";
@@ -40,7 +41,7 @@ export const institutionalLogin = defineExtension({
     {
       id: "google",
       labelKey: "providers.google",
-      loginPath: "/account/google/login/?process=login",
+      loginPath: "/account/geonode_openid_connect/login/?process=login",
     },
   ],
   translations: {
@@ -54,6 +55,10 @@ The registered button navigates to GeoNode, includes a return URL to the
 current Mirante page, and lets GeoNode complete the provider flow. On return,
 the same session restoration path recognizes the user. Provider paths must be
 same-origin absolute paths; external URLs are rejected by the registry.
+
+The official distribution does not register a social provider yet. A bundled
+Google OIDC extension is planned as a reference implementation; enabling it
+will still require operator-owned Google credentials in GeoNode.
 
 ## Deployment
 

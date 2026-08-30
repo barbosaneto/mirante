@@ -149,6 +149,10 @@ The public domain should then load Mirante. Account, admin, catalogue, profile,
 dataset, map, WMS, and WFS routes remain on that same domain and are served by
 the vanilla GeoNode stack behind Mirante.
 
+GeoServer administration is available at `/geoserver/web/`. The bare
+`/geoserver/` path is also used by GeoWebCache and service endpoints and must
+not be used as the administration link.
+
 ### 5. Stop without deleting data
 
 ```bash
@@ -217,6 +221,33 @@ The production proxy forwards only the explicit browser integration routes.
 administration, catalogue, and other complete management pages.
 
 ## Health and operation
+
+### GeoServer authentication during imports
+
+Dataset publication uses `GEOSERVER_ADMIN_USER` and
+`GEOSERVER_ADMIN_PASSWORD` for server-to-server GeoServer REST calls. Verify
+that the credential loaded by Django matches the password stored in GeoServer
+without printing the secret:
+
+```bash
+docker compose --env-file .env -f compose.yml exec -T django sh -lc \
+  'curl --silent --output /dev/null --write-out "%{http_code}\n" \
+  --user "$GEOSERVER_ADMIN_USER:$GEOSERVER_ADMIN_PASSWORD" \
+  "${GEOSERVER_LOCATION%/}/rest/about/version.json"'
+```
+
+ARM64 deployments must add `-f compose.arm64.yml`. A `200` response confirms
+the REST credential; `401` means the environment and persistent GeoServer
+password differ. Change the password through `/geoserver/web/`, copy that same
+value to `.env`, and then reload every consumer:
+
+```bash
+docker compose --env-file .env -f compose.yml up -d --force-recreate \
+  django celery geoserver
+```
+
+Do not remove the GeoServer volume to rotate a password: it also contains the
+published workspaces, stores, layers, styles, and security configuration.
 
 `GET /healthz` returns `200` when the static server is running. This does not
 assert GeoNode, GeoServer, database, or storage health. Monitor those services

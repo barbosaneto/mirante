@@ -7,6 +7,16 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Changed
+
+- GeoServer administration links now target `/geoserver/web/`, while public
+  OGC and GeoWebCache traffic remains under `/geoserver/`.
+- Production documentation now links to the public Mirante instance and
+  explains how to diagnose and prevent GeoNode-to-GeoServer authentication
+  failures during dataset publication.
+- The social-login extension example now uses GeoNode 5.1.0's generic OIDC
+  route and records the planned bundled Google reference extension.
+
 ## [0.1.1] - 2026-08-30
 
 ### Added

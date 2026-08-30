@@ -129,7 +129,7 @@ Never expose PostgreSQL's port from the supplied production stack.
 | `GEOSERVER_LB_PORT`         | TCP port integer   | No       | `8080`                             | GeoServer service port                                               |
 | `GEOSERVER_LOCATION`        | Internal URL       | No       | `http://geoserver:8080/geoserver/` | Server-to-server GeoServer endpoint                                  |
 | `GEOSERVER_PUBLIC_LOCATION` | Absolute HTTPS URL | Yes      | None                               | Browser-visible GeoServer endpoint                                   |
-| `GEOSERVER_WEB_UI_LOCATION` | Absolute HTTPS URL | Yes      | None                               | GeoServer administration endpoint                                    |
+| `GEOSERVER_WEB_UI_LOCATION` | Absolute HTTPS URL | Yes      | None                               | GeoServer administration endpoint ending in `/geoserver/web/`        |
 | `GEOSERVER_ADMIN_USER`      | Identifier         | No       | `admin`                            | GeoServer administrator username                                     |
 | `GEOSERVER_ADMIN_PASSWORD`  | Secret string      | Yes      | None                               | GeoServer administrator password                                     |
 | `GEOSERVER_CSRF_ENABLED`    | Boolean            | No       | `true`                             | Keeps GeoServer CSRF protection enabled                              |
@@ -139,6 +139,15 @@ Never expose PostgreSQL's port from the supplied production stack.
 The example gives GeoServer a 3 GiB maximum heap for the documented 24 GiB
 host. Tune it only with memory monitoring and preserve its encoding and CSRF
 options.
+
+`GEOSERVER_ADMIN_PASSWORD` is both the credential GeoNode uses for GeoServer
+REST operations and the password initialized in GeoServer's persistent data
+directory. Set it before the first startup. Changing only the environment file
+after initialization does not rotate the password already stored by GeoServer;
+if the two values diverge, imports fail with `401 Unauthorized`. Rotate the
+password through GeoServer administration, update the environment with the
+same value, and recreate `django`, `celery`, and `geoserver` so every process
+loads the synchronized credential.
 
 ## Access, storage, and ingestion
 

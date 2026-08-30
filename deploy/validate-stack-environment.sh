@@ -66,8 +66,8 @@ public_host="${public_host%%/*}"
   fail "HTTPS_HOST must match the MIRANTE_PUBLIC_URL hostname"
 [ "$(read_value GEOSERVER_PUBLIC_LOCATION)" = "${public_url%/}/geoserver/" ] ||
   fail "GEOSERVER_PUBLIC_LOCATION must use MIRANTE_PUBLIC_URL/geoserver/"
-[ "$(read_value GEOSERVER_WEB_UI_LOCATION)" = "${public_url%/}/geoserver/" ] ||
-  fail "GEOSERVER_WEB_UI_LOCATION must use MIRANTE_PUBLIC_URL/geoserver/"
+[ "$(read_value GEOSERVER_WEB_UI_LOCATION)" = "${public_url%/}/geoserver/web/" ] ||
+  fail "GEOSERVER_WEB_UI_LOCATION must use MIRANTE_PUBLIC_URL/geoserver/web/"
 
 [ "$(read_value DEBUG)" = "False" ] || fail "DEBUG must be False"
 [ "$(read_value CORS_ALLOW_ALL_ORIGINS)" = "False" ] ||

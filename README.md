@@ -4,6 +4,8 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 
 Current release: `0.1.1`.
 
+Try the public Mirante instance at [mirantegeo.org](https://mirantegeo.org).
+
 > Mirante is an independent community project. It is not an official GeoNode product and is not affiliated with or endorsed by GeoNode, OSGeo, or GeoSolutions.
 
 > [!WARNING]
