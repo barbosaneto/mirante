@@ -7,6 +7,8 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-29
+
 ### Added
 
 - Open-source project policies, templates, architecture records, licensing,
@@ -17,6 +19,9 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   and operational deployment guidance.
 - GitHub Actions quality gates and SemVer-triggered GHCR publication of AMD64
   and ARM64 images with SBOM and build-provenance attestations.
+- Consistent `0.1.0` workspace versioning, validated release metadata, public
+  image defaults, versioned release notes, and automated GitHub Release
+  creation after artifact publication.
 
 ### Changed
 
@@ -24,4 +29,5 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   as the user reaches the end of the scrollable table.
 - Dialog close controls now use consistently centered vector icons.
 
-[Unreleased]: https://github.com/barbosaneto/mirante/commits/main
+[Unreleased]: https://github.com/barbosaneto/mirante/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/barbosaneto/mirante/releases/tag/v0.1.0

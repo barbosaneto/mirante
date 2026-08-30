@@ -1,6 +1,6 @@
 {
   "name": "mirante",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "An extensible open-source Web GIS client for GeoNode.",
@@ -27,6 +27,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "release:check": "node scripts/validate-release.mjs",
     "security:audit": "npm audit --audit-level=high",
     "test": "vitest run --config apps/mirante/vite.config.ts",
     "typecheck": "tsc --noEmit"

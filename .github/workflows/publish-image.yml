@@ -1,4 +1,4 @@
-name: Publish container image
+name: Publish release
 
 on:
   push:
@@ -39,13 +39,7 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          declared_version="$(node --print "require('./package.json').version")"
-          node --input-type=module --eval '
-            const [candidate, declared] = process.argv.slice(1);
-            const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?$/;
-            if (!semver.test(candidate)) throw new Error(`Invalid release tag: v${candidate}`);
-            if (candidate !== declared) throw new Error(`Tag v${candidate} does not match package version ${declared}`);
-          ' "$version" "$declared_version"
+          MIRANTE_RELEASE_VERSION="$version" npm run release:check
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Install locked dependencies
@@ -79,6 +73,9 @@ jobs:
       packages: write
       id-token: write
       attestations: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
 
     steps:
       - name: Check out source
@@ -139,3 +136,41 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+  release:
+    name: Create GitHub release
+    needs:
+      - validate
+      - publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Publish release notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+          IMAGE_NAME: ${{ needs.publish.outputs.image }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          notes_file="$RUNNER_TEMP/mirante-release-notes.md"
+          cp "docs/releases/$VERSION.md" "$notes_file"
+          printf '\n## Verification\n\nContainer digest: `%s@%s`\n' \
+            "$IMAGE_NAME" "$IMAGE_DIGEST" >> "$notes_file"
+
+          release_options=()
+          if [[ "$VERSION" == *-* ]]; then
+            release_options+=(--prerelease)
+          fi
+
+          gh release create "v$VERSION" \
+            --verify-tag \
+            --title "Mirante $VERSION" \
+            --notes-file "$notes_file" \
+            "${release_options[@]}"

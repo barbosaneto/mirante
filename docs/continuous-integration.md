@@ -29,9 +29,10 @@ create it.
 ## Container publication
 
 `.github/workflows/publish-image.yml` runs only after a tag matching `v*.*.*` is
-pushed. It rejects tags that are not valid Semantic Versions or whose version
-does not exactly match the root `package.json`. Publication therefore remains
-dormant until maintainers intentionally prepare and push a release tag.
+pushed. It rejects tags that are not valid Semantic Versions or whose version,
+workspace manifests, lockfile, changelog, and release notes are inconsistent.
+Publication therefore remains dormant until maintainers intentionally prepare
+and push a release tag.
 
 After repeating all release checks, the workflow publishes the production image
 for `linux/amd64` and `linux/arm64` to:
@@ -47,7 +48,10 @@ immutable release version rather than `latest` or a minor tag.
 
 The image includes an SPDX SBOM and a GitHub build-provenance attestation tied
 to the published digest. The image supports both the common x86-64 server
-architecture and ARM64 hosts without an architecture override in Compose.
+architecture and ARM64 hosts without an architecture override in Compose. Only
+after image publication and attestation succeed does the workflow create the
+GitHub Release from `docs/releases/<version>.md`, including the immutable image
+digest.
 
 ## Permissions and secrets
 
@@ -56,32 +60,32 @@ permissions:
 
 - `packages: write` to push the container.
 - `id-token: write` and `attestations: write` to create provenance.
+- `contents: write`, isolated in the final job, to create the GitHub Release.
 
 No personal access token, SSH credential, production environment, domain
 certificate, or deployment secret is required. Repository settings must allow
 workflows to publish packages. The OCI source label links the package to its
 source repository so package access can inherit repository permissions.
 
-The first package published from a private repository is normally private.
-Administrators must make the package public explicitly when the distribution is
-ready. Public GHCR images can be pulled anonymously; private images require a
-token with package read access on the deployment host. Never place that token in
-the repository or Compose file.
+GitHub creates the first GHCR package as private even when its source repository
+is public. After the first successful release, a package administrator must open
+`Package settings`, choose `Change visibility`, and make it public. This is a
+one-time, irreversible publishing decision that cannot happen before the package
+exists. Once public, the release image can be pulled anonymously and no registry
+credential belongs on the deployment host.
 
 ## Pulling an image on a deployment host
 
-For a private package, provide a narrowly scoped token through the shell or the
-host's secret manager:
+After the package visibility is public, pull the immutable release directly:
 
 ```bash
-printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username YOUR_GITHUB_USER --password-stdin
-docker pull ghcr.io/OWNER/REPOSITORY:0.2.3
+docker pull ghcr.io/barbosaneto/mirante:0.1.0
 ```
 
-Set `MIRANTE_IMAGE=ghcr.io/OWNER/REPOSITORY` and
-`MIRANTE_VERSION=0.2.3` in the private production environment, then follow the
-update procedure in [Production deployment](deployment.md). Logging in is not
-required after the package becomes public.
+Set `MIRANTE_IMAGE=ghcr.io/barbosaneto/mirante` and the complete release version
+in the private production environment, then follow the update procedure in
+[Production deployment](deployment.md). Do not configure `docker login` for the
+public package.
 
 ## Failure and retry behavior
 

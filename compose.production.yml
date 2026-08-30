@@ -2,13 +2,13 @@ name: ${COMPOSE_PROJECT_NAME:-mirante-production}
 
 services:
   mirante:
-    image: "${MIRANTE_IMAGE:-mirante/frontend}:${MIRANTE_VERSION:-production}"
+    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.0}"
     build:
       context: .
       dockerfile: docker/mirante/Dockerfile
       target: production
       args:
-        MIRANTE_VERSION: "${MIRANTE_VERSION:-0.0.0-dev}"
+        MIRANTE_VERSION: "${MIRANTE_VERSION:-0.1.0}"
     environment:
       GEONODE_INTERNAL_URL: "${GEONODE_INTERNAL_URL:?Set the private GeoNode origin}"
       MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES: "${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"

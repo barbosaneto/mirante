@@ -38,7 +38,7 @@ RUN npm run build
 
 FROM nginx:${NGINX_VERSION}-alpine AS production
 
-ARG MIRANTE_VERSION=0.0.0-dev
+ARG MIRANTE_VERSION=0.1.0
 
 LABEL org.opencontainers.image.title="Mirante" \
   org.opencontainers.image.description="Extensible Web GIS client for GeoNode" \

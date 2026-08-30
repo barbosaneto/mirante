@@ -204,10 +204,11 @@ tested restore procedure before accepting irreplaceable datasets.
 Once release images are published, set `MIRANTE_IMAGE` and a fixed
 `MIRANTE_VERSION` in the private deployment environment. Never depend on a
 floating tag for production. Official release images are published for AMD64
-and ARM64 at `ghcr.io/barbosaneto/mirante`; private packages require a prior
-registry login as described in
+and ARM64 at `ghcr.io/barbosaneto/mirante` and can be pulled anonymously after
+the package's one-time public visibility setting described in
 [Continuous integration and container publication](continuous-integration.md).
-Update only the Mirante service with:
+No registry login is required on the server. Update only the Mirante service
+with:
 
 ```bash
 docker compose --env-file /private/path/mirante.env -f compose.production.yml pull mirante

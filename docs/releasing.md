@@ -40,6 +40,30 @@ At release time, maintainers will:
 10. Publish only artifacts produced from that tag.
 11. Restore an empty `Unreleased` section.
 
+The repository enforces manifest, lockfile, changelog, and release-note
+consistency with:
+
+```bash
+npm run release:check
+```
+
+After every local and CI check passes, publish the prepared commit and its tag:
+
+```bash
+git push origin main
+git tag -s v0.1.0 -m "Mirante 0.1.0"
+git push origin v0.1.0
+```
+
+Replace the version for later releases. If signed tags are not configured, use
+an annotated tag only after the maintainer has deliberately accepted that lower
+verification level. Never move or recreate a published release tag.
+
+The first GHCR publication creates a private package. For the public Mirante
+distribution, a package administrator must then change its visibility to
+`Public` once in GitHub's package settings. Public container images can be
+pulled by deployment servers without a registry login.
+
 Pre-releases use SemVer identifiers such as `0.1.0-alpha.1` and must not be
 presented as stable or production-ready.
 

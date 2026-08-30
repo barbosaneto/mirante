@@ -9,7 +9,7 @@ releases.
 
 | GeoNode version        | Status             | Notes                                                                                                                                      |
 | ---------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 5.1.0                  | Development target | Local stack version; authentication, catalogue, upload, styling, permissions, WMS, WFS, and map flows are implemented against this version |
+| 5.1.0                  | Supported in 0.1.0 | Local stack version; authentication, catalogue, upload, styling, permissions, WMS, WFS, and map flows are implemented against this version |
 | Other 5.1.x releases   | Not yet certified  | May work, but require regression validation before being listed as supported                                                               |
 | 5.0.x and earlier      | Not supported      | API and importer differences have not been evaluated                                                                                       |
 | Later feature releases | Not supported yet  | Add only after contract review and a compatibility increment                                                                               |
@@ -24,10 +24,10 @@ critical flows.
 Mirante uses standard evergreen-browser APIs and produces a static Vite build.
 A formal browser matrix and Playwright coverage have not been established yet.
 
-The development stack is intended to build on both `linux/amd64` and
-`linux/arm64` hosts without forcing one Compose platform. Automated
-multi-architecture validation is pending; until then, neither architecture is
-declared release-certified.
+The development stack builds without forcing a Compose platform. Release images
+must build successfully for both `linux/amd64` and `linux/arm64` before the
+GitHub Release is created. This validates the container build for both targets;
+it does not replace real browser and GeoNode integration testing on every host.
 
 ## Compatibility changes
 

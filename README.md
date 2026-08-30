@@ -2,6 +2,8 @@
 
 Mirante is an experimental, extensible, open-source Web GIS client designed to work with GeoNode.
 
+Current release: `0.1.0`.
+
 > Mirante is an independent community project. It is not an official GeoNode product and is not affiliated with or endorsed by GeoNode, OSGeo, or GeoSolutions.
 
 > [!WARNING]
@@ -67,6 +69,13 @@ unprivileged Nginx process. Runtime environment settings select GeoNode origins,
 authentication behavior, upload visibility, and upload limits without rebuilding
 the image. The separate `compose.production.yml` is a hardened frontend example;
 it does not claim to make the development GeoNode stack production-ready.
+
+After the first release package is made public, both AMD64 and ARM64 hosts can
+pull the immutable image without registry authentication:
+
+```bash
+docker pull ghcr.io/barbosaneto/mirante:0.1.0
+```
 
 See [Production deployment](docs/deployment.md) for build, reverse-proxy,
 full-stack startup, configuration, healthcheck, backup, update, and rollback
