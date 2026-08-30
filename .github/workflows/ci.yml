@@ -1,0 +1,121 @@
+name: Continuous integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm run security:audit
+
+      - name: Validate shell scripts
+        run: |
+          sh -n deploy/validate-stack-environment.sh
+          sh -n docker/mirante/production-entrypoint.sh
+
+      - name: Validate production Compose files
+        env:
+          MIRANTE_STACK_ENV_FILE: deploy/stack.production.example.env
+        run: |
+          docker compose --env-file deploy/production.example.env -f compose.production.yml config --quiet
+          docker compose --env-file deploy/stack.production.example.env -f compose.stack.production.yml config --quiet
+
+  production-image:
+    name: Production image
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Build production image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: docker/mirante/Dockerfile
+          target: production
+          load: true
+          push: false
+          tags: mirante/ci:${{ github.sha }}
+          build-args: MIRANTE_VERSION=0.0.0-ci.${{ github.run_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke-test production image
+        env:
+          IMAGE: mirante/ci:${{ github.sha }}
+        run: |
+          docker run --detach --rm \
+            --name mirante-ci-smoke \
+            --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --publish 127.0.0.1:18080:8080 \
+            --env GEONODE_INTERNAL_URL=https://unavailable.invalid:443 \
+            --env MIRANTE_GEONODE_WEB_URL=https://example.invalid \
+            "$IMAGE"
+
+          cleanup() {
+            docker rm --force mirante-ci-smoke >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          attempts=0
+          until curl --fail --silent --show-error http://127.0.0.1:18080/healthz; do
+            attempts=$((attempts + 1))
+            if [ "$attempts" -ge 20 ]; then
+              docker logs mirante-ci-smoke
+              exit 1
+            fi
+            sleep 1
+          done

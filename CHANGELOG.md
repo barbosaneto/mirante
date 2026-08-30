@@ -15,6 +15,8 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   an explicit GeoNode reverse proxy, healthcheck, frontend-only and complete
   vanilla GeoNode production Compose examples, a typed environment reference,
   and operational deployment guidance.
+- GitHub Actions quality gates and SemVer-triggered GHCR publication of AMD64
+  and ARM64 images with SBOM and build-provenance attestations.
 
 ### Changed
 

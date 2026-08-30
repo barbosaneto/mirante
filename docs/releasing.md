@@ -1,8 +1,8 @@
 # Release policy
 
 Mirante uses Semantic Versioning and a Keep a Changelog-style changelog. This
-document defines policy; automated packaging and publication will be added in a
-later increment.
+document defines policy. A release tag automatically publishes the production
+container according to [Continuous integration and container publication](continuous-integration.md).
 
 ## Versions
 
@@ -33,9 +33,12 @@ At release time, maintainers will:
 4. Replace `Unreleased` entries with the version and release date.
 5. Update package and artifact versions consistently.
 6. Create a signed or otherwise verifiable Git tag named `vX.Y.Z`.
-7. Publish release notes derived from the changelog.
-8. Publish only artifacts produced from that tag.
-9. Restore an empty `Unreleased` section.
+7. Push the tag and require the container publication workflow to succeed.
+8. Verify the published multi-platform image, SBOM, and provenance attestation.
+9. Publish release notes derived from the changelog and link the immutable image
+   version.
+10. Publish only artifacts produced from that tag.
+11. Restore an empty `Unreleased` section.
 
 Pre-releases use SemVer identifiers such as `0.1.0-alpha.1` and must not be
 presented as stable or production-ready.

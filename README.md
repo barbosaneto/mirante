@@ -19,6 +19,7 @@ Mirante is an experimental, extensible, open-source Web GIS client designed to w
 - [Internationalization](docs/internationalization.md)
 - [Security architecture](docs/security.md)
 - [Production deployment](docs/deployment.md)
+- [Continuous integration and container publication](docs/continuous-integration.md)
 - [Architecture decisions](docs/adr/README.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -71,6 +72,9 @@ See [Production deployment](docs/deployment.md) for build, reverse-proxy,
 full-stack startup, configuration, healthcheck, backup, update, and rollback
 guidance. Every supported production variable, type, requirement, and supplied
 default is listed in the [environment reference](docs/environment.md).
+Release tags publish verified `linux/amd64` and `linux/arm64` images to GitHub
+Container Registry without accessing an operator's deployment server. See
+[Continuous integration and container publication](docs/continuous-integration.md).
 
 ## Quality checks
 
