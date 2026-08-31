@@ -13,22 +13,22 @@ or `0`.
 
 ## Compose and Mirante
 
-| Variable                                     | Type                     | Required | Supplied default              | Purpose                                                                   |
-| -------------------------------------------- | ------------------------ | -------- | ----------------------------- | ------------------------------------------------------------------------- |
-| `COMPOSE_PROJECT_NAME`                       | Identifier               | No       | `mirante-production`          | Prefixes containers, network, and named volumes                           |
-| `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `.env`                        | Private environment file injected into GeoNode services                   |
-| `DOCKER_ENV`                                 | Enum                     | No       | `production`                  | Declares the upstream GeoNode container environment                       |
-| `MIRANTE_IMAGE`                              | OCI image name           | No       | `ghcr.io/barbosaneto/mirante` | Public official frontend image                                            |
-| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.1`                       | Immutable frontend release tag and OCI version label                      |
-| `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                             |
-| `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes          |
-| `MIRANTE_REQUIRE_AUTHENTICATION`             | Boolean                  | No       | `false`                       | Requires a restored GeoNode session before showing the client             |
-| `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | Boolean                  | No       | `true`                        | Offers public, private, and group visibility during upload                |
-| `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | Positive integer bytes   | No       | `104857600`                   | Frontend validation limit; 100 MiB                                        |
-| `MIRANTE_PROXY_MAX_BODY_SIZE`                | Nginx size               | No       | `110m`                        | Proxy request limit including multipart overhead                          |
-| `GEONODE_INTERNAL_URL`                       | HTTP(S) origin           | Yes¹     | None                          | Upstream used by frontend-only deployment; fixed internally by full stack |
-| `MIRANTE_GEONODE_BASE_URL`                   | URL or root path         | No       | `/`                           | Browser API base; `/` preserves same-origin proxying                      |
-| `MIRANTE_GEONODE_WEB_URL`                    | Absolute URL or `/`      | Yes¹     | None                          | GeoNode management origin in frontend-only deployment                     |
+| Variable                                     | Type                     | Required | Supplied default              | Purpose                                                                    |
+| -------------------------------------------- | ------------------------ | -------- | ----------------------------- | -------------------------------------------------------------------------- |
+| `COMPOSE_PROJECT_NAME`                       | Identifier               | No       | `mirante-production`          | Prefixes containers, network, and named volumes                            |
+| `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `.env`                        | Private environment file injected into GeoNode services                    |
+| `DOCKER_ENV`                                 | Enum                     | No       | `production`                  | Declares the upstream GeoNode container environment                        |
+| `MIRANTE_IMAGE`                              | OCI image name           | No       | `ghcr.io/barbosaneto/mirante` | Public official frontend image                                             |
+| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.1`                       | Immutable frontend release tag and OCI version label                       |
+| `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                              |
+| `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes           |
+| `MIRANTE_REQUIRE_AUTHENTICATION`             | Boolean                  | No       | `false`                       | Requires a restored GeoNode session before showing the client              |
+| `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | Boolean                  | No       | `true`                        | Offers public, private, and group visibility during upload                 |
+| `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | Positive integer bytes   | No       | `104857600`                   | Frontend validation limit; 100 MiB                                         |
+| `MIRANTE_PROXY_MAX_BODY_SIZE`                | Nginx size               | No       | `210m`                        | Proxy request limit including duplicated ZIP fields and multipart overhead |
+| `GEONODE_INTERNAL_URL`                       | HTTP(S) origin           | Yes¹     | None                          | Upstream used by frontend-only deployment; fixed internally by full stack  |
+| `MIRANTE_GEONODE_BASE_URL`                   | URL or root path         | No       | `/`                           | Browser API base; `/` preserves same-origin proxying                       |
+| `MIRANTE_GEONODE_WEB_URL`                    | Absolute URL or `/`      | Yes¹     | None                          | GeoNode management origin in frontend-only deployment                      |
 
 ¹ Used directly by `compose.production.yml`. The complete stack derives the
 equivalent values from its internal network and `MIRANTE_PUBLIC_URL`.
@@ -137,8 +137,12 @@ Never expose PostgreSQL's port from the supplied production stack.
 | `GEOSERVER_JAVA_OPTS`       | JVM option string  | No       | See example                        | Memory, encoding, timezone, and GeoServer CSRF settings              |
 
 The example gives GeoServer a 3 GiB maximum heap for the documented 24 GiB
-host. Tune it only with memory monitoring and preserve its encoding and CSRF
-options.
+host. Tune it only with memory monitoring. Because `GEOSERVER_JAVA_OPTS`
+replaces the image defaults, preserve its encoding and CSRF options and the
+`-Dgwc.context.suffix=gwc` option. The latter keeps GeoWebCache REST endpoints
+separate from GeoServer catalog REST endpoints; omitting it can make dataset
+publication appear successful while preventing the selected SLD style from
+being assigned to the new layer.
 
 `GEOSERVER_ADMIN_PASSWORD` is both the credential GeoNode uses for GeoServer
 REST operations and the password initialized in GeoServer's persistent data

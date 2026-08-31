@@ -19,7 +19,7 @@ The initial Mirante proof of concept uploads GeoJSON, KML, and zipped Shapefile 
 Mirante uses the browser's authenticated Django session and standard CSRF protection:
 
 1. `GET /account/logout/` provides a CSRF token for the authenticated session without ending it.
-2. `POST /api/v2/uploads/upload` starts ingestion with `base_file`, `action=upload`, and `store_spatial_files=true`. ZIP uploads also include the same archive as `zip_file`, which tells GeoNode to inspect its contents and select the Shapefile handler.
+2. `POST /api/v2/uploads/upload` starts ingestion with `base_file`, `action=upload`, and `store_spatial_files=true`. ZIP uploads also include the same archive as `zip_file`, which tells GeoNode to inspect its contents and select the Shapefile handler. Consequently, a ZIP upload's multipart request is approximately twice the archive size; every reverse proxy in front of Mirante must allow slightly more than twice the configured frontend file limit.
 3. `GET /api/v2/resource-service/execution-status/{execution_id}` reports `ready`, `running`, `finished`, or `failed`.
 4. A finished execution exposes the created resource ID in `output_params.resources`.
 5. `GET /api/v2/datasets/{id}` provides the title, WMS endpoint, layer name, and EPSG:4326 extent.

@@ -19,6 +19,11 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Celery now starts directly from the Compose environment after Django is
   healthy, preventing stale GeoServer credentials from causing dataset import
   failures.
+- GeoServer JVM examples now preserve the separate GeoWebCache REST context,
+  allowing uploaded SLD styles to be assigned to newly published layers.
+- Production proxy defaults now account for GeoNode's duplicated ZIP upload
+  fields, preventing valid Shapefile archives below the 100 MiB file limit
+  from being rejected with HTTP 413.
 
 ## [0.1.1] - 2026-08-30
 

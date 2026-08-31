@@ -164,6 +164,17 @@ for (const dockerfile of [
   }
 }
 
+for (const environmentExample of [
+  ".env.example",
+  "deploy/stack.production.example.env",
+]) {
+  if (!readText(environmentExample).includes("-Dgwc.context.suffix=gwc")) {
+    errors.push(
+      `${environmentExample} must keep GeoWebCache REST under its separate context`,
+    );
+  }
+}
+
 if (errors.length > 0) {
   console.error("Release validation failed:\n");
   for (const error of errors) console.error(`- ${error}`);

@@ -195,15 +195,15 @@ The production entrypoint validates settings and writes a small, non-cached
 browser configuration before starting Nginx. The same image can therefore be
 promoted between environments without rebuilding it.
 
-| Variable                                     | Default     | Purpose                                                                 |
-| -------------------------------------------- | ----------- | ----------------------------------------------------------------------- |
-| `GEONODE_INTERNAL_URL`                       | Required    | Private HTTP(S) GeoNode origin reached by Nginx; paths are not accepted |
-| `MIRANTE_GEONODE_BASE_URL`                   | `/`         | Browser API base; `/` uses the same-origin proxy                        |
-| `MIRANTE_GEONODE_WEB_URL`                    | Required    | Public GeoNode origin used for complete management pages                |
-| `MIRANTE_REQUIRE_AUTHENTICATION`             | `false`     | Require a GeoNode session before loading the client                     |
-| `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | `true`      | Offer public, private, and group visibility during upload               |
-| `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | `104857600` | Client-side file limit in bytes                                         |
-| `MIRANTE_PROXY_MAX_BODY_SIZE`                | `110m`      | Nginx request limit, including multipart overhead                       |
+| Variable                                     | Default     | Purpose                                                                     |
+| -------------------------------------------- | ----------- | --------------------------------------------------------------------------- |
+| `GEONODE_INTERNAL_URL`                       | Required    | Private HTTP(S) GeoNode origin reached by Nginx; paths are not accepted     |
+| `MIRANTE_GEONODE_BASE_URL`                   | `/`         | Browser API base; `/` uses the same-origin proxy                            |
+| `MIRANTE_GEONODE_WEB_URL`                    | Required    | Public GeoNode origin used for complete management pages                    |
+| `MIRANTE_REQUIRE_AUTHENTICATION`             | `false`     | Require a GeoNode session before loading the client                         |
+| `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | `true`      | Offer public, private, and group visibility during upload                   |
+| `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | `104857600` | Client-side file limit in bytes                                             |
+| `MIRANTE_PROXY_MAX_BODY_SIZE`                | `210m`      | Nginx request limit, including duplicated ZIP fields and multipart overhead |
 
 The proxy limit, GeoNode upload limit, upstream edge limit, and frontend file
 limit must be coordinated. The lowest limit remains authoritative.

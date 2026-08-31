@@ -40,7 +40,7 @@ if ! printf '%s' "$maximum_upload_size" | grep -Eq '^[1-9][0-9]*$'; then
   fail "MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES must be a positive integer"
 fi
 
-proxy_max_body_size="${MIRANTE_PROXY_MAX_BODY_SIZE:-110m}"
+proxy_max_body_size="${MIRANTE_PROXY_MAX_BODY_SIZE:-210m}"
 if ! printf '%s' "$proxy_max_body_size" | grep -Eq '^[1-9][0-9]*[kKmMgG]?$'; then
   fail "MIRANTE_PROXY_MAX_BODY_SIZE must be a positive Nginx size"
 fi
