@@ -10,12 +10,26 @@ export interface MapViewOptions {
 
 export type BaseMapId = string;
 
-export interface BaseMapDefinition {
+interface BaseMapDefinitionBase {
   id: BaseMapId;
   labels: Readonly<Record<string, string>>;
+}
+
+export interface RasterBaseMapDefinition extends BaseMapDefinitionBase {
+  type?: "raster";
   tileUrl: string;
   attributions: readonly string[];
 }
+
+export interface MapLibreStyleBaseMapDefinition extends BaseMapDefinitionBase {
+  type: "maplibre-style";
+  styleUrl: string;
+  attributions: readonly string[];
+}
+
+export type BaseMapDefinition =
+  | MapLibreStyleBaseMapDefinition
+  | RasterBaseMapDefinition;
 
 export interface MapCommandApi {
   setView: (options: MapViewOptions) => void;

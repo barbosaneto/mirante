@@ -21,6 +21,19 @@ export function LayersIcon() {
   );
 }
 
+export function GripIcon() {
+  return (
+    <Icon>
+      <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="18" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="18" r="1" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
 export function UserIcon() {
   return (
     <Icon>

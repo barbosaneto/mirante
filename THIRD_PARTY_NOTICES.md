@@ -10,12 +10,13 @@ the repository. It is not a substitute for the complete license metadata in
 
 ## Frontend runtime
 
-| Component                                                 | Purpose                             | License      |
-| --------------------------------------------------------- | ----------------------------------- | ------------ |
-| [React](https://github.com/facebook/react)                | User interface runtime              | MIT          |
-| [i18next](https://github.com/i18next/i18next)             | Internationalization runtime        | MIT          |
-| [react-i18next](https://github.com/i18next/react-i18next) | React internationalization bindings | MIT          |
-| [OpenLayers](https://github.com/openlayers/openlayers)    | Web map rendering                   | BSD-2-Clause |
+| Component                                                        | Purpose                                | License      |
+| ---------------------------------------------------------------- | -------------------------------------- | ------------ |
+| [React](https://github.com/facebook/react)                       | User interface runtime                 | MIT          |
+| [i18next](https://github.com/i18next/i18next)                    | Internationalization runtime           | MIT          |
+| [react-i18next](https://github.com/i18next/react-i18next)        | React internationalization bindings    | MIT          |
+| [OpenLayers](https://github.com/openlayers/openlayers)           | Web map rendering                      | BSD-2-Clause |
+| [ol-mapbox-style](https://github.com/openlayers/ol-mapbox-style) | MapLibre style rendering in OpenLayers | BSD-2-Clause |
 
 The build and test toolchain also includes packages under permissive licenses.
 Exact resolved versions are recorded in `package-lock.json`; package license
@@ -44,9 +45,10 @@ exact official image and bundled package metadata selected by the Compose tag.
 
 ## Map services and data
 
-The official distribution can request tiles from OpenStreetMap and CARTO.
-Their data, tiles, names, and services are governed by their own licenses,
-usage policies, and attribution requirements. Mirante renders the configured
+The official distribution can request tiles from OpenStreetMap and
+OpenFreeMap. OpenFreeMap's styles use OpenMapTiles and OpenStreetMap data. Their
+data, tiles, names, and services are governed by their own licenses, usage
+policies, and attribution requirements. Mirante renders the configured
 attribution on the map. A distribution that changes a base map is responsible
 for supplying the correct attribution and complying with the provider's terms.
 

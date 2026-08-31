@@ -24,6 +24,10 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Production proxy defaults now account for GeoNode's duplicated ZIP upload
   fields, preventing valid Shapefile archives below the 100 MiB file limit
   from being rejected with HTTP 413.
+- Active dataset layers can now be dragged into a new stacking order, which is
+  also preserved when the map is saved.
+- CARTO Dark Matter was replaced by the keyless OpenFreeMap Liberty and Dark
+  vector styles, while OpenStreetMap remains the default base map.
 
 ## [0.1.1] - 2026-08-30
 

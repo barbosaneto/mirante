@@ -8,6 +8,8 @@
   "visibility": "Show {{name}}",
   "opacity": "{{name}} opacity",
   "openAttributes": "Open {{name}} attribute table",
+  "reorder": "Reorder {{name}}",
+  "reorderHelp": "Drag to reorder, or use the up and down arrow keys",
   "remove": "Remove {{name}} from the map",
   "zoomTo": "Zoom to {{name}}",
   "catalogue": {

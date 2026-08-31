@@ -136,13 +136,16 @@ Users with GeoNode's resource creation permission can upload GeoJSON, KML, and z
 
 The collapsed dataset catalogue lists published resources visible through GeoNode API V2. Users can add them to the map, remove active layers without deleting server resources, and open GeoNode's full catalogue for advanced management. See [Dataset catalogue](docs/dataset-catalogue.md).
 
+Active datasets can be reordered by dragging them in the left panel, keeping
+the list, WMS stacking order, and persisted map layer order synchronized.
+
 Active layers can be fitted back into view from the layer panel. Clicking the map queries visible dataset layers through standard WMS GetFeatureInfo and presents returned attributes without requiring a custom backend. See [Feature inspection](docs/feature-inspection.md).
 
 Each active vector dataset also provides an infinitely scrolling attribute table backed by standard GeoServer WFS. Users can inspect dynamic columns, select and persistently highlight an individual feature, apply typed attribute filters synchronized with the WMS visualization, and export every matching feature as CSV or GeoJSON. Filters are preserved in Mirante map resources. See [Attribute table](docs/attribute-table.md), [Attribute filtering](docs/attribute-filtering.md), and [Map persistence](docs/map-persistence.md).
 
 The bottom toolbar lists the base maps registered by the distribution; the
-official configuration provides dark CARTO and light OpenStreetMap layers. The
-active dataset panel remains dedicated to WMS overlays. See
+official configuration provides OpenStreetMap plus the Liberty and Dark vector
+styles from OpenFreeMap. The active dataset panel remains dedicated to WMS overlays. See
 [Base maps](docs/base-maps.md).
 
 Authenticated users can search and paginate accessible GeoNode maps, restore

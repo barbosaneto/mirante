@@ -3,7 +3,8 @@
   "baseMap": {
     "open": "Escolher mapa-base",
     "label": "Mapa-base",
-    "darkMatter": "Dark Matter",
+    "openFreeMapDark": "OpenFreeMap Dark",
+    "openFreeMapLiberty": "OpenFreeMap Liberty",
     "openStreetMap": "OpenStreetMap"
   }
 }

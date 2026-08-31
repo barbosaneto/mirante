@@ -73,15 +73,31 @@ export const miranteConfig = defineMiranteConfig({
         ],
       },
       {
-        id: "dark-matter",
+        id: "open-free-map-liberty",
         labels: {
-          en: "Dark Matter",
-          "pt-BR": "Dark Matter",
+          en: "OpenFreeMap Liberty",
+          "pt-BR": "OpenFreeMap Liberty",
         },
-        tileUrl: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+        type: "maplibre-style",
+        styleUrl: "https://tiles.openfreemap.org/styles/liberty",
         attributions: [
+          '<a href="https://openfreemap.org/">OpenFreeMap</a>',
+          '<a href="https://openmaptiles.org/">OpenMapTiles</a>',
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+        ],
+      },
+      {
+        id: "open-free-map-dark",
+        labels: {
+          en: "OpenFreeMap Dark",
+          "pt-BR": "OpenFreeMap Dark",
+        },
+        type: "maplibre-style",
+        styleUrl: "https://tiles.openfreemap.org/styles/dark",
+        attributions: [
+          '<a href="https://openfreemap.org/">OpenFreeMap</a>',
+          '<a href="https://openmaptiles.org/">OpenMapTiles</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         ],
       },
     ],

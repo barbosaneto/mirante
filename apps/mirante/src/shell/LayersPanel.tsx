@@ -1,8 +1,9 @@
 import type { GeoNodeDataset } from "@mirante/geonode";
 import type { DatasetLayerLoadStatus } from "@mirante/map";
+import { useState, type DragEvent, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { FocusIcon, LayersIcon, TableIcon, TrashIcon } from "./Icons";
+import { FocusIcon, GripIcon, LayersIcon, TableIcon, TrashIcon } from "./Icons";
 
 export interface DisplayedDataset {
   dataset: GeoNodeDataset;
@@ -16,6 +17,7 @@ interface LayersPanelProps {
   filteredDatasetIds: readonly number[];
   onOpacityChange: (id: number, opacity: number) => void;
   onOpenAttributes: (id: number) => void;
+  onReorder: (sourceId: number, targetId: number) => void;
   onRemove: (id: number) => void;
   onZoom: (id: number) => void;
   onVisibilityChange: (id: number, visible: boolean) => void;
@@ -26,12 +28,46 @@ export function LayersPanel({
   filteredDatasetIds,
   onOpacityChange,
   onOpenAttributes,
+  onReorder,
   onRemove,
   onVisibilityChange,
   onZoom,
 }: LayersPanelProps) {
   const { t } = useTranslation("layers");
   const layerCount = datasets.length;
+  const [draggedDatasetId, setDraggedDatasetId] = useState<number | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+
+  function startDragging(event: DragEvent, id: number) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(id));
+    setDraggedDatasetId(id);
+  }
+
+  function finishDragging() {
+    setDraggedDatasetId(null);
+    setDropTargetId(null);
+  }
+
+  function dropDataset(event: DragEvent, targetId: number) {
+    event.preventDefault();
+    const sourceId =
+      draggedDatasetId ?? Number(event.dataTransfer.getData("text/plain"));
+    if (Number.isInteger(sourceId)) onReorder(sourceId, targetId);
+    finishDragging();
+  }
+
+  function reorderWithKeyboard(
+    event: KeyboardEvent<HTMLButtonElement>,
+    id: number,
+  ) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const currentIndex = datasets.findIndex((item) => item.dataset.id === id);
+    const targetIndex = currentIndex + (event.key === "ArrowUp" ? -1 : 1);
+    const target = datasets[targetIndex];
+    if (target) onReorder(id, target.dataset.id);
+  }
 
   return (
     <aside className="layers-panel" aria-labelledby="layers-panel-title">
@@ -52,8 +88,34 @@ export function LayersPanel({
         <section className="layer-group" aria-labelledby="datasets-group-title">
           <h2 id="datasets-group-title">{t("datasets")}</h2>
           {datasets.map(({ dataset, loadStatus, opacity, visible }) => (
-            <article className="dataset-layer" key={dataset.id}>
+            <article
+              className={`dataset-layer${draggedDatasetId === dataset.id ? " dataset-layer--dragging" : ""}${dropTargetId === dataset.id ? " dataset-layer--drop-target" : ""}`}
+              key={dataset.id}
+              onDragOver={(event) => {
+                if (
+                  draggedDatasetId !== null &&
+                  draggedDatasetId !== dataset.id
+                ) {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDropTargetId(dataset.id);
+                }
+              }}
+              onDrop={(event) => dropDataset(event, dataset.id)}
+            >
               <div className="layer-row">
+                <button
+                  type="button"
+                  className="layer-row__drag-handle"
+                  draggable
+                  aria-label={t("reorder", { name: dataset.title })}
+                  title={t("reorderHelp")}
+                  onDragStart={(event) => startDragging(event, dataset.id)}
+                  onDragEnd={finishDragging}
+                  onKeyDown={(event) => reorderWithKeyboard(event, dataset.id)}
+                >
+                  <GripIcon />
+                </button>
                 <input
                   className="layer-row__visibility"
                   type="checkbox"

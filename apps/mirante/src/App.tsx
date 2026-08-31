@@ -250,15 +250,6 @@ function ApplicationShell({
     activeDatasetIdsRef.current.add(dataset.id);
     const opacity = options.opacity ?? 1;
     const visible = options.visible ?? true;
-    setDatasets((currentDatasets) => [
-      {
-        dataset,
-        loadStatus: "loading",
-        opacity,
-        visible,
-      },
-      ...currentDatasets,
-    ]);
     map.addDatasetLayer({
       ...dataset,
       fit: options.fit,
@@ -269,6 +260,19 @@ function ApplicationShell({
           ),
         );
       },
+    });
+    setDatasets((currentDatasets) => {
+      const nextDatasets = [
+        {
+          dataset,
+          loadStatus: "loading" as const,
+          opacity,
+          visible,
+        },
+        ...currentDatasets,
+      ];
+      map.setDatasetLayerOrder(nextDatasets.map((item) => item.dataset.id));
+      return nextDatasets;
     });
     map.setDatasetLayerOpacity(dataset.id, opacity);
     map.setDatasetLayerVisibility(dataset.id, visible);
@@ -429,9 +433,34 @@ function ApplicationShell({
       delete next[id];
       return next;
     });
-    setDatasets((currentDatasets) =>
-      currentDatasets.filter((item) => item.dataset.id !== id),
-    );
+    setDatasets((currentDatasets) => {
+      const nextDatasets = currentDatasets.filter(
+        (item) => item.dataset.id !== id,
+      );
+      map?.setDatasetLayerOrder(nextDatasets.map((item) => item.dataset.id));
+      return nextDatasets;
+    });
+  }
+
+  function reorderDataset(sourceId: number, targetId: number) {
+    if (sourceId === targetId) return;
+
+    setDatasets((currentDatasets) => {
+      const sourceIndex = currentDatasets.findIndex(
+        (item) => item.dataset.id === sourceId,
+      );
+      const targetIndex = currentDatasets.findIndex(
+        (item) => item.dataset.id === targetId,
+      );
+      if (sourceIndex < 0 || targetIndex < 0) return currentDatasets;
+
+      const nextDatasets = [...currentDatasets];
+      const [movedDataset] = nextDatasets.splice(sourceIndex, 1);
+      if (!movedDataset) return currentDatasets;
+      nextDatasets.splice(targetIndex, 0, movedDataset);
+      map?.setDatasetLayerOrder(nextDatasets.map((item) => item.dataset.id));
+      return nextDatasets;
+    });
   }
 
   function zoomToDataset(id: number) {
@@ -525,6 +554,7 @@ function ApplicationShell({
         filteredDatasetIds={Object.keys(datasetFilters).map(Number)}
         onOpacityChange={changeOpacity}
         onOpenAttributes={openAttributeTable}
+        onReorder={reorderDataset}
         onRemove={removeDataset}
         onVisibilityChange={changeVisibility}
         onZoom={zoomToDataset}

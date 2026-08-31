@@ -8,12 +8,16 @@ import type {
 } from "@mirante/sdk";
 import { defaults as defaultControls } from "ol/control/defaults.js";
 import Feature from "ol/Feature.js";
+import BaseLayer from "ol/layer/Base.js";
+import LayerGroup from "ol/layer/Group.js";
+import Layer from "ol/layer/Layer.js";
 import TileLayer from "ol/layer/Tile.js";
 import VectorLayer from "ol/layer/Vector.js";
 import OlMap from "ol/Map.js";
 import { defaults as defaultInteractions } from "ol/interaction/defaults.js";
 import { fromLonLat, toLonLat, transformExtent } from "ol/proj.js";
 import TileWMS from "ol/source/TileWMS.js";
+import Source from "ol/source/Source.js";
 import XYZ from "ol/source/XYZ.js";
 import VectorSource from "ol/source/Vector.js";
 import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style.js";
@@ -67,6 +71,7 @@ export interface MapFacade extends MapCommandApi {
   removeDatasetLayer(id: number): void;
   setDatasetLayerOpacity(id: number, opacity: number): void;
   setDatasetLayerFilter(id: number, cqlFilter?: string): void;
+  setDatasetLayerOrder(ids: readonly number[]): void;
   setDatasetLayerVisibility(id: number, visible: boolean): void;
   setSelectedFeatureGeometry(
     geometry?: Readonly<Record<string, unknown>>,
@@ -84,6 +89,22 @@ export type FeatureInfoEvent =
 const defaultCenter: GeographicCoordinate = [-52, -15];
 const defaultZoom = 4;
 
+function setLayerAttributions(
+  layer: BaseLayer,
+  attributions: readonly string[],
+) {
+  if (layer instanceof LayerGroup) {
+    layer
+      .getLayers()
+      .forEach((childLayer) => setLayerAttributions(childLayer, attributions));
+    return;
+  }
+
+  if (layer instanceof Layer) {
+    (layer as Layer<Source>).getSource()?.setAttributions([...attributions]);
+  }
+}
+
 export function createMap({
   target,
   baseMaps,
@@ -95,23 +116,43 @@ export function createMap({
   initialZoom = defaultZoom,
   fetch: fetchImplementation = globalThis.fetch,
 }: CreateMapOptions): MapFacade {
-  const baseMapSources = new Map(
-    baseMaps.map((baseMap) => [
-      baseMap.id,
-      new XYZ({
+  let activeBaseMapId = defaultBaseMapId;
+  const baseMapLayers = new Map<BaseMapId, BaseLayer>();
+
+  for (const baseMap of baseMaps) {
+    if (baseMap.type === "maplibre-style") {
+      const layer = new LayerGroup({
+        visible: baseMap.id === defaultBaseMapId,
+      });
+      layer.setZIndex(0);
+      baseMapLayers.set(baseMap.id, layer);
+      void import("ol-mapbox-style")
+        .then(({ apply }) => apply(layer, baseMap.styleUrl))
+        .then(() => {
+          setLayerAttributions(layer, baseMap.attributions);
+          layer.setVisible(baseMap.id === activeBaseMapId);
+        })
+        .catch(() => {
+          // A remote base-map failure must not interrupt datasets or map tools.
+        });
+      continue;
+    }
+
+    const layer = new TileLayer({
+      source: new XYZ({
         attributions: [...baseMap.attributions],
         crossOrigin: "anonymous",
         url: baseMap.tileUrl,
       }),
-    ]),
-  );
-  const defaultBaseMapSource = baseMapSources.get(defaultBaseMapId);
-  if (!defaultBaseMapSource) {
+      visible: baseMap.id === defaultBaseMapId,
+    });
+    layer.setZIndex(0);
+    baseMapLayers.set(baseMap.id, layer);
+  }
+
+  if (!baseMapLayers.has(defaultBaseMapId)) {
     throw new Error("The default base map source is not registered.");
   }
-  const baseMapLayer = new TileLayer({
-    source: defaultBaseMapSource,
-  });
   const selectionSource = new VectorSource();
   const selectionLayer = new VectorLayer({
     source: selectionSource,
@@ -133,7 +174,7 @@ export function createMap({
         collapsible: false,
       },
     }),
-    layers: [baseMapLayer, selectionLayer],
+    layers: [...baseMapLayers.values(), selectionLayer],
     interactions: defaultInteractions({
       // Mirante is a full-screen map application, so pointer interactions must
       // resume on hover after a toolbar, menu, or form control receives focus.
@@ -170,9 +211,12 @@ export function createMap({
     const view = map.getView();
     const resolution = view.getResolution();
     const projection = view.getProjection();
-    const queryableLayers = [...datasetLayers.entries()].filter(
-      ([, layer]) => layer.getVisible() && layer.getOpacity() > 0,
-    );
+    const queryableLayers = [...datasetLayers.entries()]
+      .filter(([, layer]) => layer.getVisible() && layer.getOpacity() > 0)
+      .sort(
+        ([, firstLayer], [, secondLayer]) =>
+          (secondLayer.getZIndex() ?? 0) - (firstLayer.getZIndex() ?? 0),
+      );
 
     if (resolution === undefined || queryableLayers.length === 0) {
       return;
@@ -333,6 +377,11 @@ export function createMap({
           CQL_FILTER: cqlFilter || "INCLUDE",
         });
     },
+    setDatasetLayerOrder(ids) {
+      ids.forEach((id, index) => {
+        datasetLayers.get(id)?.setZIndex(ids.length - index);
+      });
+    },
     setDatasetLayerVisibility(id, visible) {
       datasetLayers.get(id)?.setVisible(visible);
     },
@@ -360,8 +409,11 @@ export function createMap({
         });
     },
     setBaseMap(id) {
-      const source = baseMapSources.get(id);
-      if (source) baseMapLayer.setSource(source);
+      if (!baseMapLayers.has(id)) return;
+      activeBaseMapId = id;
+      baseMapLayers.forEach((layer, layerId) => {
+        layer.setVisible(layerId === id);
+      });
     },
     subscribeFeatureInfo(listener) {
       featureInfoListeners.add(listener);

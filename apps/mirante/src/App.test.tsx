@@ -29,6 +29,7 @@ const mapMock = vi.hoisted(() => ({
   removeDatasetLayer: vi.fn(),
   setDatasetLayerOpacity: vi.fn(),
   setDatasetLayerFilter: vi.fn(),
+  setDatasetLayerOrder: vi.fn(),
   setDatasetLayerVisibility: vi.fn(),
   setSelectedFeatureGeometry: vi.fn(),
   getView: vi.fn(),
@@ -136,6 +137,7 @@ describe("App", () => {
     mapMock.removeDatasetLayer.mockReset();
     mapMock.setDatasetLayerOpacity.mockReset();
     mapMock.setDatasetLayerFilter.mockReset();
+    mapMock.setDatasetLayerOrder.mockReset();
     mapMock.setDatasetLayerVisibility.mockReset();
     mapMock.setSelectedFeatureGeometry.mockReset();
     mapMock.getView.mockReset();
@@ -247,7 +249,7 @@ describe("App", () => {
       canManage: false,
     });
     getSavedMapMock.mockResolvedValue({
-      baseMap: "dark-matter",
+      baseMap: "open-free-map-dark",
       id: 12,
       title: "Field survey",
       ownerId: 1000,
@@ -290,6 +292,7 @@ describe("App", () => {
       removeDatasetLayer: mapMock.removeDatasetLayer,
       setDatasetLayerOpacity: mapMock.setDatasetLayerOpacity,
       setDatasetLayerFilter: mapMock.setDatasetLayerFilter,
+      setDatasetLayerOrder: mapMock.setDatasetLayerOrder,
       setDatasetLayerVisibility: mapMock.setDatasetLayerVisibility,
       setSelectedFeatureGeometry: mapMock.setSelectedFeatureGeometry,
       setView: mapMock.setView,
@@ -309,7 +312,8 @@ describe("App", () => {
       target: mapRegion,
       baseMaps: [
         expect.objectContaining({ id: "open-street-map" }),
-        expect.objectContaining({ id: "dark-matter" }),
+        expect.objectContaining({ id: "open-free-map-liberty" }),
+        expect.objectContaining({ id: "open-free-map-dark" }),
       ],
       defaultBaseMapId: "open-street-map",
       selectionColor: "#14b8a6",
@@ -358,9 +362,9 @@ describe("App", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Choose base map" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Base map" }), {
-      target: { value: "dark-matter" },
+      target: { value: "open-free-map-dark" },
     });
-    expect(mapMock.setBaseMap).toHaveBeenCalledWith("dark-matter");
+    expect(mapMock.setBaseMap).toHaveBeenCalledWith("open-free-map-dark");
   });
 
   it("changes and persists the interface locale at runtime", async () => {
@@ -527,6 +531,71 @@ describe("App", () => {
         name: "Add Municipal boundaries to the map",
       }),
     ).toBeEnabled();
+  });
+
+  it("reorders active datasets and their map layers", async () => {
+    listDatasetsMock.mockResolvedValue({
+      datasets: [
+        {
+          id: 7,
+          title: "Municipal boundaries",
+          layerName: "geonode:municipal_boundaries",
+          wmsUrl: "/geoserver/ows",
+          extent: [-54, -16, -45, -8],
+        },
+        {
+          id: 8,
+          title: "State boundaries",
+          layerName: "geonode:state_boundaries",
+          wmsUrl: "/geoserver/ows",
+          extent: [-74, -34, -34, 6],
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      total: 2,
+    });
+
+    render(
+      <App
+        authenticationClient={authenticationMock}
+        datasetClient={datasetMock}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Browse datasets" }));
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Add Municipal boundaries to the map",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Add State boundaries to the map",
+      }),
+    );
+    expect(mapMock.setDatasetLayerOrder).toHaveBeenLastCalledWith([8, 7]);
+
+    const municipalHandle = screen.getByRole("button", {
+      name: "Reorder Municipal boundaries",
+    });
+    const stateLayer = screen
+      .getByRole("button", { name: "Reorder State boundaries" })
+      .closest("article");
+    expect(stateLayer).not.toBeNull();
+    const dataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "none",
+      getData: () => "7",
+      setData: vi.fn(),
+    };
+    fireEvent.dragStart(municipalHandle, { dataTransfer });
+    fireEvent.dragOver(stateLayer as HTMLElement, { dataTransfer });
+    fireEvent.drop(stateLayer as HTMLElement, { dataTransfer });
+    expect(mapMock.setDatasetLayerOrder).toHaveBeenLastCalledWith([7, 8]);
+
+    fireEvent.keyDown(municipalHandle, { key: "ArrowDown" });
+    expect(mapMock.setDatasetLayerOrder).toHaveBeenLastCalledWith([8, 7]);
   });
 
   it("shows attributes returned for a clicked map feature", async () => {
@@ -1057,7 +1126,7 @@ describe("App", () => {
       center: [-47.9, -15.8],
       zoom: 8,
     });
-    expect(mapMock.setBaseMap).toHaveBeenCalledWith("dark-matter");
+    expect(mapMock.setBaseMap).toHaveBeenCalledWith("open-free-map-dark");
 
     fireEvent.click(mapsButton);
     const reopenedDialog = await screen.findByRole("dialog", {
@@ -1071,7 +1140,7 @@ describe("App", () => {
     );
     await within(reopenedDialog).findByText("Map updated in GeoNode.");
     expect(updateSavedMapMock).toHaveBeenCalledWith(12, {
-      baseMap: "dark-matter",
+      baseMap: "open-free-map-dark",
       title: "Field survey",
       view: { center: [-52, -15], zoom: 4 },
       layers: [

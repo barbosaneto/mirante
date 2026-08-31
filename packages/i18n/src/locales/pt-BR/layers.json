@@ -8,6 +8,8 @@
   "visibility": "Exibir {{name}}",
   "opacity": "Opacidade de {{name}}",
   "openAttributes": "Abrir tabela de atributos de {{name}}",
+  "reorder": "Reordenar {{name}}",
+  "reorderHelp": "Arraste para reordenar ou use as setas para cima e para baixo",
   "remove": "Remover {{name}} do mapa",
   "zoomTo": "Aproximar para {{name}}",
   "catalogue": {

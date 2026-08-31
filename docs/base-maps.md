@@ -4,15 +4,17 @@ Mirante keeps base maps separate from active GeoNode datasets. The left panel li
 
 ## Available options
 
-- **Dark Matter** uses CARTO raster tiles with OpenStreetMap and CARTO attribution.
 - **OpenStreetMap** uses the standard light raster tiles with OpenStreetMap attribution.
+- **OpenFreeMap Liberty** uses OpenFreeMap's Liberty vector style.
+- **OpenFreeMap Dark** uses OpenFreeMap's Dark vector style.
 
 The distribution registers base maps in its public configuration. Each
-definition provides a stable identifier, localized labels, an XYZ tile URL, and
-the attribution required by its provider. The OpenLayers facade creates sources
-from these definitions and switches the source of a single base layer. Dataset
-layers remain in place, preserving their visibility and opacity when the
-background changes.
+definition provides a stable identifier and localized labels. Raster
+definitions also provide an XYZ tile URL and attribution; MapLibre style
+definitions provide a public style URL. The OpenLayers facade keeps one layer
+or layer group per definition and displays only the selected base map. Dataset
+layers remain in place, preserving their order, visibility, and opacity when
+the background changes.
 
 Saved GeoNode maps record the stable identifier in Mirante's versioned map data
 and restore it when opened. If a distribution no longer provides that
@@ -34,9 +36,21 @@ map: {
 }
 ```
 
+MapLibre-compatible vector styles use a source-specific definition:
+
+```ts
+{
+  id: "open-free-map-liberty",
+  labels: { en: "OpenFreeMap Liberty", "pt-BR": "OpenFreeMap Liberty" },
+  type: "maplibre-style",
+  styleUrl: "https://tiles.openfreemap.org/styles/liberty",
+  attributions: ["OpenFreeMap", "OpenMapTiles", "OpenStreetMap contributors"],
+}
+```
+
 ## Current limits
 
 - The official distribution uses OpenStreetMap for new sessions and older maps
   without a stored identifier.
-- The first public contract covers XYZ raster sources. WMS, WMTS, and vector
-  tile base maps require future source-specific definitions.
+- The public contract covers XYZ raster sources and MapLibre-compatible vector
+  styles. WMS and WMTS base maps require future source-specific definitions.

@@ -211,10 +211,33 @@ button,
 
 .layer-row {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto auto;
   gap: var(--mirante-space-3);
   align-items: center;
   min-height: 2.5rem;
+}
+
+.layer-row__drag-handle {
+  display: grid;
+  width: 1.5rem;
+  height: 1.75rem;
+  padding: 0.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: var(--mirante-radius-small);
+  color: var(--mirante-color-text-muted);
+  background: transparent;
+  cursor: grab;
+}
+
+.layer-row__drag-handle:active {
+  cursor: grabbing;
+}
+
+.layer-row__drag-handle:hover,
+.layer-row__drag-handle:focus-visible {
+  color: var(--mirante-color-primary-soft);
+  background: color-mix(in srgb, var(--mirante-color-primary) 10%, transparent);
 }
 
 .layer-row__status {
@@ -318,12 +341,30 @@ button,
   border-top: 1px solid var(--mirante-color-border);
 }
 
+.dataset-layer {
+  border-radius: var(--mirante-radius-small);
+  transition:
+    opacity 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.dataset-layer--dragging {
+  opacity: 0.45;
+}
+
+.dataset-layer--drop-target {
+  background: color-mix(in srgb, var(--mirante-color-primary) 10%, transparent);
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--mirante-color-primary) 40%, transparent);
+}
+
 .layer-opacity {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 2rem;
   gap: var(--mirante-space-2) var(--mirante-space-3);
   align-items: center;
-  padding-left: calc(2rem + var(--mirante-space-3));
+  padding-left: 4.75rem;
 }
 
 .layer-opacity > span {
