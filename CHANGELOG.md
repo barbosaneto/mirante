@@ -7,6 +7,15 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-30
+
+### Added
+
+- Active dataset layers can now be dragged into a new stacking order, which is
+  also preserved when the map is saved.
+- Keyless OpenFreeMap Liberty and Dark vector styles are now available alongside
+  the default OpenStreetMap base map.
+
 ### Changed
 
 - GeoServer administration links now target `/geoserver/web/`, while public
@@ -24,10 +33,7 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Production proxy defaults now account for GeoNode's duplicated ZIP upload
   fields, preventing valid Shapefile archives below the 100 MiB file limit
   from being rejected with HTTP 413.
-- Active dataset layers can now be dragged into a new stacking order, which is
-  also preserved when the map is saved.
-- CARTO Dark Matter was replaced by the keyless OpenFreeMap Liberty and Dark
-  vector styles, while OpenStreetMap remains the default base map.
+- CARTO Dark Matter was removed because it requires credentials in production.
 
 ## [0.1.1] - 2026-08-30
 
@@ -68,6 +74,7 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   as the user reaches the end of the scrollable table.
 - Dialog close controls now use consistently centered vector icons.
 
-[Unreleased]: https://github.com/barbosaneto/mirante/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/barbosaneto/mirante/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/barbosaneto/mirante/releases/tag/v0.1.2
 [0.1.1]: https://github.com/barbosaneto/mirante/releases/tag/v0.1.1
 [0.1.0]: https://github.com/barbosaneto/mirante/releases/tag/v0.1.0

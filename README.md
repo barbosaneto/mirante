@@ -2,7 +2,7 @@
 
 Mirante is an experimental, extensible, open-source Web GIS client designed to work with GeoNode.
 
-Current release: `0.1.1`.
+Current release: `0.1.2`.
 
 Try the public Mirante instance at [mirantegeo.org](https://mirantegeo.org).
 
@@ -85,7 +85,7 @@ Both AMD64 and ARM64 hosts can pull the public immutable image without registry
 authentication:
 
 ```bash
-docker pull ghcr.io/barbosaneto/mirante:0.1.1
+docker pull ghcr.io/barbosaneto/mirante:0.1.2
 ```
 
 The complete production release requires no repository clone or server-side

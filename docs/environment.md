@@ -19,7 +19,7 @@ or `0`.
 | `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `.env`                        | Private environment file injected into GeoNode services                    |
 | `DOCKER_ENV`                                 | Enum                     | No       | `production`                  | Declares the upstream GeoNode container environment                        |
 | `MIRANTE_IMAGE`                              | OCI image name           | No       | `ghcr.io/barbosaneto/mirante` | Public official frontend image                                             |
-| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.1`                       | Immutable frontend release tag and OCI version label                       |
+| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.2`                       | Immutable frontend release tag and OCI version label                       |
 | `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                              |
 | `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes           |
 | `MIRANTE_REQUIRE_AUTHENTICATION`             | Boolean                  | No       | `false`                       | Requires a restored GeoNode session before showing the client              |

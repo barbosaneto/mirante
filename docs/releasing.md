@@ -53,8 +53,8 @@ After every local and CI check passes, publish the prepared commit and its tag:
 
 ```bash
 git push origin main
-git tag -s v0.1.1 -m "Mirante 0.1.1"
-git push origin v0.1.1
+git tag -s vX.Y.Z -m "Mirante X.Y.Z"
+git push origin vX.Y.Z
 ```
 
 Replace the version for later releases. If signed tags are not configured, use

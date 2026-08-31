@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-mirante-production}
 
 services:
   mirante:
-    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.1}"
+    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.2}"
     environment:
       GEONODE_INTERNAL_URL: "${GEONODE_INTERNAL_URL:?Set the private GeoNode origin}"
       MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES: "${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"

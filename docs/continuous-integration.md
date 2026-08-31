@@ -92,7 +92,7 @@ explicitly in GitHub's package settings.
 Pull the immutable public release directly:
 
 ```bash
-docker pull ghcr.io/barbosaneto/mirante:0.1.1
+docker pull ghcr.io/barbosaneto/mirante:0.1.2
 ```
 
 Set `MIRANTE_IMAGE=ghcr.io/barbosaneto/mirante` and the complete release version

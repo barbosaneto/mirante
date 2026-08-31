@@ -58,11 +58,11 @@ persistent so certificates and account state survive restarts.
 ```bash
 mkdir mirante-deployment
 cd mirante-deployment
-curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/compose.yml
-curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/compose.arm64.yml
-curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/mirante.env.example
-curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/validate-environment.sh
-curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.1/SHA256SUMS
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.2/compose.yml
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.2/compose.arm64.yml
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.2/mirante.env.example
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.2/validate-environment.sh
+curl --fail --location --remote-name https://github.com/barbosaneto/mirante/releases/download/v0.1.2/SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
 
