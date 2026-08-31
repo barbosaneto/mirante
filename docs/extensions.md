@@ -166,9 +166,11 @@ export default defineExtension({
 ```
 
 The official distribution includes
-`apps/mirante/src/extensions/view-presets.tsx` as an executable example. It
-imports only the SDK and its own UI dependencies; no core or application
-internals are required.
+`apps/mirante/src/extensions/view-presets.tsx` as a map-tool example and
+`apps/mirante/src/extensions/google-oidc.ts` as an authentication-provider
+example. Both import only the public SDK. The distribution registry in
+`apps/mirante/src/extensions/index.ts` demonstrates conditional extension
+composition without changing application internals.
 
 Extensions are installed at build time. Remote modules, arbitrary runtime code,
 marketplaces, and internal package imports remain unsupported.

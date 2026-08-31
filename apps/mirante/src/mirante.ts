@@ -1,9 +1,9 @@
 import { createMirante } from "@mirante/core";
 
-import { miranteConfig } from "./config";
-import { viewPresetsExtension } from "./extensions/view-presets";
+import { googleOidcEnabled, miranteConfig } from "./config";
+import { createDistributionExtensions } from "./extensions";
 
 export const mirante = createMirante({
   config: miranteConfig,
-  extensions: [viewPresetsExtension],
+  extensions: createDistributionExtensions({ googleOidcEnabled }),
 });

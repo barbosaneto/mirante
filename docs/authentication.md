@@ -56,9 +56,12 @@ current Mirante page, and lets GeoNode complete the provider flow. On return,
 the same session restoration path recognizes the user. Provider paths must be
 same-origin absolute paths; external URLs are rejected by the registry.
 
-The official distribution does not register a social provider yet. A bundled
-Google OIDC extension is planned as a reference implementation; enabling it
-will still require operator-owned Google credentials in GeoNode.
+The official distribution enables this Google OIDC provider as a reference
+extension by default. Configure the provider and its operator-owned credentials
+in GeoNode before exposing the login flow. Set
+`VITE_GOOGLE_OIDC_ENABLED=false` in development or
+`MIRANTE_GOOGLE_OIDC_ENABLED=false` in production to hide the button. See
+[Google OIDC](google-oidc.md) for the complete procedure.
 
 ## Deployment
 

@@ -200,6 +200,7 @@ promoted between environments without rebuilding it.
 | `GEONODE_INTERNAL_URL`                       | Required    | Private HTTP(S) GeoNode origin reached by Nginx; paths are not accepted     |
 | `MIRANTE_GEONODE_BASE_URL`                   | `/`         | Browser API base; `/` uses the same-origin proxy                            |
 | `MIRANTE_GEONODE_WEB_URL`                    | Required    | Public GeoNode origin used for complete management pages                    |
+| `MIRANTE_GOOGLE_OIDC_ENABLED`                | `true`      | Show the bundled Google login extension                                     |
 | `MIRANTE_REQUIRE_AUTHENTICATION`             | `false`     | Require a GeoNode session before loading the client                         |
 | `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | `true`      | Offer public, private, and group visibility during upload                   |
 | `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | `104857600` | Client-side file limit in bytes                                             |
@@ -219,6 +220,12 @@ with permissive CORS.
 The production proxy forwards only the explicit browser integration routes.
 `MIRANTE_GEONODE_WEB_URL` sends users to GeoNode's own public origin for profile,
 administration, catalogue, and other complete management pages.
+
+Google login is shown by default, but it works only after GeoNode has a matching
+Social application. Follow [Google OIDC](google-oidc.md) before exposing the
+flow, or set `MIRANTE_GOOGLE_OIDC_ENABLED=false` until configuration is
+complete. The provider secret belongs in GeoNode and must never be added to the
+Mirante container environment.
 
 ## Health and operation
 

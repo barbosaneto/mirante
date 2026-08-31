@@ -10,6 +10,7 @@ describe("readMiranteRuntimeConfig", () => {
         datasetUploadVisibilityControl: false,
         geonodeBaseUrl: "/",
         geonodeWebUrl: "https://geonode.example.test",
+        googleOidcEnabled: true,
         requireAuthentication: true,
       }),
     ).toEqual({
@@ -17,6 +18,7 @@ describe("readMiranteRuntimeConfig", () => {
       datasetUploadVisibilityControl: false,
       geonodeBaseUrl: "/",
       geonodeWebUrl: "https://geonode.example.test",
+      googleOidcEnabled: true,
       requireAuthentication: true,
     });
   });
@@ -28,6 +30,7 @@ describe("readMiranteRuntimeConfig", () => {
         datasetUploadVisibilityControl: "false",
         geonodeBaseUrl: "",
         geonodeWebUrl: null,
+        googleOidcEnabled: "true",
         requireAuthentication: 1,
       }),
     ).toEqual({
@@ -35,6 +38,7 @@ describe("readMiranteRuntimeConfig", () => {
       datasetUploadVisibilityControl: undefined,
       geonodeBaseUrl: undefined,
       geonodeWebUrl: undefined,
+      googleOidcEnabled: undefined,
       requireAuthentication: undefined,
     });
   });

@@ -20,6 +20,7 @@ Try the public Mirante instance at [mirantegeo.org](https://mirantegeo.org).
 - [Configuration](docs/configuration.md)
 - [Environment reference](docs/environment.md)
 - [Extensions](docs/extensions.md)
+- [Google OIDC](docs/google-oidc.md)
 - [Internationalization](docs/internationalization.md)
 - [Security architecture](docs/security.md)
 - [Production deployment](docs/deployment.md)

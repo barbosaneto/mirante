@@ -22,6 +22,7 @@ or `0`.
 | `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.2`                       | Immutable frontend release tag and OCI version label                       |
 | `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                              |
 | `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes           |
+| `MIRANTE_GOOGLE_OIDC_ENABLED`                | Boolean                  | No       | `true`                        | Registers the bundled Google login extension                               |
 | `MIRANTE_REQUIRE_AUTHENTICATION`             | Boolean                  | No       | `false`                       | Requires a restored GeoNode session before showing the client              |
 | `MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL`  | Boolean                  | No       | `true`                        | Offers public, private, and group visibility during upload                 |
 | `MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES` | Positive integer bytes   | No       | `104857600`                   | Frontend validation limit; 100 MiB                                         |
@@ -155,36 +156,39 @@ loads the synchronized credential.
 
 ## Access, storage, and ingestion
 
-| Variable                                 | Type              | Required | Supplied default                             | Purpose                                                                   |
-| ---------------------------------------- | ----------------- | -------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| `CORS_ALLOW_ALL_ORIGINS`                 | Boolean           | No       | `False`                                      | Does not make GeoNode APIs universally cross-origin                       |
-| `X_FRAME_OPTIONS`                        | Enum              | No       | `SAMEORIGIN`                                 | Clickjacking response policy                                              |
-| `SESSION_ENGINE`                         | Python class path | No       | `django.contrib.sessions.backends.cached_db` | Persists sessions in database with cache acceleration                     |
-| `SESSION_EXPIRED_CONTROL_ENABLED`        | Boolean           | No       | `True`                                       | Enables GeoNode session-expiry middleware                                 |
-| `SESSION_COOKIE_SECURE`                  | Boolean           | No       | `True`                                       | Sends session cookies only over HTTPS                                     |
-| `CSRF_COOKIE_SECURE`                     | Boolean           | No       | `True`                                       | Sends CSRF cookies only over HTTPS                                        |
-| `CSRF_COOKIE_HTTPONLY`                   | Boolean           | No       | `False`                                      | Must remain readable by Mirante's standard Django CSRF client flow        |
-| `SECURE_SSL_REDIRECT`                    | Boolean           | No       | `False`                                      | Public HTTP-to-HTTPS redirect is owned by the host edge                   |
-| `SECURE_HSTS_SECONDS`                    | Integer seconds   | No       | `0`                                          | HSTS is disabled until deliberately enabled at the public edge            |
-| `ACCOUNT_OPEN_SIGNUP`                    | Boolean           | No       | `False`                                      | Disables public account creation                                          |
-| `ACCOUNT_APPROVAL_REQUIRED`              | Boolean           | No       | `False`                                      | Requires approval only when explicitly enabled                            |
-| `ACCOUNT_EMAIL_VERIFICATION`             | Enum              | No       | `none`                                       | Email verification mode; configure SMTP before enabling                   |
-| `API_LOCKDOWN`                           | Boolean           | No       | `False`                                      | Keeps public read APIs available subject to resource permissions          |
-| `LOCKDOWN_GEONODE`                       | Boolean           | No       | `False`                                      | Allows anonymous GeoNode pages; Mirante has its own authentication switch |
-| `DEFAULT_ANONYMOUS_PERMISSIONS`          | Permission enum   | No       | `download`                                   | New-resource default: `view`, `download`, or `none`                       |
-| `DEFAULT_REGISTERED_MEMBERS_PERMISSIONS` | Permission enum   | No       | `download`                                   | New-resource default: `view`, `download`, `edit`, `manage`, or `none`     |
-| `STATIC_ROOT`                            | Directory path    | No       | `/mnt/volumes/statics/static/`               | Collected static files                                                    |
-| `MEDIA_ROOT`                             | Directory path    | No       | `/mnt/volumes/statics/uploaded/`             | Uploaded media                                                            |
-| `ASSETS_ROOT`                            | Directory path    | No       | `/mnt/volumes/statics/assets/`               | Generated assets                                                          |
-| `DEFAULT_BACKEND_DATASTORE`              | Identifier        | No       | `datastore`                                  | Default GeoServer datastore                                               |
-| `DEFAULT_BACKEND_UPLOADER`               | Python module     | No       | `geonode.importer`                           | Vanilla asynchronous importer                                             |
-| `DEFAULT_MAX_UPLOAD_SIZE`                | Positive bytes    | No       | `104857600`                                  | GeoNode initial upload limit; later changes use GeoNode administration    |
-| `DEFAULT_MAX_PARALLEL_UPLOADS_PER_USER`  | Positive integer  | No       | `5`                                          | Concurrent imports per user                                               |
-| `MEMCACHED_ENABLED`                      | Boolean           | No       | `True`                                       | Enables the internal Memcached service                                    |
-| `MEMCACHED_LOCATION`                     | Host and port     | No       | `memcached:11211`                            | Internal Memcached endpoint                                               |
-| `TIME_ENABLED`                           | Boolean           | No       | `True`                                       | Enables GeoNode temporal handling                                         |
-| `MOSAIC_ENABLED`                         | Boolean           | No       | `False`                                      | Disables mosaic ingestion unless deliberately enabled                     |
-| `HAYSTACK_SEARCH`                        | Boolean           | No       | `False`                                      | Keeps optional Haystack indexing disabled                                 |
+| Variable                                  | Type              | Required | Supplied default                             | Purpose                                                                   |
+| ----------------------------------------- | ----------------- | -------- | -------------------------------------------- | ------------------------------------------------------------------------- |
+| `CORS_ALLOW_ALL_ORIGINS`                  | Boolean           | No       | `False`                                      | Does not make GeoNode APIs universally cross-origin                       |
+| `X_FRAME_OPTIONS`                         | Enum              | No       | `SAMEORIGIN`                                 | Clickjacking response policy                                              |
+| `SESSION_ENGINE`                          | Python class path | No       | `django.contrib.sessions.backends.cached_db` | Persists sessions in database with cache acceleration                     |
+| `SESSION_EXPIRED_CONTROL_ENABLED`         | Boolean           | No       | `True`                                       | Enables GeoNode session-expiry middleware                                 |
+| `SESSION_COOKIE_SECURE`                   | Boolean           | No       | `True`                                       | Sends session cookies only over HTTPS                                     |
+| `CSRF_COOKIE_SECURE`                      | Boolean           | No       | `True`                                       | Sends CSRF cookies only over HTTPS                                        |
+| `CSRF_COOKIE_HTTPONLY`                    | Boolean           | No       | `False`                                      | Must remain readable by Mirante's standard Django CSRF client flow        |
+| `SECURE_SSL_REDIRECT`                     | Boolean           | No       | `False`                                      | Public HTTP-to-HTTPS redirect is owned by the host edge                   |
+| `SECURE_HSTS_SECONDS`                     | Integer seconds   | No       | `0`                                          | HSTS is disabled until deliberately enabled at the public edge            |
+| `ACCOUNT_OPEN_SIGNUP`                     | Boolean           | No       | `False`                                      | Disables public account creation                                          |
+| `ACCOUNT_APPROVAL_REQUIRED`               | Boolean           | No       | `False`                                      | Requires approval only when explicitly enabled                            |
+| `ACCOUNT_EMAIL_VERIFICATION`              | Enum              | No       | `none`                                       | Email verification mode; configure SMTP before enabling                   |
+| `SOCIALACCOUNT_OIDC_PROVIDER_ENABLED`     | Boolean           | No       | `True`                                       | Loads GeoNode's generic OIDC provider                                     |
+| `SOCIALACCOUNT_PROVIDER`                  | Provider enum     | No       | `google`                                     | Selects GeoNode's built-in Google provider definition                     |
+| `SOCIALACCOUNT_SYNC_USER_GROUPS_ON_LOGIN` | Sync strategy     | No       | `NO_SYNC`                                    | Preserves locally managed groups when Google supplies no group claims     |
+| `API_LOCKDOWN`                            | Boolean           | No       | `False`                                      | Keeps public read APIs available subject to resource permissions          |
+| `LOCKDOWN_GEONODE`                        | Boolean           | No       | `False`                                      | Allows anonymous GeoNode pages; Mirante has its own authentication switch |
+| `DEFAULT_ANONYMOUS_PERMISSIONS`           | Permission enum   | No       | `download`                                   | New-resource default: `view`, `download`, or `none`                       |
+| `DEFAULT_REGISTERED_MEMBERS_PERMISSIONS`  | Permission enum   | No       | `download`                                   | New-resource default: `view`, `download`, `edit`, `manage`, or `none`     |
+| `STATIC_ROOT`                             | Directory path    | No       | `/mnt/volumes/statics/static/`               | Collected static files                                                    |
+| `MEDIA_ROOT`                              | Directory path    | No       | `/mnt/volumes/statics/uploaded/`             | Uploaded media                                                            |
+| `ASSETS_ROOT`                             | Directory path    | No       | `/mnt/volumes/statics/assets/`               | Generated assets                                                          |
+| `DEFAULT_BACKEND_DATASTORE`               | Identifier        | No       | `datastore`                                  | Default GeoServer datastore                                               |
+| `DEFAULT_BACKEND_UPLOADER`                | Python module     | No       | `geonode.importer`                           | Vanilla asynchronous importer                                             |
+| `DEFAULT_MAX_UPLOAD_SIZE`                 | Positive bytes    | No       | `104857600`                                  | GeoNode initial upload limit; later changes use GeoNode administration    |
+| `DEFAULT_MAX_PARALLEL_UPLOADS_PER_USER`   | Positive integer  | No       | `5`                                          | Concurrent imports per user                                               |
+| `MEMCACHED_ENABLED`                       | Boolean           | No       | `True`                                       | Enables the internal Memcached service                                    |
+| `MEMCACHED_LOCATION`                      | Host and port     | No       | `memcached:11211`                            | Internal Memcached endpoint                                               |
+| `TIME_ENABLED`                            | Boolean           | No       | `True`                                       | Enables GeoNode temporal handling                                         |
+| `MOSAIC_ENABLED`                          | Boolean           | No       | `False`                                      | Disables mosaic ingestion unless deliberately enabled                     |
+| `HAYSTACK_SEARCH`                         | Boolean           | No       | `False`                                      | Keeps optional Haystack indexing disabled                                 |
 
 GeoNode notes that `DEFAULT_MAX_UPLOAD_SIZE` is an installation-time default;
 later adjustments belong in its administration interface. Coordinate it with

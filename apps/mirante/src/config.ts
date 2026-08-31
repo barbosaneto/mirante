@@ -19,6 +19,9 @@ const datasetUploadVisibilityControl =
     "false";
 const datasetUploadMaximumFileSizeBytes =
   runtimeConfig.datasetUploadMaximumFileSizeBytes ?? 100 * 1024 * 1024;
+export const googleOidcEnabled =
+  runtimeConfig.googleOidcEnabled ??
+  import.meta.env.VITE_GOOGLE_OIDC_ENABLED?.toLowerCase() !== "false";
 
 export const miranteConfig = defineMiranteConfig({
   authentication: {

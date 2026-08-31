@@ -3,6 +3,7 @@ export interface MiranteRuntimeConfig {
   datasetUploadVisibilityControl?: boolean;
   geonodeBaseUrl?: string;
   geonodeWebUrl?: string;
+  googleOidcEnabled?: boolean;
   requireAuthentication?: boolean;
 }
 
@@ -41,6 +42,7 @@ export function readMiranteRuntimeConfig(
     ),
     geonodeBaseUrl: optionalString(values.geonodeBaseUrl),
     geonodeWebUrl: optionalString(values.geonodeWebUrl),
+    googleOidcEnabled: optionalBoolean(values.googleOidcEnabled),
     requireAuthentication: optionalBoolean(values.requireAuthentication),
   };
 }

@@ -7,11 +7,11 @@ describe("authentication provider URL", () => {
     expect(
       createAuthenticationProviderUrl({
         baseUrl: "https://maps.example.test",
-        loginPath: "/account/google/login/?process=login",
+        loginPath: "/account/geonode_openid_connect/login/?process=login",
         returnUrl: "https://maps.example.test/viewer?map=7",
       }),
     ).toBe(
-      "https://maps.example.test/account/google/login/?process=login&next=https%3A%2F%2Fmaps.example.test%2Fviewer%3Fmap%3D7",
+      "https://maps.example.test/account/geonode_openid_connect/login/?process=login&next=https%3A%2F%2Fmaps.example.test%2Fviewer%3Fmap%3D7",
     );
   });
 

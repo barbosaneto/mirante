@@ -13,6 +13,7 @@ runtime values so the same image can be promoted without recompilation. See
 The contract covers:
 
 - Optional or required GeoNode authentication before application startup.
+- Optional registration of the bundled Google OIDC login extension.
 - Application name and logo URL.
 - Semantic theme colors exposed as CSS custom properties.
 - GeoNode API base URL, public web URL, and dataset management path.
@@ -101,6 +102,13 @@ that mode Mirante leaves the new resource's permissions untouched, so GeoNode's
 `DEFAULT_REGISTERED_MEMBERS_PERMISSIONS` settings determine access exactly as
 they did before this feature. The supplied local stack keeps both defaults at
 `download`, which publishes the dataset for everyone.
+
+The official distribution reads `VITE_GOOGLE_OIDC_ENABLED` during development
+and `MIRANTE_GOOGLE_OIDC_ENABLED` when the production container starts. Both
+default to `true`, registering the bundled extension and showing its login
+button. This does not configure Google or create credentials. Complete the
+GeoNode-side setup in [Google OIDC](google-oidc.md) before exposing the flow, or
+set the applicable variable to `false` to hide it.
 
 Theme values are installed on the application root as semantic
 `--mirante-color-*` properties. Derived translucent states use `color-mix`, so

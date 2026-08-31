@@ -34,6 +34,7 @@ validate_public_url "$geonode_web_url" "MIRANTE_GEONODE_WEB_URL"
 
 require_authentication="$(normalize_boolean "${MIRANTE_REQUIRE_AUTHENTICATION:-false}" "MIRANTE_REQUIRE_AUTHENTICATION")"
 visibility_control="$(normalize_boolean "${MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL:-true}" "MIRANTE_DATASET_UPLOAD_VISIBILITY_CONTROL")"
+google_oidc_enabled="$(normalize_boolean "${MIRANTE_GOOGLE_OIDC_ENABLED:-true}" "MIRANTE_GOOGLE_OIDC_ENABLED")"
 
 maximum_upload_size="${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"
 if ! printf '%s' "$maximum_upload_size" | grep -Eq '^[1-9][0-9]*$'; then
@@ -51,6 +52,7 @@ window.__MIRANTE_RUNTIME_CONFIG__ = Object.freeze({
   datasetUploadVisibilityControl: ${visibility_control},
   geonodeBaseUrl: "${geonode_base_url}",
   geonodeWebUrl: "${geonode_web_url}",
+  googleOidcEnabled: ${google_oidc_enabled},
   requireAuthentication: ${require_authentication}
 });
 EOF

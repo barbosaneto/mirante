@@ -77,6 +77,17 @@ public_host="${public_host%%/*}"
 [ "$(read_value CSRF_COOKIE_SECURE)" = "True" ] ||
   fail "CSRF_COOKIE_SECURE must be True"
 
+case "$(read_value MIRANTE_GOOGLE_OIDC_ENABLED)" in
+  true | TRUE | True | 1 | "")
+    [ "$(read_value SOCIALACCOUNT_OIDC_PROVIDER_ENABLED)" = "True" ] ||
+      fail "SOCIALACCOUNT_OIDC_PROVIDER_ENABLED must be True when Google login is enabled"
+    [ "$(read_value SOCIALACCOUNT_PROVIDER)" = "google" ] ||
+      fail "SOCIALACCOUNT_PROVIDER must be google when Google login is enabled"
+    ;;
+  false | FALSE | False | 0 | "") ;;
+  *) fail "MIRANTE_GOOGLE_OIDC_ENABLED must be true or false" ;;
+esac
+
 if [ -n "$override_file" ]; then
   MIRANTE_STACK_ENV_FILE="$environment_file" docker compose \
     --env-file "$environment_file" \
