@@ -27,7 +27,7 @@ services:
       GEONODE_INTERNAL_URL: http://nginx
       MIRANTE_USE_POLLING: "true"
       VITE_GEONODE_BASE_URL: /
-      VITE_GEONODE_WEB_URL: "http://localhost:${HTTP_PORT:-8000}"
+      VITE_GEONODE_WEB_URL: "http://localhost:${MIRANTE_PORT:-5173}"
       VITE_GOOGLE_OIDC_ENABLED: "${VITE_GOOGLE_OIDC_ENABLED:-true}"
       VITE_REQUIRE_AUTHENTICATION: "${VITE_REQUIRE_AUTHENTICATION:-false}"
       VITE_DATASET_UPLOAD_VISIBILITY_CONTROL: "${VITE_DATASET_UPLOAD_VISIBILITY_CONTROL:-true}"
@@ -112,7 +112,7 @@ services:
     environment:
       RESOLVER: 127.0.0.11
     ports:
-      - "${HTTP_PORT:-8000}:80"
+      - "${GEONODE_HTTP_PORT:-8000}:80"
     volumes:
       - nginx-configuration:/etc/nginx
       - nginx-certificates:/geonode-certificates

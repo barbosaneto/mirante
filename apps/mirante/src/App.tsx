@@ -567,9 +567,9 @@ function ApplicationShell({
         onAdd={addDatasetToMap}
         onOpenChange={setCatalogueOpen}
       />
-      <LanguageSelector locales={config.i18n.locales} />
       <UserArea
         datasetManagementUrl={datasetManagementUrl}
+        leadingControl={<LanguageSelector locales={config.i18n.locales} />}
         providers={mirante.authenticationProviders}
         onProviderSignIn={startProviderSignIn}
       />

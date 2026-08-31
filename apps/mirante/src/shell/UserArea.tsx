@@ -1,5 +1,5 @@
 import type { RegisteredAuthenticationProvider } from "@mirante/core";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAuthentication } from "../auth/AuthenticationContext";
@@ -8,10 +8,12 @@ import { ExternalLinkIcon, UserIcon } from "./Icons";
 
 export function UserArea({
   datasetManagementUrl,
+  leadingControl,
   onProviderSignIn,
   providers,
 }: {
   datasetManagementUrl: string;
+  leadingControl?: ReactNode;
   onProviderSignIn: (provider: RegisteredAuthenticationProvider) => void;
   providers: readonly RegisteredAuthenticationProvider[];
 }) {
@@ -36,59 +38,62 @@ export function UserArea({
 
   return (
     <>
-      <button
-        className="user-area"
-        type="button"
-        aria-label={t("areaLabel")}
-        aria-expanded={authenticated ? menuOpen : loginOpen}
-        aria-haspopup={authenticated ? "menu" : "dialog"}
-        disabled={restoring}
-        onClick={() => {
-          clearError();
+      <div className="account-controls">
+        {leadingControl}
+        <button
+          className="user-area"
+          type="button"
+          aria-label={t("areaLabel")}
+          aria-expanded={authenticated ? menuOpen : loginOpen}
+          aria-haspopup={authenticated ? "menu" : "dialog"}
+          disabled={restoring}
+          onClick={() => {
+            clearError();
 
-          if (authenticated) {
-            setMenuOpen((open) => !open);
-          } else {
-            setLoginOpen(true);
-          }
-        }}
-      >
-        <span className="shell-icon">
-          <UserIcon />
-        </span>
-        <span className="user-area__label">{label}</span>
-      </button>
+            if (authenticated) {
+              setMenuOpen((open) => !open);
+            } else {
+              setLoginOpen(true);
+            }
+          }}
+        >
+          <span className="shell-icon">
+            <UserIcon />
+          </span>
+          <span className="user-area__label">{label}</span>
+        </button>
 
-      {authenticated && user && menuOpen ? (
-        <div className="user-menu" role="menu">
-          <p>{t("signedInAs", { name: user.displayName })}</p>
-          {error ? (
-            <p className="authentication-error" role="alert">
-              {t(`errors.${error}`)}
-            </p>
-          ) : null}
-          <a
-            href={datasetManagementUrl}
-            target="_blank"
-            rel="noreferrer"
-            role="menuitem"
-            onClick={() => setMenuOpen(false)}
-          >
-            <span>{t("manageDatasets")}</span>
-            <span className="shell-icon">
-              <ExternalLinkIcon />
-            </span>
-          </a>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={status === "signing-out"}
-            onClick={() => void signOut()}
-          >
-            {status === "signing-out" ? t("signingOut") : t("signOut")}
-          </button>
-        </div>
-      ) : null}
+        {authenticated && user && menuOpen ? (
+          <div className="user-menu" role="menu">
+            <p>{t("signedInAs", { name: user.displayName })}</p>
+            {error ? (
+              <p className="authentication-error" role="alert">
+                {t(`errors.${error}`)}
+              </p>
+            ) : null}
+            <a
+              href={datasetManagementUrl}
+              target="_blank"
+              rel="noreferrer"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+            >
+              <span>{t("manageDatasets")}</span>
+              <span className="shell-icon">
+                <ExternalLinkIcon />
+              </span>
+            </a>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={status === "signing-out"}
+              onClick={() => void signOut()}
+            >
+              {status === "signing-out" ? t("signingOut") : t("signOut")}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {loginOpen ? (
         <div className="authentication-backdrop">

@@ -396,6 +396,26 @@ button,
   line-height: 1.5;
 }
 
+.account-controls {
+  position: absolute;
+  z-index: 10;
+  top: var(--mirante-space-4);
+  right: var(--mirante-space-4);
+  display: flex;
+  gap: var(--mirante-space-2);
+  align-items: flex-start;
+}
+
+.account-controls .language-selector,
+.account-controls .user-area {
+  position: static;
+}
+
+.account-controls .user-menu {
+  top: calc(100% + var(--mirante-space-2));
+  right: 0;
+}
+
 .user-area {
   top: var(--mirante-space-4);
   right: var(--mirante-space-4);
@@ -2016,6 +2036,7 @@ button,
 }
 
 .authentication-provider__icon {
+  flex: 0 0 auto;
   width: 1.125rem;
   height: 1.125rem;
 }
@@ -2208,6 +2229,11 @@ button,
     min-height: 2.75rem;
     padding: 0;
     justify-content: center;
+  }
+
+  .account-controls {
+    top: var(--mirante-space-3);
+    right: var(--mirante-space-3);
   }
 
   .language-selector {

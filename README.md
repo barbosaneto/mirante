@@ -70,7 +70,7 @@ the supplied compatibility override:
 docker compose -f compose.yml -f compose.arm64.yml up --build -d --wait
 ```
 
-Mirante is then available at `http://localhost:5173`, and GeoNode remains directly available at `http://localhost:8000`. Requests from Mirante to `/api`, `/geoserver`, and the other reserved GeoNode paths are proxied through the internal Docker network.
+Mirante and the browser-facing GeoNode routes are available at `http://localhost:5173`. Keeping both on one origin mirrors production and allows OAuth to return safely to Mirante. GeoNode's internal proxy remains directly available at `http://localhost:8000` for diagnostics; application links should use port `5173`. Requests to `/api`, `/geoserver`, and the other reserved GeoNode paths are proxied through the internal Docker network.
 
 Source files are mounted into the Mirante container and update through Vite hot reload. The development entrypoint synchronizes the dependency volume when `package-lock.json` changes.
 

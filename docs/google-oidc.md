@@ -22,18 +22,16 @@ the official production instance:
 https://mirantegeo.org/account/geonode_openid_connect/login/callback/
 ```
 
-For the supplied local Mirante development server:
+For the supplied local stack, register the callback on Mirante's same-origin
+development proxy:
 
 ```text
 http://localhost:5173/account/geonode_openid_connect/login/callback/
 ```
 
-If the Google flow will also be initiated directly from the local GeoNode
-interface, add its separate callback as well:
-
-```text
-http://localhost:8000/account/geonode_openid_connect/login/callback/
-```
+The Vite proxy forwards that callback to vanilla GeoNode while preserving
+`localhost:5173` as the public origin. The `next` parameter is only the final
+destination after authentication and is not a separate OAuth callback.
 
 For another deployment such as `https://maps.example.org`, use:
 
@@ -72,6 +70,12 @@ docker compose --env-file .env -f compose.yml up -d --force-recreate django cele
 Frontend-only deployments must apply the equivalent settings to their existing
 GeoNode installation instead.
 
+The supplied development stack exposes Mirante and GeoNode's browser routes on
+`localhost:5173`. This makes the OAuth `next` value same-origin and prevents
+GeoNode's account adapter from falling back to the user's profile page. Port
+`8000` is retained only for direct diagnostics. Production already uses the
+same-origin topology required by this flow.
+
 ## 2. Store the Google application in GeoNode
 
 Open GeoNode's Django administration and create a **Social application** under
@@ -83,6 +87,12 @@ Open GeoNode's Django administration and create a **Social application** under
 - Secret key: the Google OAuth client secret.
 - Key: leave empty.
 - Sites: select the Django Site matching the public deployment origin.
+
+For the supplied local stack, edit Django Site `1` first and replace the
+default `example.com` domain and display name with `localhost:5173`. Then move
+that Site into the Social application's **Chosen sites** list. A Social
+application with an empty Sites relation is ignored by django-allauth and the
+login route raises `SocialApp.DoesNotExist`.
 
 The client ID and secret belong only in GeoNode's protected database. Do not
 put either value in Mirante variables, source files, Compose files, browser
@@ -140,6 +150,12 @@ Common failures:
   exactly match the public HTTPS callback above.
 - **Session missing after return:** `SITEURL`, proxy headers, secure-cookie
   settings, or the public origin are inconsistent.
+- **Login succeeds but opens a GeoNode profile:** the login and `next` origins
+  differ, so django-allauth rejected the return URL. Use the supplied
+  `localhost:5173` callback locally and keep all public routes on one origin.
+- **A login started directly in GeoNode opens a profile:** this is GeoNode
+  5.1.0's account-adapter behavior when no safe `next` value was supplied.
+  Start the flow from Mirante when the expected destination is the client.
 - **User can sign in but cannot upload or save maps:** assign the required
   permissions or group membership in GeoNode; social login establishes
   identity but does not bypass authorization.

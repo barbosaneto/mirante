@@ -54,7 +54,7 @@ export const config = defineMiranteConfig({
   },
   geonode: {
     baseUrl: "/",
-    webUrl: "http://localhost:8000",
+    webUrl: "http://localhost:5173",
     datasetManagementPath: "/catalogue/#/",
   },
   i18n: {

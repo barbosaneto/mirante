@@ -340,6 +340,20 @@ describe("App", () => {
         screen.getByRole("button", { name: "User account" }),
       ).toHaveTextContent("Sign in");
     });
+    const accountControls = screen
+      .getByRole("button", { name: "User account" })
+      .closest(".account-controls");
+    expect(accountControls).toContainElement(
+      screen.getByRole("combobox", { name: "Language" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "User account" }));
+    expect(
+      screen
+        .getByRole("button", { name: "Continue with Google" })
+        .querySelector(".authentication-provider__icon"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     const toolbar = screen.getByRole("toolbar", { name: "Map tools" });
     expect(toolbar).toBeInTheDocument();

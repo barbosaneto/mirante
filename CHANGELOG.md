@@ -15,6 +15,15 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   reference extension backed entirely by GeoNode's standard social-account
   provider.
 
+### Fixed
+
+- The local stack now presents Mirante and GeoNode browser routes through one
+  public origin, so completed social logins return to Mirante instead of the
+  GeoNode landing page or user profile.
+- The Google sign-in action now displays its recognizable provider icon.
+- The language selector now keeps a consistent gap from user buttons with
+  short or long display names.
+
 ## [0.1.2] - 2026-08-30
 
 ### Added

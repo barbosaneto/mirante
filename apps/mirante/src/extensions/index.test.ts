@@ -18,6 +18,7 @@ describe("distribution extensions", () => {
     const googleExtension = extensions.find(
       (extension) => extension.id === "google-oidc",
     );
+    const googleProvider = googleExtension?.authenticationProviders?.[0];
 
     expect(googleExtension?.authenticationProviders).toEqual([
       expect.objectContaining({
@@ -25,6 +26,7 @@ describe("distribution extensions", () => {
         loginPath: "/account/geonode_openid_connect/login/?process=login",
       }),
     ]);
+    expect(typeof googleProvider?.icon).toBe("function");
     expect(googleExtension?.translations?.["pt-BR"]).toEqual({
       provider: { label: "Continuar com Google" },
     });
