@@ -1778,6 +1778,7 @@ button,
 }
 
 .upload-options input[type="text"],
+.upload-options input[type="number"],
 .upload-options textarea,
 .upload-options select {
   width: 100%;

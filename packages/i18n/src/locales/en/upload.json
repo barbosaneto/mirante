@@ -37,12 +37,15 @@
     "geometry": "Geometry style",
     "default": "GeoNode default",
     "polygon": "Polygon",
+    "line": "Line",
     "point": "Point",
     "pointShape": "Point shape",
     "circle": "Circle",
     "square": "Square",
     "fillColor": "Fill color",
-    "strokeColor": "Outline color"
+    "strokeColor": "Outline color",
+    "lineColor": "Line color",
+    "lineWidth": "Line width (px)"
   },
   "visibility": {
     "legend": "Visibility",

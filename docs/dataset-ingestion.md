@@ -9,7 +9,7 @@ The initial Mirante proof of concept uploads GeoJSON, KML, and zipped Shapefile 
 3. Select or drop one `.geojson`, `.kml`, or `.zip` file. ZIP archives must contain the components of one Shapefile.
 4. Optionally provide a catalogue title and description. Empty fields preserve GeoNode's generated metadata.
 5. When visibility selection is enabled, choose public, private, or one of the uploader's GeoNode groups. Private is selected by default.
-6. Optionally choose a polygon or point style. Leaving **GeoNode default** selected preserves the existing styling behavior.
+6. Optionally choose a polygon, line, or point style. Leaving **GeoNode default** selected preserves the existing styling behavior.
 7. Keep the dialog open while GeoNode processes the dataset, metadata, style, and permissions.
 8. After publication, Mirante adds the WMS layer and fits the map to its geographic extent.
 9. Use the layers panel to change visibility and opacity.
@@ -42,9 +42,13 @@ No custom GeoNode endpoint, model, setting, or plugin is required.
 - GeoNode applies its own file type, permission, upload size, parallelism, and ingestion validation after local validation succeeds.
 - Metadata and styling are entirely optional. Omitting both preserves the same importer behavior as the original upload flow.
 - Visibility selection is distribution-configurable. When disabled, Mirante neither lists groups nor reads or changes resource permissions; GeoNode defaults remain authoritative.
-- Basic styling currently supports polygon fill and outline colors, or circle and square point symbols with fill and outline colors.
-- Line and raster style editors, attribute-based rules, classifications, labels, opacity controls, symbol sizes, and automatic geometry detection are not included yet.
-- The user must choose the matching geometry style. Selecting a point style for polygon data, or the reverse, can make features invisible until the style is corrected in GeoNode.
+- Basic styling currently supports polygon fill and outline colors, line color
+  and width, or circle and square point symbols with fill and outline colors.
+- Raster style editors, attribute-based rules, classifications, labels, opacity
+  controls, symbol sizes, and automatic geometry detection are not included yet.
+- The user must choose the matching geometry style. Selecting a style for a
+  different geometry type can make features invisible until the style is
+  corrected in GeoNode.
 - If metadata, styling, or permissions fail after ingestion, the dataset already exists in GeoNode and can be completed from its management interface.
 - The server may enforce a lower upload limit than the client.
 - The upload dialog must remain open during this initial implementation. Upload recovery after a page reload is not yet implemented.

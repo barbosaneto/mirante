@@ -82,10 +82,11 @@ export function DatasetUploadDialog({
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
   const [geometryStyle, setGeometryStyle] = useState<
-    "default" | "point" | "polygon"
+    "default" | "line" | "point" | "polygon"
   >("default");
   const [fillColor, setFillColor] = useState("#14b8a6");
   const [strokeColor, setStrokeColor] = useState("#0f172a");
+  const [lineWidth, setLineWidth] = useState(2);
   const [pointShape, setPointShape] = useState<"circle" | "square">("circle");
   const [visibilityAccess, setVisibilityAccess] =
     useState<DatasetUploadVisibility["access"]>("private");
@@ -146,12 +147,18 @@ export function DatasetUploadDialog({
                 fillColor,
                 strokeColor,
               }
-            : {
-                geometry: "point" as const,
-                fillColor,
-                strokeColor,
-                shape: pointShape,
-              };
+            : geometryStyle === "point"
+              ? {
+                  geometry: "point" as const,
+                  fillColor,
+                  strokeColor,
+                  shape: pointShape,
+                }
+              : {
+                  geometry: "line" as const,
+                  strokeColor,
+                  strokeWidth: lineWidth,
+                };
       const selectedGroup = groups.find(
         (group) => String(group.id) === visibilityGroupId,
       );
@@ -365,6 +372,7 @@ export function DatasetUploadDialog({
                   >
                     <option value="default">{t("style.default")}</option>
                     <option value="polygon">{t("style.polygon")}</option>
+                    <option value="line">{t("style.line")}</option>
                     <option value="point">{t("style.point")}</option>
                   </select>
                 </label>
@@ -386,18 +394,26 @@ export function DatasetUploadDialog({
                         </select>
                       </label>
                     ) : null}
+                    {geometryStyle !== "line" ? (
+                      <label>
+                        <span>{t("style.fillColor")}</span>
+                        <input
+                          type="color"
+                          value={fillColor}
+                          onChange={(event) =>
+                            setFillColor(event.currentTarget.value)
+                          }
+                        />
+                      </label>
+                    ) : null}
                     <label>
-                      <span>{t("style.fillColor")}</span>
-                      <input
-                        type="color"
-                        value={fillColor}
-                        onChange={(event) =>
-                          setFillColor(event.currentTarget.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>{t("style.strokeColor")}</span>
+                      <span>
+                        {t(
+                          geometryStyle === "line"
+                            ? "style.lineColor"
+                            : "style.strokeColor",
+                        )}
+                      </span>
                       <input
                         type="color"
                         value={strokeColor}
@@ -406,6 +422,24 @@ export function DatasetUploadDialog({
                         }
                       />
                     </label>
+                    {geometryStyle === "line" ? (
+                      <label>
+                        <span>{t("style.lineWidth")}</span>
+                        <input
+                          type="number"
+                          min="0.5"
+                          max="20"
+                          step="0.5"
+                          value={lineWidth}
+                          onChange={(event) => {
+                            const nextWidth = event.currentTarget.valueAsNumber;
+                            if (Number.isFinite(nextWidth)) {
+                              setLineWidth(nextWidth);
+                            }
+                          }}
+                        />
+                      </label>
+                    ) : null}
                   </div>
                 ) : null}
               </fieldset>

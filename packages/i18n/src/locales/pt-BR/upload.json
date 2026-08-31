@@ -37,12 +37,15 @@
     "geometry": "Estilo da geometria",
     "default": "Padrão do GeoNode",
     "polygon": "Polígono",
+    "line": "Linha",
     "point": "Ponto",
     "pointShape": "Formato do ponto",
     "circle": "Círculo",
     "square": "Quadrado",
     "fillColor": "Cor de preenchimento",
-    "strokeColor": "Cor do contorno"
+    "strokeColor": "Cor do contorno",
+    "lineColor": "Cor da linha",
+    "lineWidth": "Espessura da linha (px)"
   },
   "visibility": {
     "legend": "Visibilidade",

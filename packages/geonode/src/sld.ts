@@ -1,18 +1,25 @@
 export interface DatasetUploadStyleBase {
-  fillColor: string;
   strokeColor: string;
 }
 
 export interface DatasetUploadPolygonStyle extends DatasetUploadStyleBase {
   geometry: "polygon";
+  fillColor: string;
 }
 
 export interface DatasetUploadPointStyle extends DatasetUploadStyleBase {
   geometry: "point";
+  fillColor: string;
   shape: "circle" | "square";
 }
 
+export interface DatasetUploadLineStyle extends DatasetUploadStyleBase {
+  geometry: "line";
+  strokeWidth: number;
+}
+
 export type DatasetUploadStyle =
+  | DatasetUploadLineStyle
   | DatasetUploadPointStyle
   | DatasetUploadPolygonStyle;
 
@@ -45,6 +52,17 @@ function createSymbolizer(style: DatasetUploadStyle): string {
     </sld:PolygonSymbolizer>`;
   }
 
+  if (style.geometry === "line") {
+    return `<sld:LineSymbolizer>
+      <sld:Stroke>
+        <sld:CssParameter name="stroke">${style.strokeColor}</sld:CssParameter>
+        <sld:CssParameter name="stroke-width">${style.strokeWidth}</sld:CssParameter>
+        <sld:CssParameter name="stroke-linecap">round</sld:CssParameter>
+        <sld:CssParameter name="stroke-linejoin">round</sld:CssParameter>
+      </sld:Stroke>
+    </sld:LineSymbolizer>`;
+  }
+
   return `<sld:PointSymbolizer>
     <sld:Graphic>
       <sld:Mark>
@@ -69,10 +87,19 @@ export function createDatasetStyleFile(
   const colorPattern = /^#[0-9a-f]{6}$/i;
 
   if (
-    !colorPattern.test(style.fillColor) ||
-    !colorPattern.test(style.strokeColor)
+    !colorPattern.test(style.strokeColor) ||
+    (style.geometry !== "line" && !colorPattern.test(style.fillColor))
   ) {
     throw new Error("Dataset style colors must use hexadecimal values.");
+  }
+
+  if (
+    style.geometry === "line" &&
+    (!Number.isFinite(style.strokeWidth) ||
+      style.strokeWidth < 0.5 ||
+      style.strokeWidth > 20)
+  ) {
+    throw new Error("Dataset line width must be between 0.5 and 20 pixels.");
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

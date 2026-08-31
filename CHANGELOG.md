@@ -7,6 +7,11 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- Dataset uploads can now publish a persistent GeoServer line style with a
+  configurable color and width.
+
 ## [0.1.2] - 2026-08-30
 
 ### Added
