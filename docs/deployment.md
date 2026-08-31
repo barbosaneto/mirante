@@ -249,6 +249,13 @@ docker compose --env-file .env -f compose.yml up -d --force-recreate \
 Do not remove the GeoServer volume to rotate a password: it also contains the
 published workspaces, stores, layers, styles, and security configuration.
 
+The supplied Compose starts `celery-cmd` directly after Django becomes healthy.
+Django remains responsible for migrations, fixtures, static assets, and the
+vanilla GeoNode initialization. This avoids an upstream entrypoint timing issue
+where `.override_env` can be rewritten after a long-lived Celery worker starts,
+causing that worker to retain an older GeoServer credential until it is
+recreated.
+
 `GET /healthz` returns `200` when the static server is running. This does not
 assert GeoNode, GeoServer, database, or storage health. Monitor those services
 independently.

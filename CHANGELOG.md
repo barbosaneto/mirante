@@ -16,6 +16,9 @@ and releases will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   failures during dataset publication.
 - The social-login extension example now uses GeoNode 5.1.0's generic OIDC
   route and records the planned bundled Google reference extension.
+- Celery now starts directly from the Compose environment after Django is
+  healthy, preventing stale GeoServer credentials from causing dataset import
+  failures.
 
 ## [0.1.1] - 2026-08-30
 

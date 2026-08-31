@@ -76,8 +76,11 @@ services:
     <<: *geonode-service
     environment:
       IS_CELERY: "True"
-    entrypoint: ["/usr/src/geonode/entrypoint.sh"]
-    command: ["celery-cmd"]
+    # Django performs the vanilla initialization. Starting Celery directly
+    # prevents the upstream entrypoint from leaving worker processes with a
+    # stale .override_env credential.
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ["exec /usr/bin/celery-cmd"]
     depends_on:
       django:
         condition: service_healthy
