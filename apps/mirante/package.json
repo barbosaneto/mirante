@@ -1,6 +1,6 @@
 {
   "name": "@mirante/app",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -9,12 +9,12 @@
     "dev": "vite --host 0.0.0.0"
   },
   "dependencies": {
-    "@mirante/core": "0.1.2",
-    "@mirante/geonode": "0.1.2",
-    "@mirante/i18n": "0.1.2",
-    "@mirante/map": "0.1.2",
-    "@mirante/sdk": "0.1.2",
-    "@mirante/ui": "0.1.2",
+    "@mirante/core": "0.1.3",
+    "@mirante/geonode": "0.1.3",
+    "@mirante/i18n": "0.1.3",
+    "@mirante/map": "0.1.3",
+    "@mirante/sdk": "0.1.3",
+    "@mirante/ui": "0.1.3",
     "i18next": "21.8.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",

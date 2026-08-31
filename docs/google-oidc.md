@@ -53,12 +53,21 @@ For the complete supplied stack, set these values in the private environment:
 SOCIALACCOUNT_OIDC_PROVIDER_ENABLED=True
 SOCIALACCOUNT_PROVIDER=google
 SOCIALACCOUNT_SYNC_USER_GROUPS_ON_LOGIN=NO_SYNC
+ACCOUNT_OPEN_SOCIALSIGNUP=True
+SOCIALACCOUNT_AUTO_SIGNUP=True
 ```
 
 `NO_SYNC` is the safe default because normal Google identity tokens do not
 carry GeoNode group memberships. Local administrators continue to manage
 groups and permissions in GeoNode. A deployment using custom group claims may
 choose another GeoNode-supported strategy only after validating its mapping.
+
+`ACCOUNT_OPEN_SIGNUP=False` may remain in place to keep local registration
+closed. `ACCOUNT_OPEN_SOCIALSIGNUP=True` independently permits a first verified
+Google login to create its GeoNode account, while `SOCIALACCOUNT_AUTO_SIGNUP`
+avoids an additional registration form. Set `ACCOUNT_APPROVAL_REQUIRED=True`
+if newly created social accounts must remain inactive until an administrator
+approves them.
 
 Recreate Django and Celery so both processes load the updated settings. Add the
 ARM64 override to the command when the deployment uses it:

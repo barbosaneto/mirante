@@ -19,7 +19,7 @@ or `0`.
 | `MIRANTE_STACK_ENV_FILE`                     | File path                | No       | `.env`                        | Private environment file injected into GeoNode services                    |
 | `DOCKER_ENV`                                 | Enum                     | No       | `production`                  | Declares the upstream GeoNode container environment                        |
 | `MIRANTE_IMAGE`                              | OCI image name           | No       | `ghcr.io/barbosaneto/mirante` | Public official frontend image                                             |
-| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.2`                       | Immutable frontend release tag and OCI version label                       |
+| `MIRANTE_VERSION`                            | Image tag/version string | No       | `0.1.3`                       | Immutable frontend release tag and OCI version label                       |
 | `MIRANTE_HTTP_PORT`                          | TCP port integer         | No       | `8080`                        | Loopback port reached by the host HTTPS proxy                              |
 | `MIRANTE_PUBLIC_URL`                         | Absolute HTTPS URL       | Yes      | None                          | Single browser origin for Mirante and all proxied GeoNode routes           |
 | `MIRANTE_GOOGLE_OIDC_ENABLED`                | Boolean                  | No       | `true`                        | Registers the bundled Google login extension                               |
@@ -168,6 +168,8 @@ loads the synchronized credential.
 | `SECURE_SSL_REDIRECT`                     | Boolean           | No       | `False`                                      | Public HTTP-to-HTTPS redirect is owned by the host edge                   |
 | `SECURE_HSTS_SECONDS`                     | Integer seconds   | No       | `0`                                          | HSTS is disabled until deliberately enabled at the public edge            |
 | `ACCOUNT_OPEN_SIGNUP`                     | Boolean           | No       | `False`                                      | Disables public account creation                                          |
+| `ACCOUNT_OPEN_SOCIALSIGNUP`               | Boolean           | No       | `True`                                       | Allows a first verified Google login to create a GeoNode account          |
+| `SOCIALACCOUNT_AUTO_SIGNUP`               | Boolean           | No       | `True`                                       | Creates the social account without an additional local registration form  |
 | `ACCOUNT_APPROVAL_REQUIRED`               | Boolean           | No       | `False`                                      | Requires approval only when explicitly enabled                            |
 | `ACCOUNT_EMAIL_VERIFICATION`              | Enum              | No       | `none`                                       | Email verification mode; configure SMTP before enabling                   |
 | `SOCIALACCOUNT_OIDC_PROVIDER_ENABLED`     | Boolean           | No       | `True`                                       | Loads GeoNode's generic OIDC provider                                     |

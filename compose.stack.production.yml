@@ -18,7 +18,7 @@ x-geonode-service: &geonode-service
 
 services:
   mirante:
-    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.2}"
+    image: "${MIRANTE_IMAGE:-ghcr.io/barbosaneto/mirante}:${MIRANTE_VERSION:-0.1.3}"
     environment:
       GEONODE_INTERNAL_URL: https://nginx:443
       MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES: "${MIRANTE_DATASET_UPLOAD_MAX_FILE_SIZE_BYTES:-104857600}"
